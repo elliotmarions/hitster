@@ -1,0 +1,352 @@
+@import 'tailwindcss';
+
+/* ============================================================
+   HITSTER BINGO ONLINE – designsystem
+   80-tals synthwave/nattklubb: midnattssvart bas, neon-ljus.
+   Kategorifärger återkommer konsekvent i hela UI:t:
+     Årtiondet = guld · Artisten = magenta · Exakt årtal = cyan
+     Årtal ±3 år = lime · Låttiteln = lila
+   ============================================================ */
+
+@theme {
+  /* Bas – nästan svart med lila undervärme, som ett mörkt dansgolv */
+  --color-midnight: #0a0713;
+  --color-midnight-700: #0e0a1c;
+  --color-midnight-600: #150d28;
+  --color-panel: #160e2a;
+  --color-panel-2: #1d1338;
+  --color-line: #2c1e4d;
+
+  /* Kategori-neon */
+  --color-gold: #ffc93c;
+  --color-cyan: #22e6e6;
+  --color-magenta: #ff2e9a;
+  --color-lime: #b6ff3c;
+
+  /* Disco-accenter */
+  --color-disco: #b14dff;
+  --color-hotpink: #ff4d9d;
+
+  /* Text */
+  --color-cream: #f4efff;
+  --color-muted: #9a8fbf;
+
+  /* Typsnittspar */
+  --font-body: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Righteous', ui-sans-serif, system-ui, sans-serif;
+  --font-logo: 'Monoton', ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-body);
+    color: var(--color-cream);
+    background-color: var(--color-midnight);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* Dansgolvet: fasta färgade ljuspölar bakom allt innehåll */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background:
+      radial-gradient(38rem 38rem at 12% -8%, color-mix(in srgb, var(--color-magenta) 26%, transparent), transparent 60%),
+      radial-gradient(34rem 34rem at 92% 4%, color-mix(in srgb, var(--color-cyan) 22%, transparent), transparent 60%),
+      radial-gradient(40rem 40rem at 78% 108%, color-mix(in srgb, var(--color-disco) 30%, transparent), transparent 62%),
+      radial-gradient(30rem 30rem at 8% 96%, color-mix(in srgb, var(--color-lime) 14%, transparent), transparent 60%);
+    filter: saturate(1.1);
+  }
+
+  /* Diskret filmkornstextur ovanpå ljuset (dämpad så läsbarheten aldrig lider) */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.06;
+    mix-blend-mode: soft-light;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-magenta) 55%, transparent);
+    color: #fff;
+  }
+
+  /* Neonig scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-midnight-700);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--color-disco) 55%, var(--color-midnight));
+    border-radius: 99px;
+    border: 2px solid var(--color-midnight-700);
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    line-height: 1.05;
+    margin: 0;
+  }
+}
+
+@layer components {
+  /* --- Neon-hjälpare: sätt --neon på elementet, så följer glöden med ---
+     Används genom hela appen så en aktiv kategori "lyser upp" gränssnittet. */
+  .neon-text {
+    color: var(--neon, var(--color-cream));
+    text-shadow:
+      0 0 6px color-mix(in srgb, var(--neon, #fff) 65%, transparent),
+      0 0 22px color-mix(in srgb, var(--neon, #fff) 35%, transparent);
+  }
+
+  .neon-border {
+    border: 1.5px solid color-mix(in srgb, var(--neon, var(--color-line)) 75%, transparent);
+    box-shadow:
+      0 0 18px -4px color-mix(in srgb, var(--neon, transparent) 70%, transparent),
+      inset 0 0 14px -8px color-mix(in srgb, var(--neon, transparent) 90%, transparent);
+  }
+
+  /* --- Logga: neon-tub-känsla (Monoton) --- */
+  .wordmark {
+    font-family: var(--font-logo);
+    line-height: 0.95;
+    letter-spacing: 0.02em;
+    color: var(--color-cream);
+    text-shadow:
+      0 0 4px #fff,
+      0 0 12px var(--color-hotpink),
+      0 0 30px var(--color-magenta),
+      0 0 60px color-mix(in srgb, var(--color-disco) 80%, transparent);
+  }
+
+  /* --- Paneler: upphöjda mörka ytor med tunn ljuskant --- */
+  .panel {
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--color-panel-2) 92%, transparent), var(--color-panel));
+    border: 1px solid var(--color-line);
+    border-radius: 16px;
+    box-shadow:
+      0 18px 50px -24px #000,
+      inset 0 1px 0 0 color-mix(in srgb, #fff 8%, transparent);
+  }
+
+  .panel-inset {
+    background: color-mix(in srgb, var(--color-midnight-700) 80%, #000);
+    border: 1px solid var(--color-line);
+    border-radius: 12px;
+  }
+
+  /* --- Knappar: taktila, upplysta, med tydligt "tryck" --- */
+  .btn {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.8rem 1.4rem;
+    border-radius: 12px;
+    cursor: pointer;
+    user-select: none;
+    border: 1.5px solid transparent;
+    transition:
+      transform 0.08s ease,
+      box-shadow 0.18s ease,
+      filter 0.18s ease,
+      background 0.18s ease;
+  }
+  .btn:active {
+    transform: translateY(2px);
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    filter: grayscale(0.4);
+  }
+  .btn:focus-visible {
+    outline: 2px solid var(--color-cyan);
+    outline-offset: 2px;
+  }
+
+  /* Primär: fylld neon med mörk text – lyser som en knapp på ett bordskryss */
+  .btn-primary {
+    background: linear-gradient(180deg, var(--color-hotpink), var(--color-magenta));
+    color: #1a0616;
+    border-color: color-mix(in srgb, #fff 30%, var(--color-hotpink));
+    box-shadow:
+      0 0 22px -4px var(--color-magenta),
+      inset 0 1px 0 color-mix(in srgb, #fff 55%, transparent);
+    font-weight: 400;
+  }
+  .btn-primary:hover:not(:disabled) {
+    filter: brightness(1.08);
+    box-shadow: 0 0 30px -2px var(--color-magenta);
+  }
+
+  /* Outline: neonkant på mörk botten (färgen styrs av --neon) */
+  .btn-outline {
+    background: color-mix(in srgb, var(--color-panel) 70%, transparent);
+    color: var(--neon, var(--color-cream));
+    border-color: color-mix(in srgb, var(--neon, var(--color-line)) 70%, transparent);
+    box-shadow:
+      0 0 16px -6px color-mix(in srgb, var(--neon, transparent) 80%, transparent),
+      inset 0 0 12px -8px color-mix(in srgb, var(--neon, transparent) 90%, transparent);
+  }
+  .btn-outline:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--neon, var(--color-panel)) 16%, var(--color-panel));
+    box-shadow: 0 0 24px -4px color-mix(in srgb, var(--neon, transparent) 85%, transparent);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--color-muted);
+    border-color: transparent;
+  }
+  .btn-ghost:hover:not(:disabled) {
+    color: var(--color-cream);
+    background: color-mix(in srgb, #fff 6%, transparent);
+  }
+
+  /* --- Inmatningsfält --- */
+  .field {
+    width: 100%;
+    background: var(--color-midnight-700);
+    border: 1.5px solid var(--color-line);
+    border-radius: 12px;
+    color: var(--color-cream);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    padding: 0.85rem 1rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .field::placeholder {
+    color: color-mix(in srgb, var(--color-muted) 80%, transparent);
+  }
+  .field:focus {
+    outline: none;
+    border-color: var(--color-cyan);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-cyan) 22%, transparent);
+  }
+
+  .label {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.72rem;
+    color: var(--color-muted);
+  }
+
+  /* --- Rumskod-bricka: stor, avläsbar, som en display på dansgolvet --- */
+  .code-badge {
+    font-family: var(--font-display);
+    letter-spacing: 0.34em;
+    background: var(--color-midnight-700);
+    border: 1.5px dashed color-mix(in srgb, var(--color-cyan) 55%, var(--color-line));
+    color: var(--color-cyan);
+    text-shadow: 0 0 16px color-mix(in srgb, var(--color-cyan) 55%, transparent);
+    border-radius: 14px;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.7rem;
+    padding: 0.28rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--neon, var(--color-line)) 55%, transparent);
+    color: var(--neon, var(--color-muted));
+    background: color-mix(in srgb, var(--neon, var(--color-line)) 10%, transparent);
+  }
+}
+
+/* ============================================================
+   Animationer
+   ============================================================ */
+@keyframes disco-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes float-soft {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    opacity: 0.85;
+    filter: drop-shadow(0 0 6px currentColor);
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 16px currentColor);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -160% 0;
+  }
+  100% {
+    background-position: 260% 0;
+  }
+}
+
+.anim-float {
+  animation: float-soft 6s ease-in-out infinite;
+}
+.anim-spin-slow {
+  animation: disco-spin 14s linear infinite;
+}
+.anim-pulse {
+  animation: pulse-glow 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-float,
+  .anim-spin-slow,
+  .anim-pulse {
+    animation: none;
+  }
+}
