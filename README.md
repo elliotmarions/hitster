@@ -139,7 +139,7 @@ hitster-bingo-online/
 ## Design & viktiga principer
 
 - **Estetik:** 80-tals synthwave/nattklubb – midnattssvart bas, neon per kategori
-  (guld = årtiondet, magenta = artisten, cyan = exakt årtal, lime = årtal ±3 år, lila = låttiteln).
+  (lila = årtiondet, gul = artisten, rosa = exakt årtal, blå = årtal ±3 år, grön = låttiteln).
   Typsnitt: Monoton (logga), Righteous (rubriker), Space Grotesk (brödtext).
 - **Ingen ljudöverföring via WebRTC – någonsin.** Musik spelas alltid lokalt via varje
   spelares egen Spotify. WebRTC (Fas 5) bär bara video/röst.
