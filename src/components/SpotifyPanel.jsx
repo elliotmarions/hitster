@@ -12,7 +12,7 @@ const GREEN = '#1ed760'
  * via Web Playback SDK. `playerId` (valfri) speglar anslutningsstatus till
  * players.spotify_connected så andra ser vem som är redo.
  */
-export default function SpotifyPanel({ playerId }) {
+export default function SpotifyPanel({ playerId, inGame = false }) {
   const {
     isConfigured,
     isMobile,
@@ -131,8 +131,9 @@ export default function SpotifyPanel({ playerId }) {
         </p>
       )}
 
-      <div className="panel-inset mt-4 p-4">
-        <p className="label mb-2">Testa uppspelning</p>
+      {!inGame && (
+        <div className="panel-inset mt-4 p-4">
+          <p className="label mb-2">Testa uppspelning</p>
         <TextField
           placeholder="spotify:track:… eller open.spotify.com/track/…"
           value={track}
@@ -158,7 +159,8 @@ export default function SpotifyPanel({ playerId }) {
         {!deviceReady && (
           <p className="mt-2 text-xs text-muted">Förbereder spelaren i din webbläsare…</p>
         )}
-      </div>
+        </div>
+      )}
 
       {(playbackError || localErr) && (
         <p className="mt-3 text-sm text-magenta">{playbackError || localErr}</p>

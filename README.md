@@ -16,8 +16,8 @@ Dessutom digitaliseras **discokulan** och **bingobrickorna** så allt synkas i r
 | --- | --- | --- |
 | **1** | Fundament: Vite+React+Tailwind, Supabase, skapa/gå med i rum, lobby i realtid | ✅ **Klar** |
 | **2** | Spelplan: digital discokula + bingobrickor med realtidskryss (utan ljud) | ✅ **Klar** |
-| **3** | Spotify-inloggning + uppspelning av en låt lokalt | 🔨 Byggd (registrera Spotify-app) |
-| 4 | Synkad start (`PLAY_COUNTDOWN`) + 25 s-timer | ⏳ |
+| **3** | Spotify-inloggning + uppspelning av en låt lokalt | ✅ **Klar** |
+| **4** | Synkad start (`PLAY_COUNTDOWN`) + 25 s-timer | 🔨 Byggd (kör migration 0005) |
 | 5 | Video (WebRTC-mesh), helt avstängbar | ⏳ |
 
 > Denna README uppdateras allteftersom faserna byggs.

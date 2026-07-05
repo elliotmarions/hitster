@@ -164,6 +164,10 @@ export function SpotifyProvider({ children }) {
     playerRef.current?.togglePlay()
   }, [])
 
+  const pause = useCallback(() => {
+    playerRef.current?.pause()
+  }, [])
+
   const value = {
     isConfigured: isSpotifyConfigured,
     isMobile: IS_MOBILE,
@@ -178,6 +182,7 @@ export function SpotifyProvider({ children }) {
     disconnect,
     playTrack,
     togglePlay,
+    pause,
   }
 
   return <SpotifyContext.Provider value={value}>{children}</SpotifyContext.Provider>

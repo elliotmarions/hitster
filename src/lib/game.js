@@ -8,8 +8,20 @@ export async function startGame(roomId) {
   if (error) throw error
 }
 
+// Snurra discokulan → slumpad kategori (ingen musik än).
 export async function spinWheel(roomId) {
   const { data, error } = await supabase.rpc('spin_wheel', { p_room_id: roomId })
+  if (error) throw error
+  return data
+}
+
+// Värden startar en (slumpad) låt för senaste rundan → synkad uppspelning + 25s-timer hos alla.
+export async function startTrack(roomId, trackUri, trackMeta) {
+  const { data, error } = await supabase.rpc('start_track', {
+    p_room_id: roomId,
+    p_track_uri: trackUri,
+    p_track_meta: trackMeta,
+  })
   if (error) throw error
   return data
 }

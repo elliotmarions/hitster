@@ -1,24 +1,45 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CATEGORIES, TIMER_SECONDS } from '../../lib/constants.js'
+import { CATEGORIES, TIMER_SECONDS, SPIN_MS } from '../../lib/constants.js'
 import { useGame } from '../../hooks/useGame.js'
-import { ensureCard, spinWheel, markCross, unmarkCross, eraseCross, resetGame } from '../../lib/game.js'
+import {
+  ensureCard,
+  spinWheel,
+  startTrack,
+  markCross,
+  unmarkCross,
+  eraseCross,
+  resetGame,
+} from '../../lib/game.js'
 import { leaveRoom } from '../../lib/rooms.js'
+import { useSpotify } from '../../context/SpotifyContext.jsx'
+import { useTrackQueue } from '../../hooks/useTrackQueue.js'
+import { useSyncedPlayback } from '../../hooks/useSyncedPlayback.js'
 import DiscoWheel from '../DiscoWheel.jsx'
 import CategoryBanner from '../CategoryBanner.jsx'
 import RoundTimer from '../RoundTimer.jsx'
 import BingoCard from '../BingoCard.jsx'
 import WinBanner from '../WinBanner.jsx'
+import Countdown from '../Countdown.jsx'
+import TrackReveal from '../TrackReveal.jsx'
+import PlaylistSetup from '../PlaylistSetup.jsx'
 import NeonButton from '../ui/NeonButton.jsx'
 import SpotifyPanel from '../SpotifyPanel.jsx'
 
 export default function GameView({ room, players, me, isHost }) {
   const navigate = useNavigate()
   const { round, cards } = useGame(room.id)
+  const spotify = useSpotify()
+  const queue = useTrackQueue(room, isHost, spotify.connected)
+  // Startar/pausar låten synkat vid start_at (= rundans timer_start_at) hos alla.
+  useSyncedPlayback(round, spotify.deviceReady, spotify.playTrack, spotify.pause)
+
   const [now, setNow] = useState(() => Date.now())
+  const [wheelSpinning, setWheelSpinning] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const ensured = useRef(false)
+  const spunRef = useRef(0)
 
   // Säkerställ att jag har en bricka (täcker sena joins).
   useEffect(() => {
@@ -27,26 +48,54 @@ export default function GameView({ room, players, me, isHost }) {
     ensureCard(room.id).catch(() => {})
   }, [room.id])
 
-  // Tickande klocka så snurr-status och timer hålls i synk mot serverns timer_start_at.
+  // Tickande klocka.
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 200)
     return () => clearInterval(t)
   }, [])
 
-  const ts = round?.timer_start_at ? new Date(round.timer_start_at).getTime() : null
-  const spinning = ts != null && now < ts
-  const remaining = ts != null ? TIMER_SECONDS - (now - ts) / 1000 : 0
+  // Snurr-animation: bara när en NY runda (utan låt) kommer – inte när start_track
+  // uppdaterar samma runda med en låt.
+  useEffect(() => {
+    if (!round?.round_number || round.current_track_id) return
+    if (spunRef.current === round.round_number) return
+    spunRef.current = round.round_number
+    setWheelSpinning(true)
+    const t = setTimeout(() => setWheelSpinning(false), SPIN_MS)
+    return () => clearTimeout(t)
+  }, [round?.round_number, round?.current_track_id])
+
   const finished = room.status === 'finished'
+  // timer_start_at sätts först när värden trycker "Starta låt" (= start_at).
+  const startMs = round?.timer_start_at ? new Date(round.timer_start_at).getTime() : null
+  const hasTrack = Boolean(round?.current_track_id)
+  const remaining = startMs != null ? TIMER_SECONDS - (now - startMs) / 1000 : 0
+
+  // Uppspelningsfaser (efter "Starta låt").
+  const beforeStart = hasTrack && startMs != null && now < startMs
+  const clipPlaying = hasTrack && startMs != null && now >= startMs && now < startMs + TIMER_SECONDS * 1000
+  const revealed = hasTrack && startMs != null && now >= startMs + TIMER_SECONDS * 1000
+  const timerRunning = clipPlaying && remaining > 0
+
+  const needsManual = hasTrack && !spotify.deviceReady // mobil / ej redo → starta själv
+  const trackOpenUrl = round?.current_track_id?.replace(
+    'spotify:track:',
+    'https://open.spotify.com/track/',
+  )
 
   const myCard = cards.find((c) => c.player_id === me?.id)
   const otherCards = cards.filter((c) => c.player_id !== me?.id)
   const playerName = (pid) => players.find((p) => p.id === pid)?.display_name || 'Spelare'
 
-  // Efter att snurret landat gäller rundans kategori tills nästa snurr.
-  const currentCategory = round && !spinning ? round.category : null
+  // Kategorin gäller så fort hjulet landat.
+  const currentCategory = round && !wheelSpinning ? round.category : null
   const canMark = !finished && !!currentCategory && !myCard?.has_won
-  const canUnmark = !finished // egna kryss kan alltid ångras under spelets gång
+  const canUnmark = !finished
   const canErase = !finished && room.erase_rule_enabled && currentCategory === 'exact_year'
+
+  // Värdens kontroller
+  const canSpin = isHost && !finished && !wheelSpinning && !beforeStart && !clipPlaying
+  const canStartTrack = isHost && !finished && !!round && !wheelSpinning && !hasTrack
 
   async function run(fn) {
     setErr('')
@@ -60,6 +109,15 @@ export default function GameView({ room, players, me, isHost }) {
   }
 
   const onSpin = () => run(() => spinWheel(room.id))
+  const onStartTrack = () => {
+    // Nästa (slumpade) låt ur den blandade spellistan.
+    const track = queue.nextTrack()
+    if (!track) {
+      setErr('Ingen spellista vald – välj en Spotify-spellista nedan.')
+      return
+    }
+    run(() => startTrack(room.id, track.uri, track.meta))
+  }
   const onMark = (i) => run(() => markCross(room.id, i))
   const onUnmark = (i) => run(() => unmarkCross(room.id, i))
   const onErase = (cardId, i) => run(() => eraseCross(room.id, cardId, i))
@@ -78,6 +136,8 @@ export default function GameView({ room, players, me, isHost }) {
 
   return (
     <div className="space-y-6">
+      {beforeStart && <Countdown secondsToStart={(startMs - now) / 1000} />}
+
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="label">Spelar nu</p>
@@ -107,20 +167,71 @@ export default function GameView({ room, players, me, isHost }) {
       {/* Scen: discokula + kategori + timer */}
       <section className="panel p-6">
         <div className="flex flex-col items-center gap-4">
-          <CategoryBanner round={round} spinning={spinning} />
+          <CategoryBanner round={round} spinning={wheelSpinning} />
           <div className="flex items-center gap-5">
             <DiscoWheel round={round} size={260} />
-            {ts != null && !spinning && remaining > 0 && (
+            {timerRunning && (
               <RoundTimer remaining={remaining} total={TIMER_SECONDS} color={timerColor} />
             )}
           </div>
+
+          {clipPlaying && (
+            <p className="anim-pulse neon-text font-display text-lg" style={{ '--neon': '#22e6e6' }}>
+              🎵 Lyssna och gissa!
+            </p>
+          )}
+          {revealed && <TrackReveal meta={round.current_track_meta} category={round.category} />}
+          {needsManual && (beforeStart || clipPlaying) && trackOpenUrl && (
+            <div className="panel-inset p-3 text-center text-sm">
+              <p className="text-muted">
+                Spelar inte i appen{spotify.isMobile ? ' (mobil)' : ''} – starta låten i din Spotify:
+              </p>
+              <a className="text-cyan underline" href={trackOpenUrl} target="_blank" rel="noreferrer">
+                Öppna låten i Spotify
+              </a>
+            </div>
+          )}
+
           {isHost ? (
-            <NeonButton onClick={onSpin} disabled={busy || spinning || finished}>
-              {spinning ? 'Snurrar…' : round ? 'Snurra igen' : 'Snurra discokulan'}
-            </NeonButton>
+            <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-wrap justify-center gap-3">
+                <NeonButton onClick={onSpin} disabled={busy || !canSpin}>
+                  {wheelSpinning ? 'Snurrar…' : round ? 'Snurra igen' : 'Snurra discokulan'}
+                </NeonButton>
+                {canStartTrack && (
+                  <NeonButton
+                    variant="outline"
+                    neon="#1ed760"
+                    onClick={onStartTrack}
+                    disabled={busy || queue.count === 0}
+                  >
+                    ▶ Starta låt
+                  </NeonButton>
+                )}
+              </div>
+              <p className="text-center text-xs text-muted">
+                {queue.loading
+                  ? 'Hämtar spellistan…'
+                  : queue.error
+                    ? queue.error
+                    : !room.playlist_uri
+                      ? 'Välj en spellista nedan för att kunna spela låtar.'
+                      : !spotify.connected
+                        ? 'Koppla din Spotify nedan för att spela låtar.'
+                        : hasTrack
+                          ? ''
+                          : `🎵 ${queue.count} låtar i kön – snurra och tryck "Starta låt".`}
+              </p>
+            </div>
           ) : (
             <p className="text-sm text-muted">
-              {spinning ? 'Discokulan snurrar…' : 'Värden snurrar discokulan.'}
+              {wheelSpinning
+                ? 'Discokulan snurrar…'
+                : beforeStart
+                  ? 'Gör dig redo…'
+                  : clipPlaying
+                    ? 'Lyssna!'
+                    : 'Värden styr rundan.'}
             </p>
           )}
           {err && <p className="text-sm text-magenta">{err}</p>}
@@ -190,7 +301,14 @@ export default function GameView({ room, players, me, isHost }) {
         </section>
       )}
 
-      <SpotifyPanel playerId={me?.id} />
+      {isHost && (
+        <section className="panel p-5">
+          <p className="label mb-2">Spellista (Läge A)</p>
+          <PlaylistSetup room={room} isHost={isHost} />
+        </section>
+      )}
+
+      <SpotifyPanel playerId={me?.id} inGame />
     </div>
   )
 }
