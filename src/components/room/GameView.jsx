@@ -10,6 +10,7 @@ import RoundTimer from '../RoundTimer.jsx'
 import BingoCard from '../BingoCard.jsx'
 import WinBanner from '../WinBanner.jsx'
 import NeonButton from '../ui/NeonButton.jsx'
+import SpotifyPanel from '../SpotifyPanel.jsx'
 
 export default function GameView({ room, players, me, isHost }) {
   const navigate = useNavigate()
@@ -188,6 +189,8 @@ export default function GameView({ room, players, me, isHost }) {
           )}
         </section>
       )}
+
+      <SpotifyPanel playerId={me?.id} />
     </div>
   )
 }

@@ -4,12 +4,15 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
+import { SpotifyProvider } from './context/SpotifyContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <App />
+        <SpotifyProvider>
+          <App />
+        </SpotifyProvider>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,

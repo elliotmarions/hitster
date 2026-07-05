@@ -27,6 +27,11 @@ export default function PlayerList({ players, currentUserId }) {
             <span className="font-display truncate text-cream">{p.display_name}</span>
 
             <span className="ml-auto flex items-center gap-1.5">
+              {p.spotify_connected && (
+                <span title="Spotify redo" aria-label="Spotify redo" style={{ color: '#1ed760' }}>
+                  ●
+                </span>
+              )}
               {p.is_host && (
                 <span className="chip" style={{ '--neon': '#ffc93c' }}>
                   ★ Värd

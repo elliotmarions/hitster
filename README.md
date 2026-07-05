@@ -16,7 +16,7 @@ Dessutom digitaliseras **discokulan** och **bingobrickorna** så allt synkas i r
 | --- | --- | --- |
 | **1** | Fundament: Vite+React+Tailwind, Supabase, skapa/gå med i rum, lobby i realtid | ✅ **Klar** |
 | **2** | Spelplan: digital discokula + bingobrickor med realtidskryss (utan ljud) | ✅ **Klar** |
-| 3 | Spotify-inloggning + uppspelning av en låt lokalt | ⏳ Nästa |
+| **3** | Spotify-inloggning + uppspelning av en låt lokalt | 🔨 Byggd (registrera Spotify-app) |
 | 4 | Synkad start (`PLAY_COUNTDOWN`) + 25 s-timer | ⏳ |
 | 5 | Video (WebRTC-mesh), helt avstängbar | ⏳ |
 
@@ -93,17 +93,17 @@ npm run dev
 
 ## Spotify (förbereds i Fas 3)
 
-Du behöver inte göra detta för Fas 1, men för framtiden:
+1. Registrera en app på [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard) → **Create app**.
+2. Under **Redirect URIs**, lägg till BÅDA (appen härleder automatiskt rätt en utifrån nuvarande adress; Spotify kräver `127.0.0.1`, **inte** `localhost`):
+   - `http://127.0.0.1:5173/callback` (lokalt)
+   - `https://hitster-teal.vercel.app/callback` (produktion)
+3. Bocka i **Web API** + **Web Playback SDK** under *APIs used*.
+4. Kopiera **Client ID** → `VITE_SPOTIFY_CLIENT_ID` i `.env.local` (lokalt) och som env-var i Vercel (produktion).
+5. Starta om `npm run dev`.
 
-1. Registrera en app på [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard).
-2. Lägg in **exakt** denna som *Redirect URI* (Spotify kräver `127.0.0.1`, **inte** `localhost`):
-   `http://127.0.0.1:5173/callback`. I produktion: `https://<din-vercel-domän>/callback`.
-3. Kopiera **Client ID** till `VITE_SPOTIFY_CLIENT_ID` i `.env.local`.
-4. Scopes som kommer användas: `streaming`, `user-read-email`, `user-read-private`,
-   `user-modify-playback-state`, `user-read-playback-state`.
+Scopes som används: `streaming`, `user-read-email`, `user-read-private`, `user-modify-playback-state`, `user-read-playback-state`.
 
-> ⚠️ Web Playback SDK kräver **Spotify Premium** och en **desktop-webbläsare**. På mobil
-> går det att se spelplan/brickor/video, men musiken måste startas i den egna Spotify-appen.
+> ⚠️ Web Playback SDK kräver **Spotify Premium** och en **desktop-webbläsare** (Chrome/Edge/Firefox/Safari). På mobil syns spelplan/brickor, men musik *i appen* kräver dator.
 
 ---
 
