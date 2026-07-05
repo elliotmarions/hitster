@@ -76,6 +76,7 @@ function storeToken(data) {
     access_token: data.access_token,
     // Spotify skickar inte alltid ny refresh_token vid refresh – behåll då den gamla.
     refresh_token: data.refresh_token || existing?.refresh_token || null,
+    scope: data.scope || existing?.scope || '',
     expires_at: Date.now() + (data.expires_in - 60) * 1000, // 60s marginal
   }
   localStorage.setItem(TOKEN_KEY, JSON.stringify(token))
@@ -90,6 +91,11 @@ function getStored() {
 
 export function hasToken() {
   return Boolean(getStored()?.access_token)
+}
+
+// De scopes Spotify faktiskt beviljade (space-separerad sträng).
+export function getGrantedScopes() {
+  return getStored()?.scope || ''
 }
 
 // Byter auktoriseringskoden mot tokens (anropas på /callback).

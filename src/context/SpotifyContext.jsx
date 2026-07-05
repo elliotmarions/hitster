@@ -9,6 +9,7 @@ import {
 import {
   beginLogin,
   getAccessToken,
+  getGrantedScopes,
   hasToken,
   isSpotifyConfigured,
   logout,
@@ -174,6 +175,7 @@ export function SpotifyProvider({ children }) {
     connected,
     profile,
     isPremium: profile?.product === 'premium',
+    grantedScopes: connected ? getGrantedScopes() : '',
     deviceReady,
     currentTrack,
     paused,

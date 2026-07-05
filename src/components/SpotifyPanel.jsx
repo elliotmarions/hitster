@@ -19,6 +19,7 @@ export default function SpotifyPanel({ playerId, inGame = false }) {
     connected,
     profile,
     isPremium,
+    grantedScopes,
     deviceReady,
     currentTrack,
     paused,
@@ -130,6 +131,17 @@ export default function SpotifyPanel({ playerId, inGame = false }) {
           Web Playback SDK kräver Premium – uppspelning i appen fungerar inte utan det.
         </p>
       )}
+
+      <p className="mt-2 text-xs">
+        {grantedScopes.includes('playlist-read-private') ? (
+          <span className="text-lime">✓ Spellist-behörighet beviljad</span>
+        ) : (
+          <span className="text-magenta">
+            ✗ Saknar spellist-behörighet – koppla från och koppla Spotify igen och godkänn
+            "spellistor" i rutan.
+          </span>
+        )}
+      </p>
 
       {!inGame && (
         <div className="panel-inset mt-4 p-4">
