@@ -57,6 +57,9 @@ export async function beginLogin() {
     scope: SCOPES,
     code_challenge_method: 'S256',
     code_challenge: challenge,
+    // Tvinga fram samtyckesrutan så nyligen tillagda scopes (t.ex. spellist-läsning)
+    // garanterat beviljas även om appen redan var godkänd sedan tidigare.
+    show_dialog: 'true',
   })
   window.location.href = `https://accounts.spotify.com/authorize?${params.toString()}`
 }
