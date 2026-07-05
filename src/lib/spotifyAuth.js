@@ -16,6 +16,9 @@ const SCOPES = [
   'user-read-private',
   'user-modify-playback-state',
   'user-read-playback-state',
+  // Läsa spellistor (privata + delade) för att hämta låtar i Läge A.
+  'playlist-read-private',
+  'playlist-read-collaborative',
 ].join(' ')
 
 const TOKEN_KEY = 'hbo:spotify-token'

@@ -27,7 +27,23 @@ export async function fetchPlaylistTracks(input) {
 
   while (url) {
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-    if (!res.ok) throw new Error('Kunde inte hämta spellistan (' + res.status + ')')
+    if (!res.ok) {
+      let detail = ''
+      try {
+        const j = await res.json()
+        detail = j?.error?.message ? ` – ${j.error.message}` : ''
+      } catch {
+        /* ingen json-kropp */
+      }
+      if (res.status === 403 || res.status === 404) {
+        throw new Error(
+          `Spotify nekade spellistan (${res.status})${detail}. Spotifys egna kurerade listor ` +
+            '(topplistor, Discover Weekly, "This is…") går inte att läsa via appen – använd en vanlig ' +
+            'egen eller delad spellista. Är den privat: koppla från och koppla Spotify igen så den nya behörigheten gäller.',
+        )
+      }
+      throw new Error(`Kunde inte hämta spellistan (${res.status})${detail}`)
+    }
     const data = await res.json()
     for (const item of data.items || []) {
       const t = item.track

@@ -17,7 +17,7 @@ Dessutom digitaliseras **discokulan** och **bingobrickorna** så allt synkas i r
 | **1** | Fundament: Vite+React+Tailwind, Supabase, skapa/gå med i rum, lobby i realtid | ✅ **Klar** |
 | **2** | Spelplan: digital discokula + bingobrickor med realtidskryss (utan ljud) | ✅ **Klar** |
 | **3** | Spotify-inloggning + uppspelning av en låt lokalt | ✅ **Klar** |
-| **4** | Synkad start (`PLAY_COUNTDOWN`) + 25 s-timer | 🔨 Byggd (kör migration 0005) |
+| **4** | Synkad start (`PLAY_COUNTDOWN`) + 25 s-timer | ✅ **Live** (testa med Spotify) |
 | 5 | Video (WebRTC-mesh), helt avstängbar | ⏳ |
 
 > Denna README uppdateras allteftersom faserna byggs.
@@ -101,7 +101,9 @@ npm run dev
 4. Kopiera **Client ID** → `VITE_SPOTIFY_CLIENT_ID` i `.env.local` (lokalt) och som env-var i Vercel (produktion).
 5. Starta om `npm run dev`.
 
-Scopes som används: `streaming`, `user-read-email`, `user-read-private`, `user-modify-playback-state`, `user-read-playback-state`.
+Scopes som används: `streaming`, `user-read-email`, `user-read-private`, `user-modify-playback-state`, `user-read-playback-state`, `playlist-read-private`, `playlist-read-collaborative`.
+
+> ⚠️ Spotifys **egna kurerade listor** (topplistor, Discover Weekly, "This is…") går inte att läsa via en app i utvecklingsläge – använd en **vanlig egen/delad** spellista.
 
 > ⚠️ Web Playback SDK kräver **Spotify Premium** och en **desktop-webbläsare** (Chrome/Edge/Firefox/Safari). På mobil syns spelplan/brickor, men musik *i appen* kräver dator.
 
