@@ -170,6 +170,23 @@ export default function GameView({ room, players, me, isHost }) {
         </div>
       </div>
 
+      {/* Autoplay-upplåsning: gäster startar låten via en realtidshändelse (inget
+          eget klick) → webbläsaren blockerar ljudet tills detta klick skett. */}
+      {spotify.connected && spotify.deviceReady && !spotify.audioActivated && !spotify.isMobile && (
+        <div
+          className="panel flex flex-wrap items-center justify-between gap-3 p-4"
+          style={{ '--neon': '#1ed760', borderColor: 'rgba(30,215,96,0.5)' }}
+        >
+          <p className="text-sm text-cream">
+            🔊 <b>Aktivera ljudet</b> innan spelet börjar – annars hör du inte låten
+            (webbläsaren kräver ett klick).
+          </p>
+          <NeonButton variant="outline" neon="#1ed760" onClick={() => spotify.activateAudio()}>
+            Aktivera ljud
+          </NeonButton>
+        </div>
+      )}
+
       {finished && (
         <WinBanner
           winnerName={playerName(room.winner_player_id)}

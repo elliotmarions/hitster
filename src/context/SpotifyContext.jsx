@@ -39,6 +39,10 @@ export function SpotifyProvider({ children }) {
   const [connected, setConnected] = useState(() => hasToken())
   const [profile, setProfile] = useState(null) // { display_name, email, product }
   const [deviceReady, setDeviceReady] = useState(false)
+  // Har webbläsarens autoplay-spärr låsts upp via ett användarklick? Krävs för
+  // att gäster (som startar låten via en realtidshändelse, inte ett eget klick)
+  // ska höra ljud. Se activateAudio nedan.
+  const [audioActivated, setAudioActivated] = useState(false)
   const [currentTrack, setCurrentTrack] = useState(null)
   const [paused, setPaused] = useState(true)
   const [playbackError, setPlaybackError] = useState('')
@@ -85,7 +89,10 @@ export function SpotifyProvider({ children }) {
         setDeviceReady(true)
         setPlaybackError('')
       })
-      player.addListener('not_ready', () => setDeviceReady(false))
+      player.addListener('not_ready', () => {
+        setDeviceReady(false)
+        setAudioActivated(false)
+      })
       player.addListener('player_state_changed', (state) => {
         if (!state) return
         setCurrentTrack(state.track_window?.current_track ?? null)
@@ -120,6 +127,20 @@ export function SpotifyProvider({ children }) {
 
   const connect = useCallback(() => beginLogin(), [])
 
+  // Låser upp webbläsarens autoplay – MÅSTE anropas synkront från ett
+  // användarklick. Efter detta kan gäster höra låtar som startas automatiskt
+  // (via realtidshändelsen) utan att själva klicka på play.
+  const activateAudio = useCallback(async () => {
+    try {
+      await playerRef.current?.activateElement()
+      setAudioActivated(true)
+    } catch {
+      // Vissa webbläsare saknar activateElement / kastar – markera ändå som
+      // aktiverat eftersom klicket i sig räknas som användargest.
+      setAudioActivated(true)
+    }
+  }, [])
+
   const disconnect = useCallback(() => {
     if (playerRef.current) {
       playerRef.current.disconnect()
@@ -129,6 +150,7 @@ export function SpotifyProvider({ children }) {
     setConnected(false)
     setProfile(null)
     setDeviceReady(false)
+    setAudioActivated(false)
     setCurrentTrack(null)
   }, [])
 
@@ -177,10 +199,12 @@ export function SpotifyProvider({ children }) {
     isPremium: profile?.product === 'premium',
     grantedScopes: connected ? getGrantedScopes() : '',
     deviceReady,
+    audioActivated,
     currentTrack,
     paused,
     playbackError,
     connect,
+    activateAudio,
     disconnect,
     playTrack,
     togglePlay,
