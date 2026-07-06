@@ -38,6 +38,7 @@ function loadSdk() {
 export function SpotifyProvider({ children }) {
   const [connected, setConnected] = useState(() => hasToken())
   const [profile, setProfile] = useState(null) // { display_name, email, product }
+  const [profileError, setProfileError] = useState('') // varför /v1/me inte kunde läsas
   const [deviceReady, setDeviceReady] = useState(false)
   // Har webbläsarens autoplay-spärr låsts upp via ett användarklick? Krävs för
   // att gäster (som startar låten via en realtidshändelse, inte ett eget klick)
@@ -55,12 +56,34 @@ export function SpotifyProvider({ children }) {
     if (!connected) return
     let active = true
     ;(async () => {
+      setProfileError('')
       const token = await getAccessToken()
-      if (!token || !active) return
-      const res = await fetch('https://api.spotify.com/v1/me', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (res.ok && active) setProfile(await res.json())
+      if (!active) return
+      if (!token) {
+        setProfileError('Ingen giltig token – koppla från och koppla Spotify igen.')
+        return
+      }
+      try {
+        const res = await fetch('https://api.spotify.com/v1/me', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!active) return
+        if (res.ok) {
+          setProfile(await res.json())
+        } else {
+          const txt = await res.text()
+          // 403 i Development Mode = kontot är inte tillagt i appens allowlist.
+          const hint =
+            res.status === 403
+              ? ' – kontot är troligen inte tillagt i appens Spotify-allowlist (Development Mode).'
+              : res.status === 401
+                ? ' – token ogiltig, koppla Spotify igen.'
+                : ''
+          setProfileError(`Kunde inte läsa kontot (${res.status})${hint} ${txt.slice(0, 120)}`)
+        }
+      } catch (e) {
+        if (active) setProfileError('Nätverksfel mot Spotify: ' + (e.message || 'okänt'))
+      }
     })()
     return () => {
       active = false
@@ -217,6 +240,7 @@ export function SpotifyProvider({ children }) {
     currentTrack,
     paused,
     playbackError,
+    profileError,
     connect,
     activateAudio,
     disconnect,

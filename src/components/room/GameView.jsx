@@ -217,6 +217,9 @@ export default function GameView({ room, players, me, isHost }) {
               </span>
             </>
           )}
+          {spotify.profileError && (
+            <p className="mt-1 text-magenta">⚠ {spotify.profileError}</p>
+          )}
           {spotify.playbackError && (
             <p className="mt-1 text-magenta">⚠ {spotify.playbackError}</p>
           )}
