@@ -4,10 +4,11 @@ import { supabase } from '../../lib/supabase.js'
 import { leaveRoom } from '../../lib/rooms.js'
 import { startGame } from '../../lib/game.js'
 import PlayerList from '../PlayerList.jsx'
+import TeamSetup from '../TeamSetup.jsx'
 import NeonButton from '../ui/NeonButton.jsx'
 import CopyButton from '../ui/CopyButton.jsx'
 
-export default function LobbyView({ room, players, isHost, currentUserId }) {
+export default function LobbyView({ room, players, teams, isHost, currentUserId }) {
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
@@ -37,6 +38,10 @@ export default function LobbyView({ room, players, isHost, currentUserId }) {
   async function toggleErase(e) {
     // Värdens direkta uppdatering tillåts av RLS (rooms_update_host). Realtid speglar till alla.
     await supabase.from('rooms').update({ erase_rule_enabled: e.target.checked }).eq('id', room.id)
+  }
+
+  async function toggleTeamMode(e) {
+    await supabase.from('rooms').update({ team_mode: e.target.checked }).eq('id', room.id)
   }
 
   return (
@@ -79,6 +84,23 @@ export default function LobbyView({ room, players, isHost, currentUserId }) {
           />
         </label>
 
+        {/* Lagläge */}
+        <label className="panel-inset mt-3 flex items-center justify-between gap-4 p-3.5">
+          <span>
+            <span className="font-display text-cream">Lagläge</span>
+            <span className="mt-0.5 block text-xs text-muted">
+              Spela i lag med gemensam bricka och gemensamt svar. Värden delar in lagen nedan.
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            className="h-5 w-5 accent-cyan disabled:opacity-50"
+            checked={room.team_mode}
+            onChange={toggleTeamMode}
+            disabled={!isHost}
+          />
+        </label>
+
         {err && <p className="mt-4 text-sm text-magenta">{err}</p>}
 
         <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -107,6 +129,10 @@ export default function LobbyView({ room, players, isHost, currentUserId }) {
         </div>
       </section>
       </div>
+
+      {room.team_mode && (
+        <TeamSetup room={room} players={players} teams={teams} isHost={isHost} />
+      )}
     </div>
   )
 }

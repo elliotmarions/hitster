@@ -86,6 +86,36 @@ export async function resetGame(roomId, backToLobby = false) {
   if (error) throw error
 }
 
+// --- Lagläge (bara värden) ---
+
+export async function createTeam(roomId, name, color) {
+  const { data, error } = await supabase.rpc('create_team', {
+    p_room_id: roomId,
+    p_name: name ?? null,
+    p_color: color ?? null,
+  })
+  if (error) throw error
+  return data
+}
+
+export async function deleteTeam(roomId, teamId) {
+  const { error } = await supabase.rpc('delete_team', {
+    p_room_id: roomId,
+    p_team_id: teamId,
+  })
+  if (error) throw error
+}
+
+// Placera/flytta en spelare i ett lag. teamId = null → ta ur lag.
+export async function assignPlayer(roomId, playerId, teamId) {
+  const { error } = await supabase.rpc('assign_player', {
+    p_room_id: roomId,
+    p_player_id: playerId,
+    p_team_id: teamId ?? null,
+  })
+  if (error) throw error
+}
+
 // --- Rena hjälpare (kosmetiskt på klienten; servern avgör vinst) ---
 
 // Returnerar index för en full rad/kolumn om brickan har en vinstlinje, annars null.

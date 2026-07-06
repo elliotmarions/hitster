@@ -26,7 +26,7 @@ import Countdown from '../Countdown.jsx'
 import AnswerPanel from '../AnswerPanel.jsx'
 import NeonButton from '../ui/NeonButton.jsx'
 
-export default function GameView({ room, players, me, isHost }) {
+export default function GameView({ room, players, teams = [], me, isHost }) {
   const navigate = useNavigate()
   const { round, cards, answers } = useGame(room.id)
   // Synkad uppspelning av preview-klippet (samma ljud-URL hos alla vid start_at).
@@ -76,9 +76,18 @@ export default function GameView({ room, players, me, isHost }) {
   const revealed = hasTrack && startMs != null && now >= startMs + TIMER_SECONDS * 1000
   const timerRunning = clipPlaying && remaining > 0
 
-  const myCard = cards.find((c) => c.player_id === me?.id)
-  const otherCards = cards.filter((c) => c.player_id !== me?.id)
+  const teamMode = Boolean(room.team_mode)
+  const myTeamId = me?.team_id
   const playerName = (pid) => players.find((p) => p.id === pid)?.display_name || 'Spelare'
+  const teamName = (tid) => teams.find((t) => t.id === tid)?.name || 'Lag'
+  // Namnet på den enhet (lag/spelare) som en bricka tillhör.
+  const cardName = (c) => (teamMode ? teamName(c.team_id) : playerName(c.player_id))
+
+  // "Min" bricka = mitt lags bricka (lagläge) eller min egen (solo).
+  const myCard = teamMode
+    ? cards.find((c) => c.team_id && c.team_id === myTeamId)
+    : cards.find((c) => c.player_id === me?.id)
+  const otherCards = cards.filter((c) => c.id !== myCard?.id)
 
   // Kategorin gäller så fort hjulet landat.
   const currentCategory = round && !wheelSpinning ? round.category : null
@@ -157,7 +166,7 @@ export default function GameView({ room, players, me, isHost }) {
         </div>
         <div className="flex items-center gap-2">
           <span className="chip" style={{ '--neon': '#22e6e6' }}>
-            {players.length} spelare
+            {teamMode ? `${teams.length} lag · ${players.length} spelare` : `${players.length} spelare`}
           </span>
           <NeonButton variant="ghost" onClick={handleLeave}>
             Lämna
@@ -185,7 +194,7 @@ export default function GameView({ room, players, me, isHost }) {
 
       {finished && (
         <WinBanner
-          winnerName={playerName(room.winner_player_id)}
+          winnerName={teamMode ? teamName(room.winner_team_id) : playerName(room.winner_player_id)}
           isMe={Boolean(myCard?.has_won)}
           isHost={isHost}
           busy={busy}
@@ -254,7 +263,9 @@ export default function GameView({ room, players, me, isHost }) {
           round={round}
           answers={answers}
           players={players}
-          me={me}
+          teams={teams}
+          teamMode={teamMode}
+          myUnitId={teamMode ? myTeamId : me?.id}
           isHost={isHost}
           busy={busy}
           onLock={onLockAnswer}
@@ -265,7 +276,9 @@ export default function GameView({ room, players, me, isHost }) {
       {/* Egen bricka */}
       <section>
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="font-display text-xl text-cream">Din bricka</h2>
+          <h2 className="font-display text-xl text-cream">
+            {teamMode ? (myTeamId ? `Ert lag: ${teamName(myTeamId)}` : 'Din bricka') : 'Din bricka'}
+          </h2>
           {currentCategory && CATEGORIES[currentCategory] && !myCard?.has_won && (
             <span className="text-xs text-muted">
               Kryssa en{' '}
@@ -280,7 +293,7 @@ export default function GameView({ room, players, me, isHost }) {
           <div className="mx-auto max-w-[380px] space-y-2">
             <BingoCard
               card={myCard}
-              playerName={me?.display_name}
+              playerName={teamMode ? teamName(myTeamId) : me?.display_name}
               isOwn
               currentCategory={currentCategory}
               canMark={canMark}
@@ -300,16 +313,18 @@ export default function GameView({ room, players, me, isHost }) {
         )}
       </section>
 
-      {/* Medspelares brickor – full insyn */}
+      {/* Övriga brickor – full insyn */}
       {otherCards.length > 0 && (
         <section>
-          <h2 className="mb-2 font-display text-xl text-cream">Medspelare</h2>
+          <h2 className="mb-2 font-display text-xl text-cream">
+            {teamMode ? 'Andra lag' : 'Medspelare'}
+          </h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
             {otherCards.map((c) => (
               <BingoCard
                 key={c.id}
                 card={c}
-                playerName={playerName(c.player_id)}
+                playerName={cardName(c)}
                 currentCategory={currentCategory}
                 canErase={canErase}
                 onErase={(i) => onErase(c.id, i)}
@@ -319,7 +334,8 @@ export default function GameView({ room, players, me, isHost }) {
           </div>
           {canErase && (
             <p className="mt-2 text-xs text-muted">
-              Suddregel aktiv: klicka ett kryss på en medspelares bricka för att sudda.
+              Suddregel aktiv: klicka ett kryss på {teamMode ? 'ett annat lags' : 'en medspelares'}{' '}
+              bricka för att sudda.
             </p>
           )}
         </section>

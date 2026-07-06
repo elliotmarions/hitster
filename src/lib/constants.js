@@ -76,6 +76,9 @@ export const SONG_SOURCE = {
   MANUAL: 'manual', // Läge B – QR/manuell URI per kort
 }
 
+// Lagläge – neonfärger som tilldelas lag i tur och ordning.
+export const TEAM_COLORS = ['#22e6e6', '#ff4d9d', '#b6ff3c', '#ffc93c', '#b14dff', '#ff8a3c']
+
 // Fas 2 – spelplanens tajming och mått
 export const TIMER_SECONDS = 25 // rundans timer
 export const SPIN_MS = 4200 // discokulans snurr-animation (matchar timer_start_at i spin_wheel)

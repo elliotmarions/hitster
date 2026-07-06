@@ -20,6 +20,7 @@ export function useRoom(rawCode) {
   const code = normalizeCode(rawCode)
   const [room, setRoom] = useState(null)
   const [players, setPlayers] = useState([])
+  const [teams, setTeams] = useState([])
   const [status, setStatus] = useState('loading')
   // Bumpas av refresh() för att köra om hela effekten (t.ex. direkt efter att
   // man gått med via en delad länk) – då sätts även realtidskanalen upp på nytt.
@@ -34,6 +35,15 @@ export function useRoom(rawCode) {
       .eq('room_id', roomId)
       .order('joined_at', { ascending: true })
     if (!error) setPlayers(data ?? [])
+  }, [])
+
+  const fetchTeams = useCallback(async (roomId) => {
+    const { data, error } = await supabase
+      .from('teams')
+      .select('*')
+      .eq('room_id', roomId)
+      .order('sort', { ascending: true })
+    if (!error) setTeams(data ?? [])
   }, [])
 
   useEffect(() => {
@@ -66,7 +76,7 @@ export function useRoom(rawCode) {
       }
 
       setRoom(roomRow)
-      await fetchPlayers(roomRow.id)
+      await Promise.all([fetchPlayers(roomRow.id), fetchTeams(roomRow.id)])
       if (cancelled) return
       setStatus('ready')
 
@@ -82,6 +92,16 @@ export function useRoom(rawCode) {
             filter: `room_id=eq.${roomRow.id}`,
           },
           () => fetchPlayers(roomRow.id),
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'teams',
+            filter: `room_id=eq.${roomRow.id}`,
+          },
+          () => fetchTeams(roomRow.id),
         )
         .on(
           'postgres_changes',
@@ -102,7 +122,7 @@ export function useRoom(rawCode) {
       cancelled = true
       if (channel) supabase.removeChannel(channel)
     }
-  }, [code, reloadKey, fetchPlayers])
+  }, [code, reloadKey, fetchPlayers, fetchTeams])
 
-  return { room, players, status, refresh }
+  return { room, players, teams, status, refresh }
 }
