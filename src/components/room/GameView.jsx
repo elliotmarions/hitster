@@ -201,7 +201,13 @@ export default function GameView({ room, players, me, isHost }) {
           </span>
           <span className="text-muted"> · </span>
           <span className={spotify.isPremium ? 'text-lime' : 'text-magenta'}>
-            {spotify.isPremium ? 'Premium ✓' : 'ej Premium ✗'}
+            konto:{' '}
+            {spotify.profile?.product
+              ? spotify.isPremium
+                ? 'Premium ✓'
+                : `${spotify.profile.product} ✗`
+              : 'profil ej laddad ✗'}
+            {spotify.profile?.display_name ? ` (${spotify.profile.display_name})` : ''}
           </span>
           {hasTrack && (
             <>
