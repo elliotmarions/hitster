@@ -14,10 +14,9 @@ import {
   resetGame,
 } from '../../lib/game.js'
 import { leaveRoom } from '../../lib/rooms.js'
-import { useSpotify } from '../../context/SpotifyContext.jsx'
-import { useSyncedPlayback } from '../../hooks/useSyncedPlayback.js'
+import { useSyncedAudio } from '../../hooks/useSyncedAudio.js'
 import { TRACKS } from '../../data/hitsterTracks.js'
-import { searchTrackUri } from '../../lib/spotifyApi.js'
+import { searchPreviewUrl } from '../../lib/previewApi.js'
 import DiscoWheel from '../DiscoWheel.jsx'
 import CategoryBanner from '../CategoryBanner.jsx'
 import RoundTimer from '../RoundTimer.jsx'
@@ -26,14 +25,12 @@ import WinBanner from '../WinBanner.jsx'
 import Countdown from '../Countdown.jsx'
 import AnswerPanel from '../AnswerPanel.jsx'
 import NeonButton from '../ui/NeonButton.jsx'
-import SpotifyPanel from '../SpotifyPanel.jsx'
 
 export default function GameView({ room, players, me, isHost }) {
   const navigate = useNavigate()
   const { round, cards, answers } = useGame(room.id)
-  const spotify = useSpotify()
-  // Startar/pausar låten synkat vid start_at (= rundans timer_start_at) hos alla.
-  useSyncedPlayback(round, spotify.deviceReady, spotify.playTrack, spotify.pause)
+  // Synkad uppspelning av preview-klippet (samma ljud-URL hos alla vid start_at).
+  const audio = useSyncedAudio(round)
 
   const [now, setNow] = useState(() => Date.now())
   const [wheelSpinning, setWheelSpinning] = useState(false)
@@ -79,12 +76,6 @@ export default function GameView({ room, players, me, isHost }) {
   const revealed = hasTrack && startMs != null && now >= startMs + TIMER_SECONDS * 1000
   const timerRunning = clipPlaying && remaining > 0
 
-  const needsManual = hasTrack && !spotify.deviceReady // mobil / ej redo → starta själv
-  const trackOpenUrl = round?.current_track_id?.replace(
-    'spotify:track:',
-    'https://open.spotify.com/track/',
-  )
-
   const myCard = cards.find((c) => c.player_id === me?.id)
   const otherCards = cards.filter((c) => c.player_id !== me?.id)
   const playerName = (pid) => players.find((p) => p.id === pid)?.display_name || 'Spelare'
@@ -111,22 +102,26 @@ export default function GameView({ room, players, me, isHost }) {
   }
 
   const onSpin = () => run(() => spinWheel(room.id))
-  // Slumpar en låt ur den inbyggda potten, slår upp URI:n mot Spotify (sök) och
-  // startar den synkat. (Spotifys spellist-läsning är blockerad i dev-läge; sök funkar.)
+  // Slumpar en låt ur potten, slår upp ett preview-klipp (iTunes) och startar det
+  // synkat hos alla. Ingen inloggning krävs – klippet är en publik ljud-URL.
   async function pickAndStart() {
-    for (let attempt = 0; attempt < 12; attempt++) {
+    for (let attempt = 0; attempt < 15; attempt++) {
       const idx = Math.floor(Math.random() * TRACKS.length)
       if (recentRef.current.includes(idx)) continue
       const t = TRACKS[idx]
-      let uri = null
+      let previewUrl = null
       try {
-        uri = await searchTrackUri(t.title, t.artist)
+        previewUrl = await searchPreviewUrl(t.title, t.artist)
       } catch {
         continue // sökfel – prova en annan låt
       }
-      if (uri) {
+      if (previewUrl) {
         recentRef.current = [idx, ...recentRef.current].slice(0, 50)
-        await startTrack(room.id, uri, { name: t.title, artist: t.artist, year: String(t.year) })
+        await startTrack(room.id, previewUrl, {
+          name: t.title,
+          artist: t.artist,
+          year: String(t.year),
+        })
         return
       }
     }
@@ -170,9 +165,10 @@ export default function GameView({ room, players, me, isHost }) {
         </div>
       </div>
 
-      {/* Autoplay-upplåsning: gäster startar låten via en realtidshändelse (inget
-          eget klick) → webbläsaren blockerar ljudet tills detta klick skett. */}
-      {spotify.connected && spotify.deviceReady && !spotify.audioActivated && !spotify.isMobile && (
+      {/* Ljud-upplåsning: klippet startas åt spelaren av en realtidshändelse (inget
+          eget klick) → webbläsaren blockerar ljudet tills detta klick skett. Varje
+          spelare klickar en gång innan spelet börjar. */}
+      {!audio.ready && (
         <div
           className="panel flex flex-wrap items-center justify-between gap-3 p-4"
           style={{ '--neon': '#1ed760', borderColor: 'rgba(30,215,96,0.5)' }}
@@ -181,48 +177,9 @@ export default function GameView({ room, players, me, isHost }) {
             🔊 <b>Aktivera ljudet</b> innan spelet börjar – annars hör du inte låten
             (webbläsaren kräver ett klick).
           </p>
-          <NeonButton variant="outline" neon="#1ed760" onClick={() => spotify.activateAudio()}>
+          <NeonButton variant="outline" neon="#1ed760" onClick={() => audio.unlock()}>
             Aktivera ljud
           </NeonButton>
-        </div>
-      )}
-
-      {/* Diagnostik: visar var uppspelningen brister för DENNA spelare (så en
-          gäst som inte hör låten kan se/rapportera exakt vad som saknas). */}
-      {spotify.connected && !spotify.isMobile && (
-        <div className="panel-inset px-4 py-2 text-xs">
-          <span className="text-muted">Ljudstatus: </span>
-          <span className={spotify.deviceReady ? 'text-lime' : 'text-magenta'}>
-            enhet {spotify.deviceReady ? 'redo ✓' : 'ansluter… ✗'}
-          </span>
-          <span className="text-muted"> · </span>
-          <span className={spotify.audioActivated ? 'text-lime' : 'text-magenta'}>
-            ljud {spotify.audioActivated ? 'aktiverat ✓' : 'ej aktiverat ✗'}
-          </span>
-          <span className="text-muted"> · </span>
-          <span className={spotify.isPremium ? 'text-lime' : 'text-magenta'}>
-            konto:{' '}
-            {spotify.profile?.product
-              ? spotify.isPremium
-                ? 'Premium ✓'
-                : `${spotify.profile.product} ✗`
-              : 'profil ej laddad ✗'}
-            {spotify.profile?.display_name ? ` (${spotify.profile.display_name})` : ''}
-          </span>
-          {hasTrack && (
-            <>
-              <span className="text-muted"> · </span>
-              <span className={clipPlaying ? 'text-lime' : 'text-muted'}>
-                {beforeStart ? 'startar snart…' : clipPlaying ? 'spelar nu ♪' : 'väntar'}
-              </span>
-            </>
-          )}
-          {spotify.profileError && (
-            <p className="mt-1 text-magenta">⚠ {spotify.profileError}</p>
-          )}
-          {spotify.playbackError && (
-            <p className="mt-1 text-magenta">⚠ {spotify.playbackError}</p>
-          )}
         </div>
       )}
 
@@ -254,15 +211,8 @@ export default function GameView({ room, players, me, isHost }) {
             </p>
           )}
           {/* Facit visas inte här – det avslöjas i svarspanelen först när alla lag låst. */}
-          {needsManual && (beforeStart || clipPlaying) && trackOpenUrl && (
-            <div className="panel-inset p-3 text-center text-sm">
-              <p className="text-muted">
-                Spelar inte i appen{spotify.isMobile ? ' (mobil)' : ''} – starta låten i din Spotify:
-              </p>
-              <a className="text-cyan underline" href={trackOpenUrl} target="_blank" rel="noreferrer">
-                Öppna låten i Spotify
-              </a>
-            </div>
+          {audio.error && (beforeStart || clipPlaying) && (
+            <p className="panel-inset p-3 text-center text-sm text-magenta">⚠ {audio.error}</p>
           )}
 
           {isHost ? (
@@ -272,22 +222,15 @@ export default function GameView({ room, players, me, isHost }) {
                   {wheelSpinning ? 'Snurrar…' : round ? 'Snurra igen' : 'Snurra discokulan'}
                 </NeonButton>
                 {canStartTrack && (
-                  <NeonButton
-                    variant="outline"
-                    neon="#1ed760"
-                    onClick={onStartTrack}
-                    disabled={busy || !spotify.connected}
-                  >
+                  <NeonButton variant="outline" neon="#1ed760" onClick={onStartTrack} disabled={busy}>
                     {busy ? 'Startar…' : '▶ Starta låt'}
                   </NeonButton>
                 )}
               </div>
               <p className="text-center text-xs text-muted">
-                {!spotify.connected
-                  ? 'Koppla din Spotify nedan för att spela låtar.'
-                  : hasTrack
-                    ? ''
-                    : `🎵 ${TRACKS.length} låtar i potten – snurra och tryck "Starta låt".`}
+                {hasTrack
+                  ? ''
+                  : `🎵 ${TRACKS.length} låtar i potten – snurra och tryck "Starta låt".`}
               </p>
             </div>
           ) : (
@@ -381,8 +324,6 @@ export default function GameView({ room, players, me, isHost }) {
           )}
         </section>
       )}
-
-      <SpotifyPanel playerId={me?.id} inGame />
     </div>
   )
 }

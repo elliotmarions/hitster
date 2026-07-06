@@ -6,14 +6,12 @@ import { startGame } from '../../lib/game.js'
 import PlayerList from '../PlayerList.jsx'
 import NeonButton from '../ui/NeonButton.jsx'
 import CopyButton from '../ui/CopyButton.jsx'
-import SpotifyPanel from '../SpotifyPanel.jsx'
 
 export default function LobbyView({ room, players, isHost, currentUserId }) {
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const roomLink = `${window.location.origin}/rum/${room.code}`
-  const me = players.find((p) => p.user_id === currentUserId)
 
   async function handleStart() {
     setErr('')
@@ -109,8 +107,6 @@ export default function LobbyView({ room, players, isHost, currentUserId }) {
         </div>
       </section>
       </div>
-
-      <SpotifyPanel playerId={me?.id} />
     </div>
   )
 }
