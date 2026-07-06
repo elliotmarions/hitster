@@ -343,10 +343,43 @@
   animation: pulse-glow 2.4s ease-in-out infinite;
 }
 
+/* Diskret vinstkonfetti – faller en gång inom banner-rutan och tonar ut. */
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-14px) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(220px) translateX(var(--drift, 0)) rotate(var(--rot, 180deg));
+    opacity: 0;
+  }
+}
+.confetti-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.confetti-piece {
+  position: absolute;
+  top: -14px;
+  opacity: 0;
+  animation-name: confetti-fall;
+  animation-timing-function: cubic-bezier(0.3, 0.6, 0.5, 1);
+  animation-fill-mode: forwards;
+  animation-iteration-count: 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .anim-float,
   .anim-spin-slow,
   .anim-pulse {
     animation: none;
+  }
+  .confetti-layer {
+    display: none;
   }
 }
