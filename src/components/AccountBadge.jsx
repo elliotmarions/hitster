@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import NeonButton from './ui/NeonButton.jsx'
 import TextField from './ui/TextField.jsx'
@@ -57,6 +58,14 @@ export default function AccountBadge() {
             onClick={() => setOpen(false)}
           />
           <div className="panel absolute right-0 z-40 mt-2 w-72 p-4">
+            <Link
+              to="/statistik"
+              onClick={() => setOpen(false)}
+              className="mb-3 flex items-center gap-2 rounded-lg px-2 py-1.5 font-display text-cream hover:bg-white/5"
+            >
+              📊 Min statistik
+            </Link>
+            <div className="mb-3 border-t border-white/10" />
             {isGuest ? (
               sent ? (
                 <div className="text-sm">
