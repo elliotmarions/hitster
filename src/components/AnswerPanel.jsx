@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { CATEGORIES } from '../lib/constants'
-import { judgeAnswer } from '../lib/validateAnswer.js'
 import NeonButton from './ui/NeonButton.jsx'
 import TrackReveal from './TrackReveal.jsx'
 
@@ -68,9 +67,10 @@ export default function AnswerPanel({
         <div className="grid gap-2 sm:grid-cols-2">
           {shown.map((a) => {
             const isMe = unitIdOf(a) === myUnitId
-            const auto = judgeAnswer(round.category, a.answer, round.current_track_meta)
+            // Domen räknas server-side vid avslöjandet (auto_correct); värden kan
+            // överstyra (override_correct). Effektiv dom = override ?? auto.
             const overridden = a.override_correct !== null && a.override_correct !== undefined
-            const correct = overridden ? a.override_correct : auto
+            const correct = overridden ? a.override_correct : a.auto_correct === true
             const good = '#3ee87b'
             const bad = '#ff4d9d'
             return (

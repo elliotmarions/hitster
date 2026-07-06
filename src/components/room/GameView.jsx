@@ -92,9 +92,36 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
 
   // Kategorin gäller så fort hjulet landat.
   const currentCategory = round && !wheelSpinning ? round.category : null
-  const canMark = !finished && !!currentCategory && !myCard?.has_won
+
+  // Svarsspärr: när en låt spelats får man kryssa/sudda först när svaren
+  // avslöjats OCH den egna enhetens svar validerats som RÄTT (server-styrt;
+  // effektiv dom = värdens override ?? auto). Speglar mark_cross/erase_cross.
+  const myRoundAnswer = round
+    ? answers.find(
+        (a) =>
+          a.round_id === round.id &&
+          (teamMode ? a.team_id === myTeamId : a.player_id === me?.id),
+      )
+    : null
+  const myAnswerCorrect = myRoundAnswer
+    ? (myRoundAnswer.override_correct ?? myRoundAnswer.auto_correct) === true
+    : false
+  const answerGateOk = !hasTrack || (revealed && myAnswerCorrect)
+
+  const canMark = !finished && !!currentCategory && !myCard?.has_won && answerGateOk
   const canUnmark = !finished
-  const canErase = !finished && room.erase_rule_enabled && currentCategory === 'exact_year'
+  const canErase =
+    !finished && room.erase_rule_enabled && currentCategory === 'exact_year' && answerGateOk
+
+  // Förklaring till varför kryssning är låst/öppen just nu.
+  const markHint =
+    finished || !currentCategory || myCard?.has_won
+      ? null
+      : hasTrack && !revealed
+        ? 'Lås in ert svar och vänta på facit innan ni kryssar.'
+        : revealed && !myAnswerCorrect
+          ? 'Fel svar den här rundan – ingen kryssning.'
+          : 'ok'
 
   // Värdens kontroller
   const canSpin = isHost && !finished && !wheelSpinning && !beforeStart && !clipPlaying
@@ -284,14 +311,16 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
           <h2 className="font-display text-xl text-cream">
             {teamMode ? (myTeamId ? `Ert lag: ${teamName(myTeamId)}` : 'Din bricka') : 'Din bricka'}
           </h2>
-          {currentCategory && CATEGORIES[currentCategory] && !myCard?.has_won && (
-            <span className="text-xs text-muted">
-              Kryssa en{' '}
+          {markHint === 'ok' && CATEGORIES[currentCategory] ? (
+            <span className="text-xs" style={{ color: '#3ee87b' }}>
+              ✓ Rätt! Kryssa en{' '}
               <b style={{ color: CATEGORIES[currentCategory].hex }}>
                 {CATEGORIES[currentCategory].short}
               </b>
               -ruta
             </span>
+          ) : (
+            markHint && <span className="text-xs text-muted">🔒 {markHint}</span>
           )}
         </div>
         {myCard ? (
