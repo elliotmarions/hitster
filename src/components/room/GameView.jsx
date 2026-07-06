@@ -9,6 +9,8 @@ import {
   markCross,
   unmarkCross,
   eraseCross,
+  lockAnswer,
+  revealAnswers,
   resetGame,
 } from '../../lib/game.js'
 import { leaveRoom } from '../../lib/rooms.js'
@@ -22,13 +24,13 @@ import RoundTimer from '../RoundTimer.jsx'
 import BingoCard from '../BingoCard.jsx'
 import WinBanner from '../WinBanner.jsx'
 import Countdown from '../Countdown.jsx'
-import TrackReveal from '../TrackReveal.jsx'
+import AnswerPanel from '../AnswerPanel.jsx'
 import NeonButton from '../ui/NeonButton.jsx'
 import SpotifyPanel from '../SpotifyPanel.jsx'
 
 export default function GameView({ room, players, me, isHost }) {
   const navigate = useNavigate()
-  const { round, cards } = useGame(room.id)
+  const { round, cards, answers } = useGame(room.id)
   const spotify = useSpotify()
   // Startar/pausar låten synkat vid start_at (= rundans timer_start_at) hos alla.
   useSyncedPlayback(round, spotify.deviceReady, spotify.playTrack, spotify.pause)
@@ -134,6 +136,8 @@ export default function GameView({ room, players, me, isHost }) {
   const onMark = (i) => run(() => markCross(room.id, i))
   const onUnmark = (i) => run(() => unmarkCross(room.id, i))
   const onErase = (cardId, i) => run(() => eraseCross(room.id, cardId, i))
+  const onLockAnswer = (t) => run(() => lockAnswer(room.id, t))
+  const onRevealAnswers = () => run(() => revealAnswers(room.id))
   const onPlayAgain = () => run(() => resetGame(room.id, false))
   const onBackToLobby = () => run(() => resetGame(room.id, true))
   async function handleLeave() {
@@ -193,7 +197,7 @@ export default function GameView({ room, players, me, isHost }) {
               🎵 Lyssna och gissa!
             </p>
           )}
-          {revealed && <TrackReveal meta={round.current_track_meta} category={round.category} />}
+          {/* Facit visas inte här – det avslöjas i svarspanelen först när alla lag låst. */}
           {needsManual && (beforeStart || clipPlaying) && trackOpenUrl && (
             <div className="panel-inset p-3 text-center text-sm">
               <p className="text-muted">
@@ -244,6 +248,20 @@ export default function GameView({ room, players, me, isHost }) {
           {err && <p className="text-sm text-magenta">{err}</p>}
         </div>
       </section>
+
+      {/* Svarsfas: öppnas när låten spelat klart (timern slut) */}
+      {revealed && (
+        <AnswerPanel
+          round={round}
+          answers={answers}
+          players={players}
+          me={me}
+          isHost={isHost}
+          busy={busy}
+          onLock={onLockAnswer}
+          onReveal={onRevealAnswers}
+        />
+      )}
 
       {/* Egen bricka */}
       <section>

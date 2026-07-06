@@ -61,6 +61,23 @@ export async function eraseCross(roomId, targetCardId, cellIndex) {
   return data
 }
 
+// Lås in mitt svar för senaste rundan (går bara efter att låten spelat klart).
+// När alla lag låst avslöjas svaren + facit för alla (servern sätter answers_revealed).
+export async function lockAnswer(roomId, answer) {
+  const { data, error } = await supabase.rpc('lock_answer', {
+    p_room_id: roomId,
+    p_answer: answer,
+  })
+  if (error) throw error
+  return data
+}
+
+// Värdens säkerhetsventil: avslöja svaren direkt även om något lag inte svarat.
+export async function revealAnswers(roomId) {
+  const { error } = await supabase.rpc('reveal_answers', { p_room_id: roomId })
+  if (error) throw error
+}
+
 export async function resetGame(roomId, backToLobby = false) {
   const { error } = await supabase.rpc('reset_game', {
     p_room_id: roomId,
