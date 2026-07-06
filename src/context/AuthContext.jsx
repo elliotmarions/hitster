@@ -115,6 +115,26 @@ export function AuthProvider({ children }) {
     return { mode: 'existing' }
   }, [])
 
+  /**
+   * Sparar ett visningsnamn på kontot (Supabase user_metadata.display_name).
+   * Att uppdatera metadata kräver INGEN e-postbekräftelse – det gäller direkt.
+   * Håller även det lokala "preferredName" i synk så landningssidan matchar.
+   */
+  const updateAccountName = useCallback(
+    async (name) => {
+      const clean = (name || '').trim()
+      if (!clean) throw new Error('Skriv ett namn.')
+      const { data, error } = await supabase.auth.updateUser({
+        data: { display_name: clean },
+      })
+      if (error) throw error
+      if (data?.user) setUser(data.user)
+      setPreferredNameState(clean)
+      if (clean) localStorage.setItem(NAME_KEY, clean)
+    },
+    [],
+  )
+
   // Loggar ut från kontot men loggar genast in anonymt igen -> man kan spela vidare som gäst.
   const signOut = useCallback(async () => {
     if (!isSupabaseConfigured) return
@@ -130,9 +150,11 @@ export function AuthProvider({ children }) {
     isConfigured: isSupabaseConfigured,
     isGuest: user?.is_anonymous ?? true,
     accountEmail: user?.email ?? null,
+    accountName: user?.user_metadata?.display_name ?? '',
     preferredName,
     setPreferredName,
     signInWithEmail,
+    updateAccountName,
     signOut,
   }
 

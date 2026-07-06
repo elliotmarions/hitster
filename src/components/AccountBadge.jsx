@@ -6,19 +6,38 @@ import TextField from './ui/TextField.jsx'
 
 /**
  * Litet konto-märke uppe till höger. Gäster kan spela vidare men erbjuds att
- * logga in med e-post för att spara statistik. Inloggade ser sin e-post + utloggning.
+ * logga in med e-post för att spara statistik. Inloggade ser sitt valda namn
+ * (e-posten göms i menyn) och kan byta namn + logga ut.
  */
 export default function AccountBadge() {
-  const { isConfigured, loading, isGuest, accountEmail, signInWithEmail, signOut } =
-    useAuth()
+  const {
+    isConfigured,
+    loading,
+    isGuest,
+    accountEmail,
+    accountName,
+    preferredName,
+    signInWithEmail,
+    updateAccountName,
+    signOut,
+  } = useAuth()
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(null) // null | 'upgrade' | 'existing'
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
+  // Namn-redigering (inloggad)
+  const [nameField, setNameField] = useState(() => accountName || preferredName || '')
+  const [nameBusy, setNameBusy] = useState(false)
+  const [nameErr, setNameErr] = useState('')
+  const [nameSaved, setNameSaved] = useState(false)
 
   if (!isConfigured) return null
   if (loading) return <span className="text-xs text-muted">…</span>
+
+  // Namnet som visas i brickan – aldrig e-posten.
+  const badgeLabel = isGuest ? 'Gäst' : accountName || preferredName || 'Konto'
+  const needsName = !isGuest && !accountName
 
   async function submit(e) {
     e.preventDefault()
@@ -34,6 +53,21 @@ export default function AccountBadge() {
     }
   }
 
+  async function saveName(e) {
+    e.preventDefault()
+    setNameErr('')
+    setNameSaved(false)
+    setNameBusy(true)
+    try {
+      await updateAccountName(nameField.trim())
+      setNameSaved(true)
+    } catch (e2) {
+      setNameErr(e2.message || 'Kunde inte spara namnet.')
+    } finally {
+      setNameBusy(false)
+    }
+  }
+
   return (
     <div className="relative">
       <button
@@ -42,9 +76,8 @@ export default function AccountBadge() {
         style={{ '--neon': isGuest ? '#9a8fbf' : '#b6ff3c' }}
         onClick={() => setOpen((o) => !o)}
       >
-        <span className="max-w-[9rem] truncate">
-          {isGuest ? 'Gäst' : accountEmail || 'Konto'}
-        </span>
+        <span className="max-w-[9rem] truncate">{badgeLabel}</span>
+        {needsName && <span title="Välj ett namn" aria-hidden>·</span>}
         <span aria-hidden>▾</span>
       </button>
 
@@ -99,8 +132,34 @@ export default function AccountBadge() {
               )
             ) : (
               <div className="space-y-3 text-sm">
-                <p className="text-muted">Inloggad som</p>
-                <p className="truncate text-cream">{accountEmail}</p>
+                <form onSubmit={saveName} className="space-y-2">
+                  <TextField
+                    label="Ditt namn"
+                    placeholder="Välj ett namn"
+                    maxLength={24}
+                    value={nameField}
+                    onChange={(e) => {
+                      setNameField(e.target.value)
+                      setNameSaved(false)
+                    }}
+                  />
+                  {needsName && !nameSaved && (
+                    <p className="text-xs text-muted">
+                      Välj ett namn så syns det här uppe i stället för din e-post.
+                    </p>
+                  )}
+                  {nameErr && <p className="text-xs text-magenta">{nameErr}</p>}
+                  {nameSaved && <p className="text-xs text-lime">Sparat ✓</p>}
+                  <NeonButton
+                    type="submit"
+                    disabled={nameBusy || !nameField.trim()}
+                    className="w-full"
+                  >
+                    {nameBusy ? 'Sparar…' : 'Spara namn'}
+                  </NeonButton>
+                </form>
+
+                <p className="truncate text-xs text-muted">Inloggad som {accountEmail}</p>
                 <NeonButton
                   variant="ghost"
                   className="w-full"
