@@ -1,6 +1,6 @@
 import { CATEGORIES } from '../lib/constants'
 
-// Facit efter rundan: låt, artist och år (från Spotify-metadatan).
+// Facit efter rundan: låt, artist och år (från låtpottens metadata).
 export default function TrackReveal({ meta, category }) {
   if (!meta) return null
   const cat = CATEGORIES[category]

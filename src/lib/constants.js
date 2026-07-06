@@ -70,12 +70,6 @@ export const EVENT_TYPES = {
   HITSTER_WIN: 'HITSTER_WIN',
 }
 
-// Hur en runda får sin låt (ställs in per rum i Fas 3).
-export const SONG_SOURCE = {
-  PLAYLIST: 'playlist', // Läge A – värdens egen Spotify-spellista
-  MANUAL: 'manual', // Läge B – QR/manuell URI per kort
-}
-
 // Lagläge – neonfärger som tilldelas lag i tur och ordning.
 export const TEAM_COLORS = ['#22e6e6', '#ff4d9d', '#b6ff3c', '#ffc93c', '#b14dff', '#ff8a3c']
 
