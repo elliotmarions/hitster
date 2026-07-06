@@ -196,6 +196,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
         <WinBanner
           winnerName={teamMode ? teamName(room.winner_team_id) : playerName(room.winner_player_id)}
           isMe={Boolean(myCard?.has_won)}
+          teamMode={teamMode}
           isHost={isHost}
           busy={busy}
           onPlayAgain={onPlayAgain}

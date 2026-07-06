@@ -1,7 +1,21 @@
 import NeonButton from './ui/NeonButton.jsx'
 
-// Visas för alla när någon fyllt en hel rad/kolumn.
-export default function WinBanner({ winnerName, isMe, isHost, onPlayAgain, onBackToLobby, busy }) {
+// Visas för alla när ett lag/en spelare fyllt en hel rad/kolumn.
+export default function WinBanner({
+  winnerName,
+  isMe,
+  teamMode = false,
+  isHost,
+  onPlayAgain,
+  onBackToLobby,
+  busy,
+}) {
+  // Tydligt vem som vann – lag-anpassat.
+  const message = isMe
+    ? teamMode
+      ? `Ert lag ${winnerName || ''} vann! 🪩`.replace('  ', ' ')
+      : 'Du vann! 🪩'
+    : `${winnerName || (teamMode ? 'Ett lag' : 'Någon')} vann!`
   return (
     <div
       className="panel relative overflow-hidden p-6 text-center"
@@ -16,8 +30,9 @@ export default function WinBanner({ winnerName, isMe, isHost, onPlayAgain, onBac
       >
         Hitster!
       </h2>
-      <p className="mt-3 font-display text-xl text-cream">
-        {isMe ? 'Du vann! 🪩' : `${winnerName || 'Någon'} fyllde en rad!`}
+      <p className="mt-3 font-display text-xl text-cream">{message}</p>
+      <p className="mt-1 text-sm text-muted">
+        {teamMode ? 'Fyllde en hel rad eller kolumn.' : 'En hel rad eller kolumn ifylld.'}
       </p>
 
       <div className="mt-5 flex flex-wrap justify-center gap-3">
