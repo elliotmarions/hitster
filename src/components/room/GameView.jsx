@@ -187,6 +187,36 @@ export default function GameView({ room, players, me, isHost }) {
         </div>
       )}
 
+      {/* Diagnostik: visar var uppspelningen brister för DENNA spelare (så en
+          gäst som inte hör låten kan se/rapportera exakt vad som saknas). */}
+      {spotify.connected && !spotify.isMobile && (
+        <div className="panel-inset px-4 py-2 text-xs">
+          <span className="text-muted">Ljudstatus: </span>
+          <span className={spotify.deviceReady ? 'text-lime' : 'text-magenta'}>
+            enhet {spotify.deviceReady ? 'redo ✓' : 'ansluter… ✗'}
+          </span>
+          <span className="text-muted"> · </span>
+          <span className={spotify.audioActivated ? 'text-lime' : 'text-magenta'}>
+            ljud {spotify.audioActivated ? 'aktiverat ✓' : 'ej aktiverat ✗'}
+          </span>
+          <span className="text-muted"> · </span>
+          <span className={spotify.isPremium ? 'text-lime' : 'text-magenta'}>
+            {spotify.isPremium ? 'Premium ✓' : 'ej Premium ✗'}
+          </span>
+          {hasTrack && (
+            <>
+              <span className="text-muted"> · </span>
+              <span className={clipPlaying ? 'text-lime' : 'text-muted'}>
+                {beforeStart ? 'startar snart…' : clipPlaying ? 'spelar nu ♪' : 'väntar'}
+              </span>
+            </>
+          )}
+          {spotify.playbackError && (
+            <p className="mt-1 text-magenta">⚠ {spotify.playbackError}</p>
+          )}
+        </div>
+      )}
+
       {finished && (
         <WinBanner
           winnerName={playerName(room.winner_player_id)}

@@ -160,26 +160,40 @@ export function SpotifyProvider({ children }) {
     setPlaybackError('')
     const token = await getAccessToken()
     const deviceId = deviceIdRef.current
-    if (!token || !deviceId) throw new Error('Spelaren är inte redo än.')
+    if (!token || !deviceId) {
+      const msg = 'Spelaren är inte redo än (ingen enhet).'
+      setPlaybackError(msg)
+      throw new Error(msg)
+    }
+
+    const auth = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
 
     // 1. Flytta uppspelningen till vår enhet.
     await fetch('https://api.spotify.com/v1/me/player', {
       method: 'PUT',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: auth,
       body: JSON.stringify({ device_ids: [deviceId], play: false }),
     })
-    // 2. Starta låten på enheten.
-    const res = await fetch(
-      `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
-      {
+
+    // 2. Starta låten på enheten. Precis efter en enhetsöverföring hinner Spotify
+    //    ibland inte se enheten än (404 "Device not found") → en kort retry.
+    async function play() {
+      return fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
         method: 'PUT',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: auth,
         body: JSON.stringify({ uris: [uri] }),
-      },
-    )
+      })
+    }
+    let res = await play()
+    if (res.status === 404) {
+      await new Promise((r) => setTimeout(r, 600))
+      res = await play()
+    }
     if (!res.ok && res.status !== 204) {
       const txt = await res.text()
-      throw new Error(`Kunde inte spela (${res.status}): ${txt.slice(0, 140)}`)
+      const msg = `Kunde inte spela (${res.status}): ${txt.slice(0, 160)}`
+      setPlaybackError(msg)
+      throw new Error(msg)
     }
   }, [])
 
