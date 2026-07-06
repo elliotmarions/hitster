@@ -13,8 +13,9 @@ import {
 } from '../../lib/game.js'
 import { leaveRoom } from '../../lib/rooms.js'
 import { useSpotify } from '../../context/SpotifyContext.jsx'
-import { useTrackQueue } from '../../hooks/useTrackQueue.js'
 import { useSyncedPlayback } from '../../hooks/useSyncedPlayback.js'
+import { TRACKS } from '../../data/hitsterTracks.js'
+import { searchTrackUri } from '../../lib/spotifyApi.js'
 import DiscoWheel from '../DiscoWheel.jsx'
 import CategoryBanner from '../CategoryBanner.jsx'
 import RoundTimer from '../RoundTimer.jsx'
@@ -22,7 +23,6 @@ import BingoCard from '../BingoCard.jsx'
 import WinBanner from '../WinBanner.jsx'
 import Countdown from '../Countdown.jsx'
 import TrackReveal from '../TrackReveal.jsx'
-import PlaylistSetup from '../PlaylistSetup.jsx'
 import NeonButton from '../ui/NeonButton.jsx'
 import SpotifyPanel from '../SpotifyPanel.jsx'
 
@@ -30,7 +30,6 @@ export default function GameView({ room, players, me, isHost }) {
   const navigate = useNavigate()
   const { round, cards } = useGame(room.id)
   const spotify = useSpotify()
-  const queue = useTrackQueue(room, isHost, spotify.connected)
   // Startar/pausar låten synkat vid start_at (= rundans timer_start_at) hos alla.
   useSyncedPlayback(round, spotify.deviceReady, spotify.playTrack, spotify.pause)
 
@@ -40,6 +39,7 @@ export default function GameView({ room, players, me, isHost }) {
   const [err, setErr] = useState('')
   const ensured = useRef(false)
   const spunRef = useRef(0)
+  const recentRef = useRef([]) // nyligen spelade pott-index (undvik direkta repriser)
 
   // Säkerställ att jag har en bricka (täcker sena joins).
   useEffect(() => {
@@ -109,15 +109,28 @@ export default function GameView({ room, players, me, isHost }) {
   }
 
   const onSpin = () => run(() => spinWheel(room.id))
-  const onStartTrack = () => {
-    // Nästa (slumpade) låt ur den blandade spellistan.
-    const track = queue.nextTrack()
-    if (!track) {
-      setErr('Ingen spellista vald – välj en Spotify-spellista nedan.')
-      return
+  // Slumpar en låt ur den inbyggda potten, slår upp URI:n mot Spotify (sök) och
+  // startar den synkat. (Spotifys spellist-läsning är blockerad i dev-läge; sök funkar.)
+  async function pickAndStart() {
+    for (let attempt = 0; attempt < 12; attempt++) {
+      const idx = Math.floor(Math.random() * TRACKS.length)
+      if (recentRef.current.includes(idx)) continue
+      const t = TRACKS[idx]
+      let uri = null
+      try {
+        uri = await searchTrackUri(t.title, t.artist)
+      } catch {
+        continue // sökfel – prova en annan låt
+      }
+      if (uri) {
+        recentRef.current = [idx, ...recentRef.current].slice(0, 50)
+        await startTrack(room.id, uri, { name: t.title, artist: t.artist, year: String(t.year) })
+        return
+      }
     }
-    run(() => startTrack(room.id, track.uri, track.meta))
+    throw new Error('Hittade ingen spelbar låt just nu – försök igen.')
   }
+  const onStartTrack = () => run(pickAndStart)
   const onMark = (i) => run(() => markCross(room.id, i))
   const onUnmark = (i) => run(() => unmarkCross(room.id, i))
   const onErase = (cardId, i) => run(() => eraseCross(room.id, cardId, i))
@@ -203,24 +216,18 @@ export default function GameView({ room, players, me, isHost }) {
                     variant="outline"
                     neon="#1ed760"
                     onClick={onStartTrack}
-                    disabled={busy || queue.count === 0}
+                    disabled={busy || !spotify.connected}
                   >
-                    ▶ Starta låt
+                    {busy ? 'Startar…' : '▶ Starta låt'}
                   </NeonButton>
                 )}
               </div>
               <p className="text-center text-xs text-muted">
-                {queue.loading
-                  ? 'Hämtar spellistan…'
-                  : queue.error
-                    ? queue.error
-                    : !room.playlist_uri
-                      ? 'Välj en spellista nedan för att kunna spela låtar.'
-                      : !spotify.connected
-                        ? 'Koppla din Spotify nedan för att spela låtar.'
-                        : hasTrack
-                          ? ''
-                          : `🎵 ${queue.count} låtar i kön – snurra och tryck "Starta låt".`}
+                {!spotify.connected
+                  ? 'Koppla din Spotify nedan för att spela låtar.'
+                  : hasTrack
+                    ? ''
+                    : `🎵 ${TRACKS.length} låtar i potten – snurra och tryck "Starta låt".`}
               </p>
             </div>
           ) : (
@@ -298,13 +305,6 @@ export default function GameView({ room, players, me, isHost }) {
               Suddregel aktiv: klicka ett kryss på en medspelares bricka för att sudda.
             </p>
           )}
-        </section>
-      )}
-
-      {isHost && (
-        <section className="panel p-5">
-          <p className="label mb-2">Spellista (Läge A)</p>
-          <PlaylistSetup room={room} isHost={isHost} />
         </section>
       )}
 

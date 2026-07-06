@@ -7,7 +7,6 @@ import PlayerList from '../PlayerList.jsx'
 import NeonButton from '../ui/NeonButton.jsx'
 import CopyButton from '../ui/CopyButton.jsx'
 import SpotifyPanel from '../SpotifyPanel.jsx'
-import PlaylistSetup from '../PlaylistSetup.jsx'
 
 export default function LobbyView({ room, players, isHost, currentUserId }) {
   const navigate = useNavigate()
@@ -81,10 +80,6 @@ export default function LobbyView({ room, players, isHost, currentUserId }) {
             disabled={!isHost}
           />
         </label>
-
-        <div className="panel-inset mt-4 p-3.5">
-          <PlaylistSetup room={room} isHost={isHost} />
-        </div>
 
         {err && <p className="mt-4 text-sm text-magenta">{err}</p>}
 

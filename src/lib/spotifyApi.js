@@ -62,6 +62,33 @@ export async function fetchPlaylistTracks(input) {
   return out
 }
 
+// --- Sök upp en låt-URI från titel + artist (spellist-läsning är blockerad i
+// Spotifys dev-läge, men /v1/search funkar). market=from_token ger en variant
+// som är spelbar i användarens land. Cachas per titel|artist. ---
+const uriCache = new Map()
+
+async function doSearch(token, q) {
+  const url =
+    'https://api.spotify.com/v1/search?type=track&limit=1&market=from_token&q=' +
+    encodeURIComponent(q)
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+  if (!res.ok) throw new Error('Spotify-sök misslyckades (' + res.status + ')')
+  const data = await res.json()
+  return data?.tracks?.items?.[0]?.uri ?? null
+}
+
+export async function searchTrackUri(title, artist) {
+  const key = `${title}|${artist}`.toLowerCase()
+  if (uriCache.has(key)) return uriCache.get(key)
+  const token = await getAccessToken()
+  if (!token) throw new Error('Spotify är inte kopplat.')
+  // Först exakt (fältfilter), annars en fri sökning som fallback.
+  let uri = await doSearch(token, `track:${title} artist:${artist}`)
+  if (!uri) uri = await doSearch(token, `${title} ${artist}`)
+  uriCache.set(key, uri)
+  return uri
+}
+
 // Fisher–Yates-blandning (ny kopia).
 export function shuffle(arr) {
   const a = [...arr]
