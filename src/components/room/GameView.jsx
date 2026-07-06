@@ -11,6 +11,7 @@ import {
   eraseCross,
   lockAnswer,
   revealAnswers,
+  overrideAnswer,
   resetGame,
 } from '../../lib/game.js'
 import { leaveRoom } from '../../lib/rooms.js'
@@ -142,6 +143,8 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   const onErase = (cardId, i) => run(() => eraseCross(room.id, cardId, i))
   const onLockAnswer = (t) => run(() => lockAnswer(room.id, t))
   const onRevealAnswers = () => run(() => revealAnswers(room.id))
+  const onOverrideAnswer = (answerId, correct) =>
+    run(() => overrideAnswer(room.id, answerId, correct))
   const onPlayAgain = () => run(() => resetGame(room.id, false))
   const onBackToLobby = () => run(() => resetGame(room.id, true))
   async function handleLeave() {
@@ -271,6 +274,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
           busy={busy}
           onLock={onLockAnswer}
           onReveal={onRevealAnswers}
+          onOverride={onOverrideAnswer}
         />
       )}
 

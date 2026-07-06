@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { CATEGORIES } from '../lib/constants'
+import { judgeAnswer } from '../lib/validateAnswer.js'
 import NeonButton from './ui/NeonButton.jsx'
 import TrackReveal from './TrackReveal.jsx'
 
@@ -32,6 +33,7 @@ export default function AnswerPanel({
   busy,
   onLock,
   onReveal,
+  onOverride,
 }) {
   const [text, setText] = useState('')
   if (!round) return null
@@ -66,24 +68,80 @@ export default function AnswerPanel({
         <div className="grid gap-2 sm:grid-cols-2">
           {shown.map((a) => {
             const isMe = unitIdOf(a) === myUnitId
+            const auto = judgeAnswer(round.category, a.answer, round.current_track_meta)
+            const overridden = a.override_correct !== null && a.override_correct !== undefined
+            const correct = overridden ? a.override_correct : auto
+            const good = '#3ee87b'
+            const bad = '#ff4d9d'
             return (
               <div
                 key={a.id}
                 className="panel-inset p-3"
-                style={isMe ? { borderColor: 'rgba(34,230,230,0.5)' } : undefined}
+                style={{ borderColor: correct ? `${good}66` : `${bad}55` }}
               >
-                <p className="label" style={{ color: isMe ? '#22e6e6' : undefined }}>
-                  {nameOf(a)}
-                  {isMe ? (teamMode ? ' (ni)' : ' (du)') : ''}
-                </p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="label" style={{ color: isMe ? '#22e6e6' : undefined }}>
+                    {nameOf(a)}
+                    {isMe ? (teamMode ? ' (ni)' : ' (du)') : ''}
+                  </p>
+                  <span className="chip shrink-0" style={{ '--neon': correct ? good : bad }}>
+                    {correct ? '✓ Rätt' : '✗ Fel'}
+                  </span>
+                </div>
                 <p className="mt-0.5 font-display text-lg text-cream break-words">
                   {a.answer?.trim() ? a.answer : <span className="text-muted">— inget svar —</span>}
                 </p>
+
+                {isHost && (
+                  <div className="mt-2 flex items-center gap-1.5 text-xs">
+                    <span className="text-muted">Rätta:</span>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => onOverride?.(a.id, true)}
+                      className="rounded px-1.5 py-0.5"
+                      style={{
+                        border: `1px solid ${good}`,
+                        color: correct ? '#140c22' : good,
+                        background: correct ? good : 'transparent',
+                      }}
+                    >
+                      ✓
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => onOverride?.(a.id, false)}
+                      className="rounded px-1.5 py-0.5"
+                      style={{
+                        border: `1px solid ${bad}`,
+                        color: !correct ? '#140c22' : bad,
+                        background: !correct ? bad : 'transparent',
+                      }}
+                    >
+                      ✗
+                    </button>
+                    {overridden && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => onOverride?.(a.id, null)}
+                        className="text-muted underline"
+                      >
+                        auto
+                      </button>
+                    )}
+                  </div>
+                )}
+                {overridden && <p className="mt-1 text-[10px] text-muted">rättat av värden</p>}
               </div>
             )
           })}
           {shown.length === 0 && <p className="text-sm text-muted">Inga svar registrerades.</p>}
         </div>
+        <p className="text-center text-[11px] text-muted">
+          ✓/✗ är auto-bedömt mot facit{isHost ? ' – tryck ✓/✗ för att rätta.' : '.'}
+        </p>
 
         <div className="flex justify-center pt-1">
           <TrackReveal meta={round.current_track_meta} category={round.category} />

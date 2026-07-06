@@ -78,6 +78,17 @@ export async function revealAnswers(roomId) {
   if (error) throw error
 }
 
+// Värden överstyr en auto-bedömning. correct = true/false, eller null för att
+// återgå till auto-domen.
+export async function overrideAnswer(roomId, answerId, correct) {
+  const { error } = await supabase.rpc('override_answer', {
+    p_room_id: roomId,
+    p_answer_id: answerId,
+    p_correct: correct,
+  })
+  if (error) throw error
+}
+
 export async function resetGame(roomId, backToLobby = false) {
   const { error } = await supabase.rpc('reset_game', {
     p_room_id: roomId,
