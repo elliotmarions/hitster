@@ -8,9 +8,9 @@ import NeonButton from '../components/ui/NeonButton.jsx'
 import TextField from '../components/ui/TextField.jsx'
 
 const POINTS = [
-  { c: '#22e6e6', t: 'Din egen Spotify', d: 'Ren musik från din egen källa – aldrig komprimerad över video.' },
+  { c: '#22e6e6', t: 'Ingen inloggning', d: 'Korta musikklipp spelas synkat hos alla – direkt i webbläsaren, funkar på mobil.' },
   { c: '#ff2e9a', t: 'Delad discokula', d: 'Värden snurrar, alla ser samma kategori samtidigt.' },
-  { c: '#b6ff3c', t: 'Brickor live', d: 'Sätter någon ett kryss uppdateras allas vy direkt.' },
+  { c: '#b6ff3c', t: 'Solo eller i lag', d: 'Spela var för sig eller dela in gänget i lag – brickor uppdateras live.' },
 ]
 
 export default function LandingPage() {
@@ -75,7 +75,7 @@ export default function LandingPage() {
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-muted">
           Spela discospelet tillsammans på distans. En delad discokula, bingobrickor i
-          realtid – och ren musik från varje spelares egen Spotify.
+          realtid och synkade musikklipp – helt utan inloggning. Spela solo eller i lag.
         </p>
       </section>
 

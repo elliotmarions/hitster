@@ -25,7 +25,7 @@ export default function AppShell({ children }) {
       </main>
 
       <footer className="mx-auto w-full max-w-6xl px-4 pb-8 pt-4 text-xs text-muted sm:px-6">
-        Ren musik från varje spelares egen Spotify · discokula &amp; brickor i realtid
+        Synkade musikklipp · discokula &amp; brickor i realtid · spela solo eller i lag
       </footer>
     </div>
   )
