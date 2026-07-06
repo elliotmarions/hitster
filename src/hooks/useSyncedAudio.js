@@ -7,6 +7,17 @@ import { TIMER_SECONDS } from '../lib/constants'
 const SILENCE =
   'data:audio/wav;base64,UklGRnQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YVAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA=='
 
+// Kom ihåg mellan sidladdningar att användaren aktiverat ljudet en gång, så
+// "Aktivera ljud"-bannern inte kommer tillbaka varje gång.
+const AUDIO_OK_KEY = 'hbo:audio-ok'
+function rememberedReady() {
+  try {
+    return localStorage.getItem(AUDIO_OK_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
 /**
  * Synkad uppspelning av ett preview-klipp (ersätter Spotify Web Playback).
  * Alla klienter spelar samma publika ljud-URL (round.current_track_id) vid
@@ -23,7 +34,9 @@ export function useSyncedAudio(round) {
   const audioRef = useRef(null)
   const playedRef = useRef(0)
   const pausedRef = useRef(0)
-  const [ready, setReady] = useState(false)
+  const unlockedRef = useRef(false) // har elementet aktiverats DENNA sidladdning?
+  // Bannern göms direkt för den som redan aktiverat ljudet en gång.
+  const [ready, setReady] = useState(rememberedReady)
   const [error, setError] = useState('')
 
   function getAudio() {
@@ -37,6 +50,17 @@ export function useSyncedAudio(round) {
 
   // Lås upp <audio> inifrån ett användarklick (spela tyst klipp → pausa).
   const unlock = useCallback(async () => {
+    const already = unlockedRef.current
+    unlockedRef.current = true
+    setReady(true)
+    try {
+      localStorage.setItem(AUDIO_OK_KEY, '1')
+    } catch {
+      /* privat läge e.d. – strunt samma */
+    }
+    // Själva element-aktiveringen behövs bara en gång per sidladdning – och får
+    // inte klippa av en låt som redan spelar (om en senare gest råkar trigga).
+    if (already) return
     const a = getAudio()
     try {
       a.src = SILENCE
@@ -47,8 +71,25 @@ export function useSyncedAudio(round) {
       // Även om detta kastar räknas klicket som användargest på de flesta
       // webbläsare → markera som upplåst ändå.
     }
-    setReady(true)
   }, [])
+
+  // Auto-upplåsning: första användargesten var som helst i appen aktiverar
+  // ljudet, så man slipper träffa just "Aktivera ljud"-knappen. Körs varje
+  // sidladdning tills elementet aktiverats (autoplay-upplåsning gäller per
+  // sida och kan inte sparas – men bannern är redan gömd om man aktiverat förr).
+  useEffect(() => {
+    if (unlockedRef.current) return
+    const onGesture = () => unlock()
+    const opts = { once: true, capture: true }
+    window.addEventListener('pointerdown', onGesture, opts)
+    window.addEventListener('keydown', onGesture, opts)
+    window.addEventListener('touchstart', onGesture, opts)
+    return () => {
+      window.removeEventListener('pointerdown', onGesture, opts)
+      window.removeEventListener('keydown', onGesture, opts)
+      window.removeEventListener('touchstart', onGesture, opts)
+    }
+  }, [unlock])
 
   const url = round?.current_track_id
   const startMs = round?.timer_start_at ? new Date(round.timer_start_at).getTime() : null
