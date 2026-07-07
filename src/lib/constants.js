@@ -67,7 +67,7 @@ export const EVENT_TYPES = {
   PLAY_COUNTDOWN: 'PLAY_COUNTDOWN',
   CROSS_MARKED: 'CROSS_MARKED',
   CROSS_ERASED: 'CROSS_ERASED',
-  HITSTER_WIN: 'HITSTER_WIN',
+  GAME_WIN: 'GAME_WIN',
 }
 
 // Lagläge – neonfärger som tilldelas lag i tur och ordning.

@@ -1,6 +1,6 @@
-# 🪩 Hitster Bingo Online
+# 🪩 Låtsnurran
 
-Spela sällskapsspelet **Hitster Bingo** tillsammans på distans – utan att musiken låter
+Spela **Låtsnurran** tillsammans på distans – utan att musiken låter
 uselt över video.
 
 **Kärnidén:** ingen musik streamas mellan deltagarna. Varje spelare har sin egen Spotify

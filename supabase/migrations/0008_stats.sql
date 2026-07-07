@@ -1,5 +1,5 @@
 -- =====================================================================
---  HITSTER BINGO ONLINE – Enkel spelarstatistik
+--  LÅTSNURRAN – Enkel spelarstatistik
 --
 --  Räknar spelade matcher och vinster per användare. Uppdateras helt
 --  automatiskt via en trigger på rooms (ingen ändring i spel-RPC:erna):

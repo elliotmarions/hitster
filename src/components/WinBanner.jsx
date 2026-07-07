@@ -31,7 +31,7 @@ export default function WinBanner({
           className="wordmark mt-2 text-4xl sm:text-5xl"
           style={{ textShadow: '0 0 4px #fff, 0 0 16px #ffc93c, 0 0 42px #ff2e9a' }}
         >
-          Hitster!
+          Låtsnurran!
         </h2>
         <p className="mt-3 font-display text-xl text-cream">{message}</p>
         <p className="mt-1 text-sm text-muted">

@@ -16,7 +16,7 @@ import {
 } from '../../lib/game.js'
 import { leaveRoom } from '../../lib/rooms.js'
 import { useSyncedAudio } from '../../hooks/useSyncedAudio.js'
-import { TRACKS } from '../../data/hitsterTracks.js'
+import { TRACKS } from '../../data/tracks.js'
 import { searchPreviewUrl } from '../../lib/previewApi.js'
 import DiscoWheel from '../DiscoWheel.jsx'
 import CategoryBanner from '../CategoryBanner.jsx'

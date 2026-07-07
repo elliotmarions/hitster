@@ -1,5 +1,5 @@
 -- =====================================================================
---  HITSTER BINGO ONLINE – Fas 2
+--  LÅTSNURRAN – Fas 2
 --  Spelplan: discokula (rundor), bingobrickor och kryss – allt i realtid.
 --
 --  Kör i Supabase SQL Editor efter 0001. Idempotent (går att köra om).
@@ -238,7 +238,7 @@ begin
     update public.rooms set status = 'finished', winner_player_id = v_player.id
       where id = p_room_id;
     insert into public.room_events (room_id, type, payload)
-    values (p_room_id, 'HITSTER_WIN',
+    values (p_room_id, 'GAME_WIN',
             jsonb_build_object('player_id', v_player.id, 'display_name', v_player.display_name));
   end if;
 

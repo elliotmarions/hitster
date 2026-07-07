@@ -1,5 +1,5 @@
 -- =====================================================================
---  HITSTER BINGO ONLINE – ångra eget kryss
+--  LÅTSNURRAN – ångra eget kryss
 --
 --  Låter en spelare ta bort ett kryss på SIN EGEN bricka (om man råkat
 --  kryssa fel). Server-auktoritativt: bara din egen bricka, valfri kategori.

@@ -1,4 +1,4 @@
-// Hitster-låtpott: titel/artist/år, hämtad från Hitster-korten (verifierade år).
+// Låtsnurran-låtpott: titel/artist/år (verifierade år).
 // Källa: github.com/andygruber/songseeker-hitster-playlists (20 utgåvor, dedupade).
 // Preview-klipp slås upp vid uppspelning via iTunes Search (src/lib/previewApi.js).
 // Rensad 2026-07-07: tog bort 306 låtar med Deezer-rank < 100,000 (okända/regionala kort).

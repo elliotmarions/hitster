@@ -1,5 +1,5 @@
 -- =====================================================================
---  HITSTER BINGO ONLINE – Fas 1
+--  LÅTSNURRAN – Fas 1
 --  Rum, spelare och realtidslobby.
 --
 --  Kör denna i Supabase (SQL Editor -> New query -> klistra in -> Run),

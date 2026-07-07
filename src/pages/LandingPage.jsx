@@ -71,7 +71,7 @@ export default function LandingPage() {
       <section className="pt-4 text-center">
         <DiscoBall size={104} className="anim-float mx-auto" />
         <h1 className="wordmark mt-2 text-[13vw] leading-none sm:text-6xl md:text-7xl">
-          Hitster Bingo
+          Låtsnurran
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-muted">
           Spela discospelet tillsammans på distans. En delad discokula, bingobrickor i

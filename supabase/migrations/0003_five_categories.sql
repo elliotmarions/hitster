@@ -1,5 +1,5 @@
 -- =====================================================================
---  HITSTER BINGO ONLINE – 5 kategorier (uppdaterar Fas 2)
+--  LÅTSNURRAN – 5 kategorier (uppdaterar Fas 2)
 --
 --  Ändring: "Före/efter 2000" tas bort. In kommer "Årtal ±3 år" (approx_year)
 --  och "Låttiteln" (title). Totalt 5 kategorier → brickan blir 5x5 latinsk
@@ -137,7 +137,7 @@ begin
     update public.rooms set status = 'finished', winner_player_id = v_player.id
       where id = p_room_id;
     insert into public.room_events (room_id, type, payload)
-    values (p_room_id, 'HITSTER_WIN',
+    values (p_room_id, 'GAME_WIN',
             jsonb_build_object('player_id', v_player.id, 'display_name', v_player.display_name));
   end if;
 

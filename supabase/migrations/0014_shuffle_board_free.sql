@@ -1,5 +1,5 @@
 -- =====================================================================
---  HITSTER BINGO ONLINE – Fritt slumpad bricka (bort från latinsk kvadrat)
+--  LÅTSNURRAN – Fritt slumpad bricka (bort från latinsk kvadrat)
 --
 --  Tidigare var brickan en 5x5 latinsk kvadrat: varje rad OCH kolumn hade
 --  alla 5 kategorier exakt en gång. Den slumpades per spel men kändes lik

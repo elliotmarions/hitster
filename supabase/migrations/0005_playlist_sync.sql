@@ -1,5 +1,5 @@
 -- =====================================================================
---  HITSTER BINGO ONLINE – Fas 4: synkad uppspelning (separat "Starta låt")
+--  LÅTSNURRAN – Fas 4: synkad uppspelning (separat "Starta låt")
 --
 --  Flöde: värden SNURRAR (spin_wheel → kategori, oförändrad sedan 0003).
 --  När alla är redo trycker värden STARTA LÅT → start_track sätter en (slumpad)

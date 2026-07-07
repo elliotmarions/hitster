@@ -1,5 +1,5 @@
 -- =====================================================================
---  HITSTER BINGO ONLINE – Kryssa innan du snurrar igen
+--  LÅTSNURRAN – Kryssa innan du snurrar igen
 --
 --  Om förra rundan avslöjats och någon som svarade RÄTT ännu inte kryssat
 --  sitt kryss, ska värden inte kunna snurra vidare (då skulle krysset gå

@@ -13,7 +13,7 @@ export default function AppShell({ children }) {
               className="neon-text font-display text-sm uppercase tracking-[0.18em]"
               style={{ '--neon': '#ff4d9d' }}
             >
-              Hitster Bingo
+              Låtsnurran
             </span>
           </Link>
           <AccountBadge />

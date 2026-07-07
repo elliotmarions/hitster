@@ -1,5 +1,5 @@
 -- =====================================================================
---  HITSTER BINGO ONLINE – Svarsfas (skriv & lås in gissning)
+--  LÅTSNURRAN – Svarsfas (skriv & lås in gissning)
 --
 --  Efter att låten spelat klart (timern slut) får varje lag skriva sitt
 --  svar och LÅSA IN det. När ALLA lag i rummet låst in avslöjas svaren –

@@ -58,7 +58,7 @@ export default function BingoCard({
         </span>
         {card?.has_won && (
           <span className="chip" style={{ '--neon': '#ffc93c' }}>
-            Hitster!
+            Låtsnurran!
           </span>
         )}
       </div>

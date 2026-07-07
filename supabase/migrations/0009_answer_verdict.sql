@@ -1,5 +1,5 @@
 -- =====================================================================
---  HITSTER BINGO ONLINE – Auto-bedömning av svar + värd-override
+--  LÅTSNURRAN – Auto-bedömning av svar + värd-override
 --
 --  Appen auto-bedömer varje låst svar mot facit på KLIENTEN (år exakt/±3/
 --  årtionde samt tolerant textmatch för artist/titel). Auto-domen är

@@ -1,5 +1,5 @@
 -- =====================================================================
---  HITSTER BINGO ONLINE – Kryssa bara efter validerat (rätt) svar
+--  LÅTSNURRAN – Kryssa bara efter validerat (rätt) svar
 --
 --  Tidigare räknades ✓/✗ bara på klienten. Nu bedöms varje svar SERVER-SIDE
 --  vid avslöjandet och lagras i round_answers.auto_correct → en enda sanning
@@ -278,12 +278,12 @@ begin
       update public.rooms set status = 'finished', winner_team_id = v_player.team_id, winner_player_id = null
         where id = p_room_id;
       insert into public.room_events (room_id, type, payload)
-      values (p_room_id, 'HITSTER_WIN', jsonb_build_object('team_id', v_player.team_id, 'display_name', v_label));
+      values (p_room_id, 'GAME_WIN', jsonb_build_object('team_id', v_player.team_id, 'display_name', v_label));
     else
       update public.rooms set status = 'finished', winner_player_id = v_player.id
         where id = p_room_id;
       insert into public.room_events (room_id, type, payload)
-      values (p_room_id, 'HITSTER_WIN', jsonb_build_object('player_id', v_player.id, 'display_name', v_player.display_name));
+      values (p_room_id, 'GAME_WIN', jsonb_build_object('player_id', v_player.id, 'display_name', v_player.display_name));
     end if;
   end if;
 
