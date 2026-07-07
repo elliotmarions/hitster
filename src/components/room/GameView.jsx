@@ -136,8 +136,24 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
             ? 'Kryss placerat – ett per runda. Klicka på krysset för att ändra.'
             : 'ok'
 
+  // Snurr-spärr: lämna inte en avslöjad runda medan någon rätt-svarande ännu
+  // inte kryssat (och har en ledig ruta i kategorin att kryssa). Speglar spin_wheel.
+  const pendingCross = Boolean(
+    round &&
+      revealed &&
+      answers.some((a) => {
+        if (a.round_id !== round.id) return false
+        if ((a.override_correct ?? a.auto_correct) !== true) return false
+        if (a.has_marked === true) return false
+        const card = teamMode
+          ? cards.find((c) => c.team_id && c.team_id === a.team_id)
+          : cards.find((c) => c.player_id === a.player_id)
+        return card?.grid?.some((cell) => cell.category === round.category && !cell.filled)
+      }),
+  )
+
   // Värdens kontroller
-  const canSpin = isHost && !finished && !wheelSpinning && !beforeStart && !clipPlaying
+  const canSpin = isHost && !finished && !wheelSpinning && !beforeStart && !clipPlaying && !pendingCross
   const canStartTrack = isHost && !finished && !!round && !wheelSpinning && !hasTrack
 
   async function run(fn) {
@@ -317,9 +333,11 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
                 )}
               </div>
               <p className="text-center text-xs text-muted">
-                {hasTrack
-                  ? ''
-                  : `🎵 ${TRACKS.length} låtar i potten – snurra och tryck "Starta låt".`}
+                {pendingCross
+                  ? '⏳ Alla som hade rätt måste kryssa innan du kan snurra igen.'
+                  : hasTrack
+                    ? ''
+                    : `🎵 ${TRACKS.length} låtar i potten – snurra och tryck "Starta låt".`}
               </p>
             </div>
           ) : (
