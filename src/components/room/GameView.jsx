@@ -29,7 +29,7 @@ import NeonButton from '../ui/NeonButton.jsx'
 
 export default function GameView({ room, players, teams = [], me, isHost }) {
   const navigate = useNavigate()
-  const { round, cards, answers } = useGame(room.id)
+  const { round, cards, answers, refetch, optimisticCell, optimisticOverride } = useGame(room.id)
   // Synkad uppspelning av preview-klippet (samma ljud-URL hos alla vid start_at).
   const audio = useSyncedAudio(round)
 
@@ -138,6 +138,19 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
     setBusy(false)
   }
 
+  // Optimistisk åtgärd: visa ändringen lokalt direkt, skicka till servern i
+  // bakgrunden (blockerar inte UI:t), backa via refetch om det blir fel.
+  function optimistic(applyLocal, rpc) {
+    setErr('')
+    applyLocal()
+    Promise.resolve()
+      .then(rpc)
+      .catch((e) => {
+        setErr(e.message || 'Något gick fel.')
+        refetch()
+      })
+  }
+
   const onSpin = () => run(() => spinWheel(room.id))
   // Slumpar en låt ur potten, slår upp ett preview-klipp (iTunes) och startar det
   // synkat hos alla. Ingen inloggning krävs – klippet är en publik ljud-URL.
@@ -165,13 +178,30 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
     throw new Error('Hittade ingen spelbar låt just nu – försök igen.')
   }
   const onStartTrack = () => run(pickAndStart)
-  const onMark = (i) => run(() => markCross(room.id, i))
-  const onUnmark = (i) => run(() => unmarkCross(room.id, i))
-  const onErase = (cardId, i) => run(() => eraseCross(room.id, cardId, i))
+  const onMark = (i) =>
+    myCard &&
+    optimistic(
+      () => optimisticCell(myCard.id, i, true),
+      () => markCross(room.id, i),
+    )
+  const onUnmark = (i) =>
+    myCard &&
+    optimistic(
+      () => optimisticCell(myCard.id, i, false),
+      () => unmarkCross(room.id, i),
+    )
+  const onErase = (cardId, i) =>
+    optimistic(
+      () => optimisticCell(cardId, i, false),
+      () => eraseCross(room.id, cardId, i),
+    )
   const onLockAnswer = (t) => run(() => lockAnswer(room.id, t))
   const onRevealAnswers = () => run(() => revealAnswers(room.id))
   const onOverrideAnswer = (answerId, correct) =>
-    run(() => overrideAnswer(room.id, answerId, correct))
+    optimistic(
+      () => optimisticOverride(answerId, correct),
+      () => overrideAnswer(room.id, answerId, correct),
+    )
   const onPlayAgain = () => run(() => resetGame(room.id, false))
   const onBackToLobby = () => run(() => resetGame(room.id, true))
   async function handleLeave() {

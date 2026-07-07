@@ -89,5 +89,31 @@ export function useGame(roomId) {
     }
   }, [roomId, fetchRound, fetchCards, fetchAnswers])
 
-  return { round, cards, answers, loading }
+  // Hämta om allt (används för att backa en optimistisk ändring vid fel).
+  const refetch = useCallback(() => {
+    if (!roomId) return
+    fetchRound(roomId)
+    fetchCards(roomId)
+    fetchAnswers(roomId)
+  }, [roomId, fetchRound, fetchCards, fetchAnswers])
+
+  // Optimistiska ändringar: uppdatera lokalt DIREKT så klicket känns omedelbart.
+  // Realtiden skriver sedan över med serverns sanning (eller refetch vid fel).
+  const optimisticCell = useCallback((cardId, cell, filled) => {
+    setCards((prev) =>
+      prev.map((c) =>
+        c.id === cardId
+          ? { ...c, grid: c.grid.map((g, i) => (i === cell ? { ...g, filled } : g)) }
+          : c,
+      ),
+    )
+  }, [])
+
+  const optimisticOverride = useCallback((answerId, value) => {
+    setAnswers((prev) =>
+      prev.map((a) => (a.id === answerId ? { ...a, override_correct: value } : a)),
+    )
+  }, [])
+
+  return { round, cards, answers, loading, refetch, optimisticCell, optimisticOverride }
 }
