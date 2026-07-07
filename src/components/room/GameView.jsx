@@ -37,6 +37,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   const [wheelSpinning, setWheelSpinning] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const [markedRoundId, setMarkedRoundId] = useState(null) // runda där jag redan kryssat (optimistiskt)
   const ensured = useRef(false)
   const spunRef = useRef(0)
   const recentRef = useRef([]) // nyligen spelade pott-index (undvik direkta repriser)
@@ -108,7 +109,17 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
     : false
   const answerGateOk = !hasTrack || (revealed && myAnswerCorrect)
 
-  const canMark = !finished && !!currentCategory && !myCard?.has_won && answerGateOk
+  // Rätt svar ger bara ETT kryss per runda (server-styrt via round_answers.has_marked;
+  // markedRoundId speglar det optimistiskt så knappen låses direkt vid klick).
+  const alreadyMarkedThisRound =
+    (round && markedRoundId === round.id) || myRoundAnswer?.has_marked === true
+
+  const canMark =
+    !finished &&
+    !!currentCategory &&
+    !myCard?.has_won &&
+    answerGateOk &&
+    !(hasTrack && alreadyMarkedThisRound)
   const canUnmark = !finished
   const canErase =
     !finished && room.erase_rule_enabled && currentCategory === 'exact_year' && answerGateOk
@@ -121,7 +132,9 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
         ? 'Lås in ert svar och vänta på facit innan ni kryssar.'
         : revealed && !myAnswerCorrect
           ? 'Fel svar den här rundan – ingen kryssning.'
-          : 'ok'
+          : hasTrack && alreadyMarkedThisRound
+            ? 'Kryss placerat – ett per runda. Klicka på krysset för att ändra.'
+            : 'ok'
 
   // Värdens kontroller
   const canSpin = isHost && !finished && !wheelSpinning && !beforeStart && !clipPlaying
@@ -181,13 +194,19 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   const onMark = (i) =>
     myCard &&
     optimistic(
-      () => optimisticCell(myCard.id, i, true),
+      () => {
+        optimisticCell(myCard.id, i, true)
+        if (round?.id) setMarkedRoundId(round.id) // lås fler kryss direkt (ett per runda)
+      },
       () => markCross(room.id, i),
     )
   const onUnmark = (i) =>
     myCard &&
     optimistic(
-      () => optimisticCell(myCard.id, i, false),
+      () => {
+        optimisticCell(myCard.id, i, false)
+        setMarkedRoundId(null) // frigör rundans kryss så felklick kan läggas om
+      },
       () => unmarkCross(room.id, i),
     )
   const onErase = (cardId, i) =>
