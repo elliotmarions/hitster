@@ -347,13 +347,11 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
                   </NeonButton>
                 )}
               </div>
-              <p className="text-center text-xs text-muted">
-                {pendingCross
-                  ? '⏳ Alla som hade rätt måste kryssa innan du kan snurra igen.'
-                  : hasTrack
-                    ? ''
-                    : `🎵 ${TRACKS.length} låtar i potten – snurra och tryck "Starta låt".`}
-              </p>
+              {pendingCross && (
+                <p className="text-center text-xs text-muted">
+                  ⏳ Alla som hade rätt måste kryssa innan du kan snurra igen.
+                </p>
+              )}
             </div>
           ) : (
             <p className="text-sm text-muted">
