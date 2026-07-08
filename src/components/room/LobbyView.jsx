@@ -44,6 +44,10 @@ export default function LobbyView({ room, players, teams, isHost, currentUserId 
     await supabase.from('rooms').update({ team_mode: e.target.checked }).eq('id', room.id)
   }
 
+  async function toggleSwedishMode(e) {
+    await supabase.from('rooms').update({ swedish_mode: e.target.checked }).eq('id', room.id)
+  }
+
   return (
     <div className="space-y-6">
       <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
@@ -97,6 +101,24 @@ export default function LobbyView({ room, players, teams, isHost, currentUserId 
             className="h-5 w-5 accent-cyan disabled:opacity-50"
             checked={room.team_mode}
             onChange={toggleTeamMode}
+            disabled={!isHost}
+          />
+        </label>
+
+        {/* Svenskt läge */}
+        <label className="panel-inset mt-3 flex items-center justify-between gap-4 p-3.5">
+          <span>
+            <span className="font-display text-cream">🇸🇪 Svenskt läge</span>
+            <span className="mt-0.5 block text-xs text-muted">
+              Bara svenska låtar – alla genrer, från 1950-tal till idag.
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            className="h-5 w-5 accent-cyan disabled:opacity-50"
+            style={{ accentColor: '#ffd23f' }}
+            checked={room.swedish_mode}
+            onChange={toggleSwedishMode}
             disabled={!isHost}
           />
         </label>
