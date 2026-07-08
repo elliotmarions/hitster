@@ -129,7 +129,8 @@ export async function assignPlayer(roomId, playerId, teamId) {
 
 // --- Rena hjälpare (kosmetiskt på klienten; servern avgör vinst) ---
 
-// Returnerar index för en full rad/kolumn om brickan har en vinstlinje, annars null.
+// Returnerar index för en full rad/kolumn/diagonal om brickan har en
+// vinstlinje, annars null.
 export function winningLine(grid) {
   if (!grid) return null
   const filled = (i) => Boolean(grid[i]?.filled)
@@ -141,5 +142,10 @@ export function winningLine(grid) {
     const idx = Array.from({ length: GRID }, (_, r) => r * GRID + c)
     if (idx.every(filled)) return idx
   }
+  // Diagonalerna: uppifrån-vänster → ner-höger, och uppifrån-höger → ner-vänster.
+  const diag = Array.from({ length: GRID }, (_, i) => i * GRID + i)
+  if (diag.every(filled)) return diag
+  const anti = Array.from({ length: GRID }, (_, i) => i * GRID + (GRID - 1 - i))
+  if (anti.every(filled)) return anti
   return null
 }
