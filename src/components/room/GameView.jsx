@@ -23,6 +23,7 @@ import CategoryBanner from '../CategoryBanner.jsx'
 import RoundTimer from '../RoundTimer.jsx'
 import BingoCard from '../BingoCard.jsx'
 import WinBanner from '../WinBanner.jsx'
+import HostLeftNotice from '../HostLeftNotice.jsx'
 import Countdown from '../Countdown.jsx'
 import AnswerPanel from '../AnswerPanel.jsx'
 import NeonButton from '../ui/NeonButton.jsx'
@@ -68,6 +69,8 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   }, [round?.round_number, round?.current_track_id])
 
   const finished = room.status === 'finished'
+  // Värden lämnade → spelet avslutat utan vinnare (visar notis, inte vinstbanner).
+  const hostLeft = finished && room.ended_reason === 'host_left'
   // timer_start_at sätts först när värden trycker "Starta låt" (= start_at).
   const startMs = round?.timer_start_at ? new Date(round.timer_start_at).getTime() : null
   const hasTrack = Boolean(round?.current_track_id)
@@ -293,7 +296,9 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
         </div>
       )}
 
-      {finished && (
+      {hostLeft && <HostLeftNotice onBack={() => navigate('/')} />}
+
+      {finished && !hostLeft && (
         <WinBanner
           winnerName={teamMode ? teamName(room.winner_team_id) : playerName(room.winner_player_id)}
           isMe={Boolean(myCard?.has_won)}

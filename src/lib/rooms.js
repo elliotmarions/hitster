@@ -29,15 +29,10 @@ export async function joinRoom({ code, displayName }) {
   return data
 }
 
-// Lämnar ett rum (raderar din spelar-rad). RLS tillåter bara att man raderar sin egen.
+// Lämnar ett rum via RPC:n leave_room: raderar din spelar-rad, och om det är
+// VÄRDEN som lämnar avslutas spelet för alla (status='finished',
+// ended_reason='host_left'). Se migration 0018.
 export async function leaveRoom(roomId) {
-  const { data: userData } = await supabase.auth.getUser()
-  const uid = userData?.user?.id
-  if (!uid) return
-  const { error } = await supabase
-    .from('players')
-    .delete()
-    .eq('room_id', roomId)
-    .eq('user_id', uid)
+  const { error } = await supabase.rpc('leave_room', { p_room_id: roomId })
   if (error) throw error
 }
