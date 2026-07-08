@@ -52,6 +52,12 @@ export default function AnswerPanel({
   const iLocked = Boolean(mine?.locked)
   const cat = CATEGORIES[round.category]
 
+  // Årtals-kategorier kräver ett HELT fyrsiffrigt årtal (1900–2099) – "67"
+  // godtas inte. Speglar serverns facit-regex (?:19|20)\d{2}. Blockerar
+  // inlåsning tills formatet stämmer.
+  const isYearCat = round.category === 'exact_year' || round.category === 'approx_year'
+  const yearFormatBad = isYearCat && text.trim() !== '' && !/(?:19|20)\d{2}/.test(text)
+
   // --- Avslöjat: visa allas svar + facit ---
   if (revealed) {
     const shown = [...roundAnswers].sort((a, b) => nameOf(a).localeCompare(nameOf(b), 'sv'))
@@ -187,14 +193,22 @@ export default function AnswerPanel({
           <p className="text-sm text-muted">{cat?.desc || 'Skriv ert svar och lås in det.'}</p>
           <textarea
             className="field min-h-[76px] resize-none"
-            placeholder="Skriv ert svar här…"
+            placeholder={isYearCat ? 'Skriv hela årtalet, t.ex. 1967' : 'Skriv ert svar här…'}
             value={text}
             onChange={(e) => setText(e.target.value)}
             maxLength={200}
             autoFocus
           />
+          {yearFormatBad && (
+            <p className="text-sm text-magenta">
+              ⚠ Skriv hela årtalet med fyra siffror, t.ex. <b>1967</b> – inte ”67”.
+            </p>
+          )}
           <div className="flex justify-end">
-            <NeonButton onClick={() => onLock(text.trim())} disabled={busy || !text.trim()}>
+            <NeonButton
+              onClick={() => onLock(text.trim())}
+              disabled={busy || !text.trim() || yearFormatBad}
+            >
               Lås in svar 🔒
             </NeonButton>
           </div>
