@@ -157,69 +157,120 @@ export default function AnswerPanel({
     )
   }
 
-  // --- Inte avslöjat än ---
+  // --- Inte avslöjat än: en ruta per enhet, din egen är inmatningen ---
+  // Vilka enheter som låst kommer från round.locked_units (server, utan att
+  // läcka svarstexten). Din egen status speglas även av mine.locked så den
+  // känns direkt vid inlåsning.
+  const lockedUnits = new Set(round.locked_units || [])
+  const units = teamMode
+    ? teams.map((t) => ({ id: t.id, name: t.name || 'Lag' }))
+    : players.map((p) => ({ id: p.id, name: p.display_name || 'Spelare' }))
+  const good = '#3ee87b'
+
   return (
     <section className="panel p-5 space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-xl text-cream">{teamMode ? 'Ert svar' : 'Ditt svar'}</h2>
+        <h2 className="font-display text-xl text-cream">Svar</h2>
         <span className="text-sm text-muted">
           {locked} av {total} {unitWord} klara
         </span>
       </div>
 
-      {/* Anonym låst-progress: en prick per enhet. */}
-      <div className="flex flex-wrap gap-1.5">
-        {Array.from({ length: total }).map((_, i) => (
-          <span
-            key={i}
-            className="h-2.5 w-2.5 rounded-full"
-            style={{
-              background: i < locked ? cat?.hex || '#22e6e6' : 'rgba(244,239,255,0.15)',
-              boxShadow: i < locked ? `0 0 8px ${cat?.hex || '#22e6e6'}` : 'none',
-            }}
-          />
-        ))}
-      </div>
-
-      {iLocked ? (
-        <div className="panel-inset p-4 text-center">
-          <p className="font-display text-lg text-cream">
-            {teamMode ? 'Ert svar är inlåst 🔒' : 'Ditt svar är inlåst 🔒'}
-          </p>
-          {mine.answer?.trim() && <p className="mt-1 text-sm text-muted">”{mine.answer}”</p>}
-          <p className="mt-2 text-sm text-muted">Väntar på att alla {unitWord} låser in…</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <p className="text-sm text-muted">{cat?.desc || 'Skriv ert svar och lås in det.'}</p>
-          <textarea
-            className="field min-h-[76px] resize-none"
-            placeholder={isYearCat ? 'Skriv hela årtalet, t.ex. 1967' : 'Skriv ert svar här…'}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            maxLength={200}
-            autoFocus
-          />
-          {yearFormatBad && (
-            <p className="text-sm text-magenta">
-              ⚠ Skriv hela årtalet med fyra siffror, t.ex. <b>1967</b> – inte ”67”.
-            </p>
-          )}
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs text-muted">
-              {canLock
-                ? 'Lås in när ni är klara.'
-                : '🎵 Skriv ert svar medan låten spelar – lås in när klippet spelat klart.'}
-            </p>
-            <NeonButton
-              onClick={() => onLock(text.trim())}
-              disabled={busy || !text.trim() || yearFormatBad || !canLock}
+      <div
+        className="grid gap-3"
+        style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' }}
+      >
+        {units.map((u) => {
+          const isMe = u.id === myUnitId
+          const unitLocked = lockedUnits.has(u.id) || (isMe && iLocked)
+          return (
+            <div
+              key={u.id}
+              className="panel-inset flex flex-col p-3"
+              style={{
+                borderColor: unitLocked
+                  ? `${good}66`
+                  : isMe
+                    ? 'rgba(34,230,230,0.4)'
+                    : undefined,
+                boxShadow: unitLocked ? `0 0 18px -8px ${good}` : undefined,
+              }}
             >
-              Lås in svar 🔒
-            </NeonButton>
-          </div>
-        </div>
-      )}
+              <div className="flex items-center justify-between gap-2">
+                <p className="label truncate" style={{ color: isMe ? '#22e6e6' : undefined }}>
+                  {u.name}
+                  {isMe ? (teamMode ? ' (ni)' : ' (du)') : ''}
+                </p>
+                {unitLocked ? (
+                  <span className="chip shrink-0" style={{ '--neon': good }}>
+                    🔒 Låst
+                  </span>
+                ) : (
+                  <span className="shrink-0 text-xs text-muted">skriver…</span>
+                )}
+              </div>
+
+              {/* Egen ruta = inmatning; andras = bara status (svaret döljs). */}
+              {isMe ? (
+                unitLocked ? (
+                  <div className="mt-2">
+                    <p className="font-display text-lg text-cream break-words">
+                      {mine?.answer?.trim() ? (
+                        mine.answer
+                      ) : (
+                        <span className="text-muted">— inget svar —</span>
+                      )}
+                    </p>
+                    <p className="mt-1 text-xs text-muted">
+                      Väntar på att alla {unitWord} låser in…
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-2 space-y-2">
+                    <textarea
+                      className="field min-h-[64px] resize-none"
+                      placeholder={
+                        isYearCat ? 'Skriv hela årtalet, t.ex. 1967' : cat?.desc || 'Skriv ert svar…'
+                      }
+                      value={text}
+                      onChange={(e) => setText(e.target.value)}
+                      maxLength={200}
+                      autoFocus
+                    />
+                    {yearFormatBad && (
+                      <p className="text-xs text-magenta">
+                        ⚠ Skriv hela årtalet, t.ex. <b>1967</b> – inte ”67”.
+                      </p>
+                    )}
+                    <NeonButton
+                      onClick={() => onLock(text.trim())}
+                      disabled={busy || !text.trim() || yearFormatBad || !canLock}
+                      className="w-full"
+                    >
+                      Lås in 🔒
+                    </NeonButton>
+                    {!canLock && (
+                      <p className="text-[11px] text-muted">
+                        🎵 Skriv medan låten spelar – lås in när klippet är slut.
+                      </p>
+                    )}
+                  </div>
+                )
+              ) : (
+                <div className="mt-2 flex flex-1 items-center justify-center py-3 text-center">
+                  {unitLocked ? (
+                    <p className="font-display text-lg" style={{ color: good }}>
+                      🔒 Klar!
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted">Väntar…</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
 
       {isHost && canLock && (
         <div className="border-t border-white/10 pt-3 text-center">
