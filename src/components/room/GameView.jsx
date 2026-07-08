@@ -369,8 +369,9 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
         </div>
       </section>
 
-      {/* Svarsfas: öppnas när låten spelat klart (timern slut) */}
-      {revealed && (
+      {/* Svarsfas: rutan öppnas redan när klippet spelar (man kan skriva medan
+          man lyssnar), men inlåsning tillåts först när klippet spelat klart. */}
+      {(clipPlaying || revealed) && (
         <AnswerPanel
           round={round}
           answers={answers}
@@ -380,6 +381,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
           myUnitId={teamMode ? myTeamId : me?.id}
           isHost={isHost}
           busy={busy}
+          canLock={revealed}
           onLock={onLockAnswer}
           onReveal={onRevealAnswers}
           onOverride={onOverrideAnswer}

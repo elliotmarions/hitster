@@ -30,6 +30,7 @@ export default function AnswerPanel({
   myUnitId,
   isHost,
   busy,
+  canLock = true,
   onLock,
   onReveal,
   onOverride,
@@ -204,10 +205,15 @@ export default function AnswerPanel({
               ⚠ Skriv hela årtalet med fyra siffror, t.ex. <b>1967</b> – inte ”67”.
             </p>
           )}
-          <div className="flex justify-end">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs text-muted">
+              {canLock
+                ? 'Lås in när ni är klara.'
+                : '🎵 Skriv ert svar medan låten spelar – lås in när klippet spelat klart.'}
+            </p>
             <NeonButton
               onClick={() => onLock(text.trim())}
-              disabled={busy || !text.trim() || yearFormatBad}
+              disabled={busy || !text.trim() || yearFormatBad || !canLock}
             >
               Lås in svar 🔒
             </NeonButton>
@@ -215,7 +221,7 @@ export default function AnswerPanel({
         </div>
       )}
 
-      {isHost && (
+      {isHost && canLock && (
         <div className="border-t border-white/10 pt-3 text-center">
           <NeonButton variant="ghost" onClick={onReveal} disabled={busy}>
             Visa svar nu
