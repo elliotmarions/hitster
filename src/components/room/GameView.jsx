@@ -107,7 +107,10 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   const myAnswerCorrect = myRoundAnswer
     ? (myRoundAnswer.override_correct ?? myRoundAnswer.auto_correct) === true
     : false
-  const answerGateOk = !hasTrack || (revealed && myAnswerCorrect)
+  // Kryss kräver att DENNA rundas låt spelats, avslöjats och att det egna
+  // svaret var rätt. Utan låt (nyss snurrat) är grinden stängd – annars kunde
+  // man kryssa direkt efter snurret innan man gissat. Speglar mark_cross.
+  const answerGateOk = hasTrack && revealed && myAnswerCorrect
 
   // Rätt svar ger bara ETT kryss per runda (server-styrt via round_answers.has_marked;
   // markedRoundId speglar det optimistiskt så knappen låses direkt vid klick).
@@ -128,13 +131,15 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   const markHint =
     finished || !currentCategory || myCard?.has_won
       ? null
-      : hasTrack && !revealed
-        ? 'Lås in ert svar och vänta på facit innan ni kryssar.'
-        : revealed && !myAnswerCorrect
-          ? 'Fel svar den här rundan – ingen kryssning.'
-          : hasTrack && alreadyMarkedThisRound
-            ? 'Kryss placerat – ett per runda. Klicka på krysset för att ändra.'
-            : 'ok'
+      : !hasTrack
+        ? 'Starta låten och gissa innan ni kryssar.'
+        : !revealed
+          ? 'Lås in ert svar och vänta på facit innan ni kryssar.'
+          : !myAnswerCorrect
+            ? 'Fel svar den här rundan – ingen kryssning.'
+            : alreadyMarkedThisRound
+              ? 'Kryss placerat – ett per runda. Klicka på krysset för att ändra.'
+              : 'ok'
 
   // Snurr-spärr: lämna inte en avslöjad runda medan någon rätt-svarande ännu
   // inte kryssat (och har en ledig ruta i kategorin att kryssa). Speglar spin_wheel.
