@@ -41,6 +41,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   const ensured = useRef(false)
   const spunRef = useRef(0)
   const recentRef = useRef([]) // nyligen spelade pott-index (undvik direkta repriser)
+  const volBeforeMute = useRef(1) // volym att återställa till när man slår på ljudet igen
 
   // Säkerställ att jag har en bricka (täcker sena joins).
   useEffect(() => {
@@ -356,6 +357,39 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
                     : 'Värden styr rundan.'}
             </p>
           )}
+
+          {/* Volym – lokal per spelare, sparas mellan spel. */}
+          <div className="flex w-full max-w-[280px] items-center gap-3">
+            <button
+              type="button"
+              onClick={() =>
+                audio.setVolume(audio.volume > 0 ? 0 : volBeforeMute.current || 1)
+              }
+              className="text-lg leading-none"
+              aria-label={audio.volume > 0 ? 'Stäng av ljudet' : 'Slå på ljudet'}
+              title={audio.volume > 0 ? 'Stäng av ljudet' : 'Slå på ljudet'}
+            >
+              {audio.volume === 0 ? '🔇' : audio.volume < 0.5 ? '🔉' : '🔊'}
+            </button>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={Math.round(audio.volume * 100)}
+              onChange={(e) => {
+                const v = Number(e.target.value) / 100
+                if (v > 0) volBeforeMute.current = v
+                audio.setVolume(v)
+              }}
+              className="h-1.5 flex-1 cursor-pointer"
+              style={{ accentColor: '#22e6e6' }}
+              aria-label="Volym"
+            />
+            <span className="w-9 text-right text-xs tabular-nums text-muted">
+              {Math.round(audio.volume * 100)}%
+            </span>
+          </div>
+
           {err && <p className="text-sm text-magenta">{err}</p>}
         </div>
       </section>

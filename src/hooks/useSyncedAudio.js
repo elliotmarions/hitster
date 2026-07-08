@@ -18,6 +18,18 @@ function rememberedReady() {
   }
 }
 
+// Volymen är LOKAL per enhet (varje spelare spelar sitt eget klipp – inget
+// synkas) och sparas mellan spel. 0–1.
+const VOLUME_KEY = 'hbo:volume'
+function rememberedVolume() {
+  try {
+    const v = parseFloat(localStorage.getItem(VOLUME_KEY))
+    return Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 1
+  } catch {
+    return 1
+  }
+}
+
 /**
  * Synkad uppspelning av ett preview-klipp (ersätter Spotify Web Playback).
  * Alla klienter spelar samma publika ljud-URL (round.current_track_id) vid
@@ -38,15 +50,31 @@ export function useSyncedAudio(round) {
   // Bannern göms direkt för den som redan aktiverat ljudet en gång.
   const [ready, setReady] = useState(rememberedReady)
   const [error, setError] = useState('')
+  const [volume, setVolumeState] = useState(rememberedVolume)
+  const volumeRef = useRef(volume) // senaste volymen åt lazily skapade element
 
   function getAudio() {
     if (!audioRef.current) {
       const a = new Audio()
       a.preload = 'auto'
+      a.volume = volumeRef.current
       audioRef.current = a
     }
     return audioRef.current
   }
+
+  // Justera volymen (0–1): applicera live, spara per enhet, minns för nya element.
+  const setVolume = useCallback((v) => {
+    const clamped = Math.min(1, Math.max(0, Number(v) || 0))
+    volumeRef.current = clamped
+    setVolumeState(clamped)
+    if (audioRef.current) audioRef.current.volume = clamped
+    try {
+      localStorage.setItem(VOLUME_KEY, String(clamped))
+    } catch {
+      /* privat läge e.d. – strunt samma */
+    }
+  }, [])
 
   // Lås upp <audio> inifrån ett användarklick (spela tyst klipp → pausa).
   const unlock = useCallback(async () => {
@@ -139,5 +167,5 @@ export function useSyncedAudio(round) {
     }
   }, [])
 
-  return { ready, unlock, error }
+  return { ready, unlock, error, volume, setVolume }
 }
