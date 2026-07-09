@@ -7,6 +7,8 @@ import PlayerList from '../PlayerList.jsx'
 import TeamSetup from '../TeamSetup.jsx'
 import NeonButton from '../ui/NeonButton.jsx'
 import CopyButton from '../ui/CopyButton.jsx'
+import { TRACKS } from '../../data/tracks.js'
+import { SWEDISH_TRACKS } from '../../data/swedishTracks.js'
 
 export default function LobbyView({ room, players, teams, isHost, currentUserId }) {
   const navigate = useNavigate()
@@ -44,8 +46,8 @@ export default function LobbyView({ room, players, teams, isHost, currentUserId 
     await supabase.from('rooms').update({ team_mode: e.target.checked }).eq('id', room.id)
   }
 
-  async function toggleSwedishMode(e) {
-    await supabase.from('rooms').update({ swedish_mode: e.target.checked }).eq('id', room.id)
+  async function setSwedishMode(value) {
+    await supabase.from('rooms').update({ swedish_mode: value }).eq('id', room.id)
   }
 
   return (
@@ -71,57 +73,83 @@ export default function LobbyView({ room, players, teams, isHost, currentUserId 
           </div>
         </div>
 
-        {/* Suddregel */}
-        <label className="panel-inset mt-6 flex items-center justify-between gap-4 p-3.5">
-          <span>
-            <span className="font-display text-cream">Suddregel</span>
-            <span className="mt-0.5 block text-xs text-muted">
-              På "Exakt årtal": rätt gissning låter dig sudda ett kryss hos en medspelare.
-            </span>
-          </span>
-          <input
-            type="checkbox"
-            className="h-5 w-5 accent-magenta disabled:opacity-50"
-            checked={room.erase_rule_enabled}
-            onChange={toggleErase}
-            disabled={!isHost}
-          />
-        </label>
+        {/* Musik – vilken låtpott spelet använder (egen väljare, inte en av/på-regel) */}
+        <div className="mt-6">
+          <p className="label mb-2">🎵 Musik</p>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              disabled={!isHost}
+              onClick={() => setSwedishMode(false)}
+              aria-pressed={!room.swedish_mode}
+              className="panel-inset flex flex-col gap-1 p-3.5 text-left transition disabled:opacity-60"
+              style={{
+                borderColor: !room.swedish_mode ? '#22e6e6' : undefined,
+                boxShadow: !room.swedish_mode ? '0 0 22px -8px #22e6e6' : undefined,
+              }}
+            >
+              <span className="font-display text-cream">🌍 Alla låtar</span>
+              <span className="text-xs text-muted">
+                Blandat från hela världen · {TRACKS.length.toLocaleString('sv-SE')} låtar
+              </span>
+            </button>
+            <button
+              type="button"
+              disabled={!isHost}
+              onClick={() => setSwedishMode(true)}
+              aria-pressed={room.swedish_mode}
+              className="panel-inset flex flex-col gap-1 p-3.5 text-left transition disabled:opacity-60"
+              style={{
+                borderColor: room.swedish_mode ? '#ffd23f' : undefined,
+                boxShadow: room.swedish_mode ? '0 0 22px -8px #ffd23f' : undefined,
+              }}
+            >
+              <span className="font-display text-cream">🇸🇪 Svenska</span>
+              <span className="text-xs text-muted">
+                Svenska artister, 1950–idag · {SWEDISH_TRACKS.length} låtar
+              </span>
+            </button>
+          </div>
+        </div>
 
-        {/* Lagläge */}
-        <label className="panel-inset mt-3 flex items-center justify-between gap-4 p-3.5">
-          <span>
-            <span className="font-display text-cream">Lagläge</span>
-            <span className="mt-0.5 block text-xs text-muted">
-              Spela i lag med gemensam bricka och gemensamt svar. Värden delar in lagen nedan.
-            </span>
-          </span>
-          <input
-            type="checkbox"
-            className="h-5 w-5 accent-cyan disabled:opacity-50"
-            checked={room.team_mode}
-            onChange={toggleTeamMode}
-            disabled={!isHost}
-          />
-        </label>
+        {/* Regler – av/på */}
+        <div className="mt-6">
+          <p className="label mb-2">Regler</p>
 
-        {/* Svenskt läge */}
-        <label className="panel-inset mt-3 flex items-center justify-between gap-4 p-3.5">
-          <span>
-            <span className="font-display text-cream">🇸🇪 Svenskt läge</span>
-            <span className="mt-0.5 block text-xs text-muted">
-              Bara svenska låtar – alla genrer, från 1950-tal till idag.
+          {/* Suddregel */}
+          <label className="panel-inset flex items-center justify-between gap-4 p-3.5">
+            <span>
+              <span className="font-display text-cream">Suddregel</span>
+              <span className="mt-0.5 block text-xs text-muted">
+                På "Exakt årtal": rätt gissning låter dig sudda ett kryss hos en medspelare.
+              </span>
             </span>
-          </span>
-          <input
-            type="checkbox"
-            className="h-5 w-5 accent-cyan disabled:opacity-50"
-            style={{ accentColor: '#ffd23f' }}
-            checked={room.swedish_mode}
-            onChange={toggleSwedishMode}
-            disabled={!isHost}
-          />
-        </label>
+            <input
+              type="checkbox"
+              className="h-5 w-5 accent-magenta disabled:opacity-50"
+              checked={room.erase_rule_enabled}
+              onChange={toggleErase}
+              disabled={!isHost}
+            />
+          </label>
+
+          {/* Lagläge */}
+          <label className="panel-inset mt-3 flex items-center justify-between gap-4 p-3.5">
+            <span>
+              <span className="font-display text-cream">Lagläge</span>
+              <span className="mt-0.5 block text-xs text-muted">
+                Spela i lag med gemensam bricka och gemensamt svar. Värden delar in lagen nedan.
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              className="h-5 w-5 accent-cyan disabled:opacity-50"
+              checked={room.team_mode}
+              onChange={toggleTeamMode}
+              disabled={!isHost}
+            />
+          </label>
+        </div>
 
         {err && <p className="mt-4 text-sm text-magenta">{err}</p>}
 
