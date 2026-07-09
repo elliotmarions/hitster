@@ -83,7 +83,7 @@ export default function LobbyView({ room, players, teams, isHost, currentUserId 
               disabled={!isHost}
               onClick={() => setSwedishMode(false)}
               aria-pressed={!room.swedish_mode}
-              className="panel-inset flex flex-col gap-1 p-3.5 text-left transition disabled:opacity-60"
+              className="panel-inset flex cursor-pointer flex-col gap-1 p-3.5 text-left transition disabled:cursor-default disabled:opacity-60"
               style={{
                 borderColor: !room.swedish_mode ? '#22e6e6' : undefined,
                 boxShadow: !room.swedish_mode ? '0 0 22px -8px #22e6e6' : undefined,
@@ -99,7 +99,7 @@ export default function LobbyView({ room, players, teams, isHost, currentUserId 
               disabled={!isHost}
               onClick={() => setSwedishMode(true)}
               aria-pressed={room.swedish_mode}
-              className="panel-inset flex flex-col gap-1 p-3.5 text-left transition disabled:opacity-60"
+              className="panel-inset flex cursor-pointer flex-col gap-1 p-3.5 text-left transition disabled:cursor-default disabled:opacity-60"
               style={{
                 borderColor: room.swedish_mode ? '#ffd23f' : undefined,
                 boxShadow: room.swedish_mode ? '0 0 22px -8px #ffd23f' : undefined,
