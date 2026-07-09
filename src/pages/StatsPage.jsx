@@ -36,6 +36,7 @@ export default function StatsPage() {
 
   const played = stats?.games_played ?? 0
   const won = stats?.games_won ?? 0
+  const tied = stats?.games_tied ?? 0
   const winRate = played > 0 ? Math.round((won / played) * 100) : 0
 
   return (
@@ -74,9 +75,10 @@ export default function StatsPage() {
         </div>
       ) : (
         <>
-          <section className="grid grid-cols-3 gap-3">
+          <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <StatCard label="Spelade" value={played} neon="#22e6e6" />
             <StatCard label="Vinster" value={won} neon="#b6ff3c" />
+            <StatCard label="Oavgjorda" value={tied} neon="#ffc93c" />
             <StatCard label="Vinst­andel" value={`${winRate}%`} neon="#ff2e9a" />
           </section>
 
