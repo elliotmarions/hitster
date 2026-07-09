@@ -193,4 +193,112 @@ export const SWEDISH_TRACKS = [
   { title: 'Voices', artist: 'Tusse', year: 2021 },
   { title: 'Hold Me Closer', artist: 'Cornelia Jakobs', year: 2022 },
   { title: 'Tattoo', artist: 'Loreen', year: 2023 },
+
+  // === Svenskspråkiga låtar (sjungna på svenska) ===
+  // --- 1960–70-tal ---
+  { title: 'Cecilia Lind', artist: 'Cornelis Vreeswijk', year: 1965 },
+  { title: 'Somliga går med trasiga skor', artist: 'Cornelis Vreeswijk', year: 1971 },
+  { title: 'Jag ger dig min morgon', artist: 'Fred Åkerström', year: 1971 },
+  { title: 'Änglamark', artist: 'Evert Taube', year: 1971 },
+
+  // --- 1980-tal ---
+  { title: 'Sensuella Isabella', artist: 'Tomas Ledin', year: 1980 },
+  { title: '800°', artist: 'Ebba Grön', year: 1980 },
+  { title: 'Die Mauer', artist: 'Ebba Grön', year: 1981 },
+  { title: 'Öppna landskap', artist: 'Ulf Lundell', year: 1982 },
+  { title: 'Segla på ett moln', artist: 'Anne-Lie Rydé', year: 1983 },
+  { title: 'Ögon känsliga för ljus', artist: 'Ratata', year: 1985 },
+  { title: 'Stockholm', artist: 'Orup', year: 1988 },
+  { title: 'Undan för undan', artist: "Freda'", year: 1989 },
+
+  // --- 1990-tal ---
+  { title: 'Vem ska jag tro på?', artist: 'Thomas Di Leva', year: 1990 },
+  { title: 'Vem tänder stjärnorna', artist: 'Eva Dahlgren', year: 1991 },
+  { title: 'Hon är så söt', artist: 'Bo Kaspers Orkester', year: 1993 },
+  { title: 'Vem vet', artist: 'Lisa Ekdahl', year: 1994 },
+  { title: 'Öppna din dörr', artist: 'Lisa Ekdahl', year: 1994 },
+  { title: 'Undantag', artist: 'Bo Kaspers Orkester', year: 1996 },
+  { title: 'I samma bil', artist: 'Bo Kaspers Orkester', year: 1998 },
+
+  // --- 2000-tal ---
+  { title: 'Logiskt', artist: 'Petter', year: 2000 },
+  { title: 'En midsommarnattsdröm', artist: 'Håkan Hellström', year: 2000 },
+  { title: 'Elegi', artist: 'Lars Winnerbäck', year: 2001 },
+  { title: 'Utan dina andetag', artist: 'Kent', year: 2002 },
+  { title: 'Det löser sig', artist: 'Timbuktu', year: 2003 },
+  { title: 'Det gör ont', artist: 'Lena Philipsson', year: 2004 },
+  { title: 'Las Vegas', artist: 'Martin Stenmarck', year: 2005 },
+  { title: 'Alla vill till himlen men ingen vill dö', artist: 'Thåström', year: 2005 },
+  { title: 'Nu kan du få mig så lätt', artist: 'Håkan Hellström', year: 2005 },
+  { title: 'Evighet', artist: 'Carola', year: 2006 },
+  { title: 'Ingenting', artist: 'Kent', year: 2007 },
+  { title: 'Solregn', artist: 'Lars Winnerbäck', year: 2007 },
+  { title: 'Kärleken kommer', artist: 'Melissa Horn', year: 2008 },
+  { title: 'Fel del av gården', artist: 'Movits!', year: 2008 },
+  { title: 'Alla som inte dansar', artist: 'Maskinen', year: 2009 },
+  { title: 'Kärlek är för dom', artist: 'Thåström', year: 2009 },
+
+  // --- 2010-tal ---
+  { title: 'Från och med du', artist: 'Oskar Linnros', year: 2010 },
+  { title: '17 år', artist: 'Veronica Maggio', year: 2011 },
+  { title: 'Säg ingenting till mig', artist: 'Melissa Horn', year: 2011 },
+  { title: 'Flickan och kråkan', artist: 'Timbuktu', year: 2011 },
+  { title: 'Händerna mot himlen', artist: 'Petra Marklund', year: 2012 },
+  { title: 'För alltid', artist: 'Norlie & KKV', year: 2013 },
+  { title: 'Din soldat', artist: 'Albin', year: 2013 },
+  { title: 'Det kommer aldrig va över för mig', artist: 'Håkan Hellström', year: 2013 },
+  { title: 'Tabanja', artist: 'Cherrie', year: 2016 },
+  { title: 'Klär av dig', artist: 'Victor Leksell', year: 2019 },
+  { title: '5 minuter', artist: 'Veronica Maggio', year: 2019 },
+
+  // --- 2020-tal ---
+  { title: 'Tänker inte alls gå hem', artist: 'Miss Li', year: 2020 },
+
+  // === Fler genrer + fyllnad för tunna årtionden (50-, 60-, 2020-tal) ===
+  // --- 1950-tal (schlager, rock'n'roll) ---
+  { title: 'Varm korv boogie', artist: 'Owe Thörnqvist', year: 1959 },
+  { title: 'Augustin', artist: 'Brita Borg', year: 1959 },
+
+  // --- 1960-tal (pop, jazz, folkpop) ---
+  { title: 'Sån’t är livet', artist: 'Anita Lindblom', year: 1961 },
+  { title: 'Jag väntar vid min mila', artist: 'Hootenanny Singers', year: 1964 },
+  { title: 'Visa från Utanmyra', artist: 'Jan Johansson', year: 1964 },
+  { title: 'Kristina från Vilhelmina', artist: 'Sven-Ingvars', year: 1964 },
+  { title: 'Leva livet', artist: 'Lill-Babs', year: 1966 },
+  { title: 'Nygammal vals', artist: 'Lill Lindfors & Svante Thuresson', year: 1966 },
+
+  // --- 1970-tal (glam/pop) ---
+  { title: 'Moviestar', artist: 'Harpo', year: 1975 },
+
+  // --- 1980-tal (new wave, schlager, eurodance) ---
+  { title: 'Vill ha dej', artist: 'Freestyle', year: 1980 },
+  { title: 'En kväll i tunnelbanan', artist: 'Noice', year: 1980 },
+  { title: 'Fyra Bugg & en Coca-Cola', artist: 'Lotta Engberg', year: 1987 },
+  { title: 'Buffalo Stance', artist: 'Neneh Cherry', year: 1988 },
+  { title: 'Kärlekens tunga', artist: 'Eldkvarn', year: 1988 },
+
+  // --- 1990-tal (eurodance, pop) ---
+  { title: 'Crucified', artist: 'Army of Lovers', year: 1991 },
+  { title: 'Open Sesame', artist: 'Leila K', year: 1992 },
+  { title: 'Hobo Humpin’ Slobo Babe', artist: 'Whale', year: 1993 },
+
+  // --- 2000-tal (metal, garagerock, indie, dance) ---
+  { title: 'Only for the Weak', artist: 'In Flames', year: 2000 },
+  { title: 'Alright Alright (Here’s My Fist Where’s the Fight)', artist: 'Sahara Hotnights', year: 2001 },
+  { title: 'Living in America', artist: 'The Sounds', year: 2002 },
+  { title: 'Hearts on Fire', artist: 'HammerFall', year: 2002 },
+  { title: 'Jerk It Out', artist: 'Caesars', year: 2003 },
+  { title: 'Cobrastyle', artist: 'Teddybears', year: 2004 },
+  { title: 'This Is the World We Live In', artist: 'Alcazar', year: 2004 },
+  { title: 'Primo Victoria', artist: 'Sabaton', year: 2005 },
+  { title: 'Young Folks', artist: 'Peter Bjorn and John', year: 2006 },
+
+  // --- 2010-tal (folk, indie, metal) ---
+  { title: 'The Lion’s Roar', artist: 'First Aid Kit', year: 2012 },
+  { title: 'Genghis Khan', artist: 'Miike Snow', year: 2015 },
+  { title: 'Square Hammer', artist: 'Ghost', year: 2016 },
+
+  // --- 2020-tal (schlager, pop) ---
+  { title: 'Ciao Ciao', artist: 'Klara Hammarström', year: 2021 },
+  { title: 'No One Dies from Love', artist: 'Tove Lo', year: 2022 },
 ]
