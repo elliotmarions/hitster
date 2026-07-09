@@ -72,6 +72,9 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   const finished = room.status === 'finished'
   // Värden lämnade → spelet avslutat utan vinnare (visar notis, inte vinstbanner).
   const hostLeft = finished && room.ended_reason === 'host_left'
+  // Avgörande rundan = den där spelet avgjordes. Där får kvarvarande rätt-
+  // svarande fortfarande kryssa för att bli MEDVINNARE (oavgjort).
+  const inDecidingRound = finished && !!round && room.winner_round_id === round.id
   // timer_start_at sätts först när värden trycker "Starta låt" (= start_at).
   const startMs = round?.timer_start_at ? new Date(round.timer_start_at).getTime() : null
   const hasTrack = Boolean(round?.current_track_id)
@@ -123,12 +126,12 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
     (round && markedRoundId === round.id) || myRoundAnswer?.has_marked === true
 
   const canMark =
-    !finished &&
+    (!finished || inDecidingRound) &&
     !!currentCategory &&
     !myCard?.has_won &&
     answerGateOk &&
     !(hasTrack && alreadyMarkedThisRound)
-  const canUnmark = !finished
+  const canUnmark = !finished || inDecidingRound
   const canErase =
     !finished && room.erase_rule_enabled && currentCategory === 'exact_year' && answerGateOk
 
@@ -161,6 +164,19 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
         return card?.grid?.some((cell) => cell.category === round.category && !cell.filled)
       }),
   )
+
+  // Vinnare (en – eller flera vid oavgjort). Fallback till de gamla enskilda
+  // kolumnerna för rum som avgjordes före tie-stödet.
+  let winnerIds = Array.isArray(room.winner_unit_ids) ? room.winner_unit_ids : []
+  if (winnerIds.length === 0 && finished && !hostLeft) {
+    const single = teamMode ? room.winner_team_id : room.winner_player_id
+    if (single) winnerIds = [single]
+  }
+  const winnerNames = winnerIds.map((id) => (teamMode ? teamName(id) : playerName(id)))
+  // Visa vinsten först när den avgörande rundans kryss är klara – så medvinnare
+  // hinner kryssa och det kan bli oavgjort.
+  const decidingPending = finished && !hostLeft && pendingCross
+  const showWin = finished && !hostLeft && !pendingCross
 
   // Värdens kontroller
   const canSpin = isHost && !finished && !wheelSpinning && !beforeStart && !clipPlaying && !pendingCross
@@ -301,9 +317,21 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
 
       {hostLeft && <HostLeftNotice onBack={() => navigate('/')} />}
 
-      {finished && !hostLeft && (
+      {decidingPending && (
+        <div
+          className="panel p-4 text-center"
+          style={{ borderColor: '#ffc93c', boxShadow: '0 0 30px -12px #ffc93c' }}
+        >
+          <p className="font-display text-lg text-cream">🏁 Avgörande runda</p>
+          <p className="mt-1 text-sm text-muted">
+            Alla som hade rätt måste kryssa klart – fler radkryss den här rundan blir oavgjort.
+          </p>
+        </div>
+      )}
+
+      {showWin && (
         <WinBanner
-          winnerName={teamMode ? teamName(room.winner_team_id) : playerName(room.winner_player_id)}
+          winnerNames={winnerNames}
           isMe={Boolean(myCard?.has_won)}
           teamMode={teamMode}
           isHost={isHost}
