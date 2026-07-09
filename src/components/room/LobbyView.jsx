@@ -7,6 +7,7 @@ import PlayerList from '../PlayerList.jsx'
 import TeamSetup from '../TeamSetup.jsx'
 import NeonButton from '../ui/NeonButton.jsx'
 import CopyButton from '../ui/CopyButton.jsx'
+import SwedishFlag from '../ui/SwedishFlag.jsx'
 import { TRACKS } from '../../data/tracks.js'
 import { SWEDISH_TRACKS } from '../../data/swedishTracks.js'
 
@@ -104,7 +105,9 @@ export default function LobbyView({ room, players, teams, isHost, currentUserId 
                 boxShadow: room.swedish_mode ? '0 0 22px -8px #ffd23f' : undefined,
               }}
             >
-              <span className="font-display text-cream">🇸🇪 Svenska</span>
+              <span className="inline-flex items-center gap-2 font-display text-cream">
+                <SwedishFlag size={20} /> Svenska
+              </span>
               <span className="text-xs text-muted">
                 Svenska artister, 1950–idag · {SWEDISH_TRACKS.length} låtar
               </span>
