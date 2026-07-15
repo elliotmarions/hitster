@@ -3,10 +3,10 @@
 // Preview-klipp slås upp vid uppspelning via iTunes Search (src/lib/previewApi.js).
 // Språkrensad 2026-07-07: behåller engelska + svenska; andra språk bara om stora
 //   världshits (Deezer-rank >= 650000 eller ikonisk klassiker). Tog bort 229 låtar.
-// Språkrensad 2026-07-15: tog bort tyska/franska/holländska (439 låtar). Behåller
+// Språkrensad 2026-07-15: tog bort tyska/franska/holländska (445 låtar). Behåller
 //   engelska, svenska + övriga språk (italienska, spanska, finska, ungerska m.fl.).
 //   Instrumentala filmteman med tysk titel omdöpta till sin engelska originaltitel.
-// 2991 låtar.
+// 2985 låtar.
 export const TRACKS = [
   {"title": "La Donna E Mobile (Rigoletto)", "artist": "Enrico Caruso", "year": 1908},
   {"title": "La Donna È Mobile", "artist": "Enrico Caruso", "year": 1908},
@@ -748,7 +748,6 @@ export const TRACKS = [
   {"title": "Just Can't Get Enough", "artist": "Depeche Mode", "year": 1981},
   {"title": "Juke Box Hero", "artist": "Foreigner", "year": 1981},
   {"title": "Titanic", "artist": "Frederik", "year": 1981},
-  {"title": "I've Seen That Face Before (Libertango)", "artist": "Grace Jones", "year": 1981},
   {"title": "I Love Rock 'N Roll", "artist": "Joan Jett & the Blackhearts", "year": 1981},
   {"title": "Don't Stop Believin'", "artist": "Journey", "year": 1981},
   {"title": "Don't Stop Belivin'", "artist": "Journey", "year": 1981},
@@ -972,7 +971,6 @@ export const TRACKS = [
   {"title": "There Must Be an Angel (Playing With My Heart)", "artist": "Eurythmics", "year": 1985},
   {"title": "A Good Heart", "artist": "Feargal Sharkey", "year": 1985},
   {"title": "The Power Of Love", "artist": "Huey Lewis & The News", "year": 1985},
-  {"title": "Ibiza", "artist": "Ibo", "year": 1985},
   {"title": "Destiny", "artist": "Jennifer Rush", "year": 1985},
   {"title": "Out of Africa (I Had a Farm in Africa)", "artist": "John Barry", "year": 1985},
   {"title": "Running Up That Hill (A Deal With God)", "artist": "Kate Bush", "year": 1985},
@@ -1394,7 +1392,6 @@ export const TRACKS = [
   {"title": "Bye Bye Baby (Original)", "artist": "Catcat", "year": 1994},
   {"title": "Staying out for the summer", "artist": "Dodgy", "year": 1994},
   {"title": "Stay Another Day", "artist": "East 17", "year": 1994},
-  {"title": "300 PS (... Auto)", "artist": "EAV (Erste Allgemeine Verunsicherung)", "year": 1994},
   {"title": "Can you feel the love tonight", "artist": "Elton John", "year": 1994},
   {"title": "Circle of Life", "artist": "Elton John", "year": 1994},
   {"title": "Always - 2009 Remaster", "artist": "Erasure", "year": 1994},
@@ -1490,7 +1487,6 @@ export const TRACKS = [
   {"title": "James Bond 007 - GoldenEye", "artist": "Tina Turner", "year": 1995},
   {"title": "Waterfalls", "artist": "TLC", "year": 1995},
   {"title": "I Kiss Your Lips", "artist": "Tokyo Ghetto Pussy", "year": 1995},
-  {"title": "Emmylou, Emmylou", "artist": "Truck Stop", "year": 1995},
   {"title": "Colors Of The Wind", "artist": "Vanessa Williams", "year": 1995},
   {"title": "Szomorú szamuráj", "artist": "Ámokfutók", "year": 1995},
   {"title": "How Come, How Long", "artist": "Babyface (feat. Stevie Wonder)", "year": 1996},
@@ -2680,7 +2676,6 @@ export const TRACKS = [
   {"title": "Be Alright", "artist": "Dean Lewis", "year": 2018},
   {"title": "In My Mind", "artist": "Dynoro", "year": 2018},
   {"title": "Ain't Nobody (Loves Me Better) (feat. Jasmine Thompson)", "artist": "Felix Jaehn Jasmine Thompson", "year": 2018},
-  {"title": "Lovesong", "artist": "Francine Jordi", "year": 2018},
   {"title": "Dance Macabre", "artist": "Ghost", "year": 2018},
   {"title": "Bulletproof", "artist": "Godsmack", "year": 2018},
   {"title": "You're The One", "artist": "Greta Van Fleet", "year": 2018},
@@ -2935,7 +2930,6 @@ export const TRACKS = [
   {"title": "Mercy", "artist": "The Blessed Madonna (feat. Jacob Lusk)", "year": 2023},
   {"title": "Angry", "artist": "The Rolling Stones", "year": 2023},
   {"title": "Éget a nap", "artist": "Valmar", "year": 2023},
-  {"title": "Ouzo", "artist": "Vincent Gross", "year": 2023},
   {"title": "Carry You Home", "artist": "Alex Warren", "year": 2024},
   {"title": "I like the way you kiss me", "artist": "Artemas", "year": 2024},
   {"title": "Beautiful Things", "artist": "Benson Boone", "year": 2024},
