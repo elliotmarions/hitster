@@ -9,7 +9,7 @@ pott i "Svenskt läge"), slår upp ett publikt ~30-sekunders preview-klipp via
 iTunes Search och startar **samma klipp hos alla samtidigt** via en synkad
 tidsstämpel. Röst/video för häcklandet sköts utanför appen (Discord e.d.).
 
-**Publik version:** https://hitster-teal.vercel.app
+**Publik version:** https://latsnurran.vercel.app
 
 ---
 
