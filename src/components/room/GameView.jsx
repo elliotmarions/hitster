@@ -16,8 +16,6 @@ import {
 } from '../../lib/game.js'
 import { leaveRoom } from '../../lib/rooms.js'
 import { useSyncedAudio } from '../../hooks/useSyncedAudio.js'
-import { TRACKS } from '../../data/tracks.js'
-import { SWEDISH_TRACKS } from '../../data/swedishTracks.js'
 import { searchPreviewUrl } from '../../lib/previewApi.js'
 import DiscoWheel from '../DiscoWheel.jsx'
 import CategoryBanner from '../CategoryBanner.jsx'
@@ -210,8 +208,12 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   // Slumpar en låt ur potten, slår upp ett preview-klipp (iTunes) och startar det
   // synkat hos alla. Ingen inloggning krävs – klippet är en publik ljud-URL.
   async function pickAndStart() {
-    // Svenskt läge → svensk pott, annars den vanliga.
-    const pot = room.swedish_mode ? SWEDISH_TRACKS : TRACKS
+    // Svenskt läge → svensk pott, annars den vanliga. Potterna lazy-laddas
+    // (egen chunk) så de tusentals låtarna inte tynger huvudbundeln – bara
+    // värden behöver dem, och först här.
+    const pot = room.swedish_mode
+      ? (await import('../../data/swedishTracks.js')).SWEDISH_TRACKS
+      : (await import('../../data/tracks.js')).TRACKS
     for (let attempt = 0; attempt < 15; attempt++) {
       const idx = Math.floor(Math.random() * pot.length)
       if (recentRef.current.includes(idx)) continue

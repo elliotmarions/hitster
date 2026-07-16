@@ -47,28 +47,8 @@ export const CATEGORIES = {
   },
 }
 
-// Fast ordning – används bl.a. för brickans latinska kvadrat i Fas 2.
+// Fast ordning – t.ex. discokulans segment.
 export const CATEGORY_ORDER = ['decade', 'artist', 'exact_year', 'approx_year', 'title']
-
-export function categoryHex(key) {
-  return CATEGORIES[key]?.hex ?? '#f4efff'
-}
-
-// Rumsstatus
-export const ROOM_STATUS = {
-  LOBBY: 'lobby',
-  PLAYING: 'playing',
-  FINISHED: 'finished',
-}
-
-// Realtidshändelser (broadcastas via room_events i senare faser)
-export const EVENT_TYPES = {
-  SPIN_RESULT: 'SPIN_RESULT',
-  PLAY_COUNTDOWN: 'PLAY_COUNTDOWN',
-  CROSS_MARKED: 'CROSS_MARKED',
-  CROSS_ERASED: 'CROSS_ERASED',
-  GAME_WIN: 'GAME_WIN',
-}
 
 // Lagläge – neonfärger som tilldelas lag i tur och ordning.
 export const TEAM_COLORS = ['#22e6e6', '#ff4d9d', '#b6ff3c', '#ffc93c', '#b14dff', '#ff8a3c']
@@ -76,4 +56,4 @@ export const TEAM_COLORS = ['#22e6e6', '#ff4d9d', '#b6ff3c', '#ffc93c', '#b14dff
 // Fas 2 – spelplanens tajming och mått
 export const TIMER_SECONDS = 25 // rundans timer
 export const SPIN_MS = 4200 // discokulans snurr-animation (matchar timer_start_at i spin_wheel)
-export const GRID = 5 // brickan är 5x5 (en ruta per kategori i varje rad/kolumn)
+export const GRID = 5 // brickan är 5x5 (fritt slumpad, exakt 5 rutor per kategori)

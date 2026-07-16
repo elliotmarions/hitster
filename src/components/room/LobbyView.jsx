@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase.js'
 import { leaveRoom } from '../../lib/rooms.js'
@@ -8,14 +8,27 @@ import TeamSetup from '../TeamSetup.jsx'
 import NeonButton from '../ui/NeonButton.jsx'
 import CopyButton from '../ui/CopyButton.jsx'
 import SwedishFlag from '../ui/SwedishFlag.jsx'
-import { TRACKS } from '../../data/tracks.js'
-import { SWEDISH_TRACKS } from '../../data/swedishTracks.js'
 
 export default function LobbyView({ room, players, teams, isHost, currentUserId }) {
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  // Antal låtar per pott – potterna lazy-laddas (samma chunkar som spelet
+  // använder) så de inte tynger huvudbundeln.
+  const [potCounts, setPotCounts] = useState(null)
   const roomLink = `${window.location.origin}/rum/${room.code}`
+
+  useEffect(() => {
+    let active = true
+    Promise.all([import('../../data/tracks.js'), import('../../data/swedishTracks.js')])
+      .then(([all, sv]) => {
+        if (active) setPotCounts({ all: all.TRACKS.length, sv: sv.SWEDISH_TRACKS.length })
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [])
 
   async function handleStart() {
     setErr('')
@@ -91,7 +104,8 @@ export default function LobbyView({ room, players, teams, isHost, currentUserId 
             >
               <span className="font-display text-cream">🌍 Alla låtar</span>
               <span className="text-xs text-muted">
-                Blandat från hela världen · {TRACKS.length.toLocaleString('sv-SE')} låtar
+                Blandat från hela världen
+                {potCounts ? ` · ${potCounts.all.toLocaleString('sv-SE')} låtar` : ''}
               </span>
             </button>
             <button
@@ -109,7 +123,8 @@ export default function LobbyView({ room, players, teams, isHost, currentUserId 
                 <SwedishFlag size={20} /> Svenska
               </span>
               <span className="text-xs text-muted">
-                Svenska artister, 1950–idag · {SWEDISH_TRACKS.length} låtar
+                Svenska artister, 1950–idag
+                {potCounts ? ` · ${potCounts.sv} låtar` : ''}
               </span>
             </button>
           </div>

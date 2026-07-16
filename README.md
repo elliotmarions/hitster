@@ -1,38 +1,43 @@
 # 🪩 Låtsnurran
 
-Spela **Låtsnurran** tillsammans på distans – utan att musiken låter
-uselt över video.
+Spela **Låtsnurran** tillsammans på distans – musikquiz-bingo med discokula,
+synkade musikklipp och brickor i realtid.
 
-**Kärnidén:** ingen musik streamas mellan deltagarna. Varje spelare har sin egen Spotify
-Premium, och appen startar **samma låt hos alla samtidigt** via en synkad nedräkning. Alla
-hör ren musik från sin egen källa. Video/röst används bara för att umgås – aldrig för ljudet.
-Dessutom digitaliseras **discokulan** och **bingobrickorna** så allt synkas i realtid.
+**Kärnidén:** ingen musik streamas mellan deltagarna och ingen behöver logga in.
+Appen slumpar en låt ur en inbyggd pott (~3 000 verifierade låtar, eller en svensk
+pott i "Svenskt läge"), slår upp ett publikt ~30-sekunders preview-klipp via
+iTunes Search och startar **samma klipp hos alla samtidigt** via en synkad
+tidsstämpel. Röst/video för häcklandet sköts utanför appen (Discord e.d.).
+
+**Publik version:** https://hitster-teal.vercel.app
 
 ---
 
-## Byggstatus (faser)
+## Spelet i korthet
 
-| Fas | Innehåll | Status |
-| --- | --- | --- |
-| **1** | Fundament: Vite+React+Tailwind, Supabase, skapa/gå med i rum, lobby i realtid | ✅ **Klar** |
-| **2** | Spelplan: digital discokula + bingobrickor med realtidskryss (utan ljud) | ✅ **Klar** |
-| **3** | Spotify-inloggning + uppspelning av en låt lokalt | ✅ **Klar** |
-| **4** | Synkad start (`PLAY_COUNTDOWN`) + 25 s-timer | ✅ **Live** (testa med Spotify) |
-| 5 | Video (WebRTC-mesh), helt avstängbar | ⏳ |
-
-> Denna README uppdateras allteftersom faserna byggs.
+1. Värden skapar ett rum och delar rumskoden. Alla spelar som gäst (anonym auth).
+2. Värden snurrar **discokulan** → en av fem kategorier (årtionde, artist,
+   exakt årtal, årtal ±3, låttitel) och trycker **Starta låt**.
+3. Alla hör samma klipp, skriver sitt svar och **låser in**. När alla låst
+   avslöjas svaren + facit, och servern rättar automatiskt (värden kan överstyra).
+4. Rätt svar ger **ett kryss** i en matchande ruta på 5×5-brickan. Full rad,
+   kolumn eller diagonal vinner – flera vinster i samma runda blir **oavgjort**.
+5. Extraregler: **suddregel** (rätt "exakt årtal" låter dig sudda hos en motståndare),
+   **lagläge** (gemensam bricka + gemensamt svar per lag), **svenskt läge** (bara
+   svenska låtar) och enkel **statistik** (spelade/vinster/oavgjorda) på `/statistik`.
 
 ---
 
 ## Teknik
 
-- **Frontend:** React + Vite
-- **Styling:** Tailwind CSS (v4)
-- **Backend / realtid / auth:** Supabase (Postgres + Realtime + Auth)
-- **Hosting:** Vercel
-- **Musik (Fas 3+):** Spotify Web Playback SDK + Web API (Authorization Code with PKCE)
-- **Video (Fas 5):** WebRTC peer-to-peer mesh, signalering via Supabase Realtime
-- **Språk i UI:t:** svenska
+- **Frontend:** React + Vite, Tailwind CSS v4 (UI på svenska)
+- **Backend / realtid / auth:** Supabase (Postgres + Realtime + Auth, anonyma gäster)
+- **Ljud:** iTunes Search API → publika preview-klipp i ett `<audio>`-element
+- **Hosting:** Vercel (`git push` → auto-deploy)
+
+All spellogik är **server-auktoritativ**: snurr, kryss, vinst, svarslåsning och
+rättning sker i `SECURITY DEFINER`-RPC:er i Postgres (se `supabase/migrations/`).
+Klienten animerar och speglar bara serverns sanning via Realtime.
 
 ---
 
@@ -47,19 +52,17 @@ npm install
 ### 2. Sätt upp Supabase
 
 1. Skapa ett gratis projekt på [supabase.com](https://supabase.com).
-2. Öppna **SQL Editor → New query**, klistra in innehållet i
-   [`supabase/migrations/0001_phase1_rooms_players.sql`](supabase/migrations/0001_phase1_rooms_players.sql)
-   och tryck **Run**. (Alternativt med Supabase CLI: `supabase db push`.)
+2. Kör migrationerna i `supabase/migrations/` i nummerordning – antingen i
+   **SQL Editor**, eller automatiskt med `npm run migrate <fil>` (kräver
+   `SUPABASE_DB_URL` i `.env.local`, se `.env.example`).
 3. **Aktivera anonyma inloggningar** (krävs – appen loggar in gäster automatiskt):
    **Authentication → Sign In / Providers → Anonymous sign-ins → På**.
 4. *(Valfritt, för kontoinloggning/statistik)* Under **Authentication → URL Configuration**
-   lägg till `http://127.0.0.1:5173` (och senare din Vercel-URL) som **Site URL** och
-   **Redirect URL**. E-post­inloggning (magisk länk) fungerar direkt på ett hostat projekt.
+   lägg till `http://127.0.0.1:5173` (och din produktions-URL) som **Site URL** och
+   **Redirect URL**.
 5. Hämta **Project URL** och **anon/public key** under **Project Settings → API**.
 
 ### 3. Miljövariabler
-
-Kopiera mallen och fyll i Supabase-värdena:
 
 ```bash
 cp .env.example .env.local
@@ -68,7 +71,6 @@ cp .env.example .env.local
 ```dotenv
 VITE_SUPABASE_URL=https://xxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOi...
-# Spotify behövs först i Fas 3 – kan lämnas tomt nu.
 ```
 
 ### 4. Starta
@@ -77,45 +79,52 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOi...
 npm run dev
 ```
 
-Öppna **http://127.0.0.1:5173** (eller `localhost:5173`).
+Öppna **http://127.0.0.1:5173**. Testa realtiden genom att öppna två fönster
+(ett inkognito) och gå med i samma rum.
 
 > Saknas Supabase-nycklarna visar appen en tydlig setup-ruta i stället för att krascha.
-
-### 5. Testa realtiden 🎉
-
-1. Öppna appen i **två fönster** (t.ex. ett vanligt + ett inkognito, eller två datorer).
-2. Skapa ett rum i det ena → du får en **rumskod**.
-3. Gå med med samma kod i det andra fönstret.
-4. Spelarlistan i lobbyn ska uppdateras **direkt** i båda fönstren. Lämnar någon rummet
-   försvinner de live.
-
----
-
-## Spotify (förbereds i Fas 3)
-
-1. Registrera en app på [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard) → **Create app**.
-2. Under **Redirect URIs**, lägg till BÅDA (appen härleder automatiskt rätt en utifrån nuvarande adress; Spotify kräver `127.0.0.1`, **inte** `localhost`):
-   - `http://127.0.0.1:5173/callback` (lokalt)
-   - `https://hitster-teal.vercel.app/callback` (produktion)
-3. Bocka i **Web API** + **Web Playback SDK** under *APIs used*.
-4. Kopiera **Client ID** → `VITE_SPOTIFY_CLIENT_ID` i `.env.local` (lokalt) och som env-var i Vercel (produktion).
-5. Starta om `npm run dev`.
-
-Scopes som används: `streaming`, `user-read-email`, `user-read-private`, `user-modify-playback-state`, `user-read-playback-state`, `playlist-read-private`, `playlist-read-collaborative`.
-
-> ⚠️ Spotifys **egna kurerade listor** (topplistor, Discover Weekly, "This is…") går inte att läsa via en app i utvecklingsläge – använd en **vanlig egen/delad** spellista.
-
-> ⚠️ Web Playback SDK kräver **Spotify Premium** och en **desktop-webbläsare** (Chrome/Edge/Firefox/Safari). På mobil syns spelplan/brickor, men musik *i appen* kräver dator.
 
 ---
 
 ## Deploy till Vercel
 
-1. Pusha repot till GitHub och importera det i Vercel (framework upptäcks som **Vite**).
-2. Lägg in miljövariablerna (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, m.fl.) under
+1. Pusha repot till GitHub och importera det i Vercel (framework: **Vite**).
+2. Lägg in `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` under
    **Settings → Environment Variables**.
-3. `vercel.json` sköter SPA-routing så att djuplänkar (t.ex. `/rum/ABCD1`) fungerar.
-4. Uppdatera **Supabase Site URL** och **Spotify Redirect URI** till din Vercel-domän.
+3. `vercel.json` sköter SPA-routing för djuplänkar (t.ex. `/rum/ABCD1`) och
+   sätter säkerhetsheaders (CSP m.m. – se nedan).
+4. Uppdatera **Supabase Site URL / Redirect URLs** till din Vercel-domän.
+
+---
+
+## Säkerhetsmodell
+
+Härdad i migration `0023_security_hardening.sql` (2026-07-16):
+
+- **RLS på alla tabeller.** Bara ett rums medlemmar kan läsa dess data; svar är
+  dolda för andra tills rundan avslöjats; statistik ser bara ägaren.
+- **All skrivning via RPC:er.** Klienten har inga direkta INSERT/UPDATE/DELETE-
+  rättigheter, med ETT undantag: värden får uppdatera exakt tre regel-kolumner
+  på sitt eget rum (`erase_rule_enabled`, `team_mode`, `swedish_mode`) via
+  kolumnbegränsad GRANT. Allt annat (inkl. vinnare/status) sätts av servern.
+- **Indata-gränser server-side:** visningsnamn ≤ 40, rumsnamn ≤ 60, lagnamn ≤ 40,
+  svar ≤ 300 tecken; lagfärg måste vara hex; ljud-URL måste vara `https://` och
+  låt-metadata saneras till kända fält. Tak: 30 spelare/rum, 20 lag/rum,
+  20 nya rum per värd och timme.
+- **Kryptografiska rumskoder** (`gen_random_bytes`, 31⁵ ≈ 28,6 M kombinationer).
+- **Funktionsrättigheter:** PUBLIC/anon-execute är återkallat på alla RPC:er
+  (bara `authenticated`). OBS för nya migrationer: default privileges är ändrade
+  → varje ny funktion måste själv `grant execute ... to authenticated`.
+- **HTTP-headers via `vercel.json`:** Content-Security-Policy (ingen extern JS,
+  connect bara till Supabase/iTunes), `frame-ancestors 'none'`, nosniff, HSTS.
+- **Städning:** pg_cron raderar rum äldre än 30 dagar varje natt (cascade tar
+  spelare/rundor/brickor/svar/lag; statistiken behålls).
+
+**Medveten begränsning (hederssystem):** facit för pågående runda
+(`rounds.current_track_meta`) är tekniskt läsbart för rummets medlemmar via
+API:et medan låten spelar, och preview-URL:en avslöjar ändå låten för den som
+slår upp den. Att helt stoppa en tekniskt kunnig fuskare kräver server-side-ljud
+– medvetet utanför spelets ambition.
 
 ---
 
@@ -124,28 +133,24 @@ Scopes som används: `streaming`, `user-read-email`, `user-read-private`, `user-
 ```
 hitster-bingo-online/
 ├─ src/
-│  ├─ lib/            supabase-klient, spelkonstanter (kategorier/färger), rum-RPC:er
+│  ├─ lib/            supabase-klient, spelkonstanter, RPC-wrappers, iTunes-sök
 │  ├─ context/        AuthContext – anonym gäst + valfri kontoinloggning
-│  ├─ hooks/          useRoom – rum + spelare i realtid
-│  ├─ components/     AppShell, DiscoBall, PlayerList, AccountBadge, ui/*
-│  ├─ pages/          LandingPage (skapa/gå med), LobbyPage (lobby)
-│  ├─ index.css       designsystem: neonpalett, typsnitt, animationer
+│  ├─ hooks/          useRoom/useGame (realtid), useSyncedAudio (synkat ljud)
+│  ├─ components/     spelvyer (lobby/spel), bricka, discokula, svarspanel, ui/*
+│  ├─ pages/          LandingPage, RoomPage, StatsPage
+│  ├─ data/           låtpotter (lazy-laddade chunkar): tracks.js, swedishTracks.js
 │  └─ main.jsx        router + providers
-├─ supabase/migrations/   SQL-migrationer (en per fas)
+├─ supabase/migrations/   SQL-migrationer i nummerordning (körs med npm run migrate)
+├─ scripts/migrate.mjs    kör en migrationsfil i en transaktion mot SUPABASE_DB_URL
 ├─ .env.example
-└─ vercel.json
+└─ vercel.json            SPA-routing + säkerhetsheaders (CSP m.m.)
 ```
 
 ---
 
-## Design & viktiga principer
+## Design
 
-- **Estetik:** 80-tals synthwave/nattklubb – midnattssvart bas, neon per kategori
-  (lila = årtiondet, gul = artisten, rosa = exakt årtal, blå = årtal ±3 år, grön = låttiteln).
-  Typsnitt: Monoton (logga), Righteous (rubriker), Space Grotesk (brödtext).
-- **Ingen ljudöverföring via WebRTC – någonsin.** Musik spelas alltid lokalt via varje
-  spelares egen Spotify. WebRTC (Fas 5) bär bara video/röst.
-- **Inloggning:** man spelar direkt som **gäst**. Vill man spara statistik kan man logga in
-  med e-post – kontot länkas till samma id så statistiken följer med från gäst → konto.
-- **Säkerhet:** Row Level Security är på. Bara ett rums medlemmar kan läsa/skriva dess data;
-  att skapa/gå med sker via `SECURITY DEFINER`-funktioner i databasen.
+80-tals synthwave/nattklubb – midnattssvart bas med neon per kategori
+(lila = årtiondet, gul = artisten, rosa = exakt årtal, blå = årtal ±3 år,
+grön = låttiteln). Typsnitt: Monoton (logga), Righteous (rubriker),
+Space Grotesk (brödtext).
