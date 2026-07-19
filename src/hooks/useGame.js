@@ -13,6 +13,7 @@ export function useGame(roomId) {
   const [round, setRound] = useState(null)
   const [cards, setCards] = useState([])
   const [answers, setAnswers] = useState([])
+  const [facit, setFacit] = useState(null)
   const [loading, setLoading] = useState(true)
 
   const fetchRound = useCallback(async (rid) => {
@@ -22,7 +23,22 @@ export function useGame(roomId) {
       .eq('room_id', rid)
       .order('round_number', { ascending: false })
       .limit(1)
-    setRound(data?.[0] ?? null)
+    const r = data?.[0] ?? null
+    setRound(r)
+
+    // Facit ligger i round_tracks, som RLS öppnar först när rundan avslöjats –
+    // före dess finns det ingenting att läsa (inte ens via devtools).
+    if (r?.answers_revealed) {
+      const { data: rt } = await supabase
+        .from('round_tracks')
+        .select('meta')
+        .eq('round_id', r.id)
+        .maybeSingle()
+      // Fallback till gamla kolumnen för rundor startade före server-side-bytet.
+      setFacit(rt?.meta ?? r.current_track_meta ?? null)
+    } else {
+      setFacit(null)
+    }
   }, [])
 
   const fetchCards = useCallback(async (rid) => {
@@ -115,5 +131,5 @@ export function useGame(roomId) {
     )
   }, [])
 
-  return { round, cards, answers, loading, refetch, optimisticCell, optimisticOverride }
+  return { round, cards, answers, facit, loading, refetch, optimisticCell, optimisticOverride }
 }

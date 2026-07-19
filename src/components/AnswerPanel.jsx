@@ -9,7 +9,8 @@ import TrackReveal from './TrackReveal.jsx'
  * (round.answers_revealed) visas allas svar + facit samtidigt.
  *
  * Props:
- *   round    – senaste rundan (answers_revealed, locked_count, facit-meta)
+ *   round    – senaste rundan (answers_revealed, locked_count)
+ *   facitMeta – facit {name, artist, year} (från round_tracks, null före reveal)
  *   answers  – round_answers för rummet (RLS: bara mitt eget tills avslöjat)
  *   players  – rummets spelare
  *   teams    – rummets lag (lagläge)
@@ -23,6 +24,7 @@ import TrackReveal from './TrackReveal.jsx'
  */
 export default function AnswerPanel({
   round,
+  facitMeta,
   answers,
   players,
   teams = [],
@@ -151,7 +153,8 @@ export default function AnswerPanel({
         </p>
 
         <div className="flex justify-center pt-1">
-          <TrackReveal meta={round.current_track_meta} category={round.category} />
+          {/* Facit hämtas från round_tracks (RLS öppnar den först vid reveal). */}
+          <TrackReveal meta={facitMeta} category={round.category} />
         </div>
       </section>
     )

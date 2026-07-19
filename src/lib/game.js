@@ -15,13 +15,27 @@ export async function spinWheel(roomId) {
   return data
 }
 
-// Värden startar en (slumpad) låt för senaste rundan → synkad uppspelning + 25s-timer hos alla.
-export async function startTrack(roomId, trackUri, trackMeta) {
-  const { data, error } = await supabase.rpc('start_track', {
-    p_room_id: roomId,
-    p_track_uri: trackUri,
-    p_track_meta: trackMeta,
-  })
+// Värden startar en slumpad låt. HELT server-side: servern väljer låt ur
+// potten, slår upp preview-klippet hos iTunes och sparar facit bakom
+// reveal-spärren – ingen klient (inte ens värdens) ser svaret i förväg.
+// pg_net är asynkront → steg 1 begär, steg 2 pollas tills rundan fått låten.
+export async function startRandomTrack(roomId) {
+  const { error } = await supabase.rpc('start_random_track', { p_room_id: roomId })
+  if (error) throw error
+  for (let i = 0; i < 20; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 400))
+    const { data, error: pollError } = await supabase.rpc('poll_track_start', {
+      p_room_id: roomId,
+    })
+    if (pollError) throw pollError
+    if (data?.id) return data // klart – alla klienter startar via realtiden
+  }
+  throw new Error('Låtstarten tog för lång tid – försök igen.')
+}
+
+// Antal låtar per pott (lobbyns visning). Själva potten är oläsbar för klienter.
+export async function trackPoolCounts() {
+  const { data, error } = await supabase.rpc('track_pool_counts')
   if (error) throw error
   return data
 }

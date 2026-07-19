@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase.js'
 import { leaveRoom } from '../../lib/rooms.js'
-import { startGame } from '../../lib/game.js'
+import { startGame, trackPoolCounts } from '../../lib/game.js'
 import PlayerList from '../PlayerList.jsx'
 import TeamSetup from '../TeamSetup.jsx'
 import NeonButton from '../ui/NeonButton.jsx'
@@ -13,17 +13,15 @@ export default function LobbyView({ room, players, teams, isHost, currentUserId 
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
-  // Antal låtar per pott – potterna lazy-laddas (samma chunkar som spelet
-  // använder) så de inte tynger huvudbundeln.
+  // Antal låtar per pott – potten bor i databasen (oläsbar för klienter),
+  // bara räknarna exponeras via en RPC.
   const [potCounts, setPotCounts] = useState(null)
   const roomLink = `${window.location.origin}/rum/${room.code}`
 
   useEffect(() => {
     let active = true
-    Promise.all([import('../../data/tracks.js'), import('../../data/swedishTracks.js')])
-      .then(([all, sv]) => {
-        if (active) setPotCounts({ all: all.TRACKS.length, sv: sv.SWEDISH_TRACKS.length })
-      })
+    trackPoolCounts()
+      .then((c) => active && setPotCounts(c))
       .catch(() => {})
     return () => {
       active = false

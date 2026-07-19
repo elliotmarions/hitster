@@ -51,17 +51,19 @@ export default function DiscoWheel({ round, size = 300 }) {
 
   return (
     <div
-      className="relative"
+      className="relative mx-auto w-full"
       style={{
-        width: size,
-        height: size,
+        // Skalar med föräldern på smala skärmar men växer aldrig större än `size`,
+        // så hjulet + timern får plats sida vid sida på desktop och krymper på mobil.
+        maxWidth: size,
+        aspectRatio: '1 / 1',
         filter: landedCat
           ? `drop-shadow(0 0 26px ${landedCat.hex}) drop-shadow(0 0 8px ${landedCat.hex})`
           : 'drop-shadow(0 0 12px rgba(177,77,255,0.4))',
         transition: 'filter 0.4s ease',
       }}
     >
-      <svg viewBox="0 0 240 240" width={size} height={size}>
+      <svg viewBox="0 0 240 240" width="100%" height="100%" className="block">
         {/* fasta kant-lampor */}
         {BULBS.map(([x, y], i) => (
           <circle

@@ -5,7 +5,7 @@ import { useGame } from '../../hooks/useGame.js'
 import {
   ensureCard,
   spinWheel,
-  startTrack,
+  startRandomTrack,
   markCross,
   unmarkCross,
   eraseCross,
@@ -16,7 +16,6 @@ import {
 } from '../../lib/game.js'
 import { leaveRoom } from '../../lib/rooms.js'
 import { useSyncedAudio } from '../../hooks/useSyncedAudio.js'
-import { searchPreviewUrl } from '../../lib/previewApi.js'
 import DiscoWheel from '../DiscoWheel.jsx'
 import CategoryBanner from '../CategoryBanner.jsx'
 import RoundTimer from '../RoundTimer.jsx'
@@ -30,7 +29,8 @@ import NeonButton from '../ui/NeonButton.jsx'
 
 export default function GameView({ room, players, teams = [], me, isHost }) {
   const navigate = useNavigate()
-  const { round, cards, answers, refetch, optimisticCell, optimisticOverride } = useGame(room.id)
+  const { round, cards, answers, facit, refetch, optimisticCell, optimisticOverride } =
+    useGame(room.id)
   // Synkad uppspelning av preview-klippet (samma ljud-URL hos alla vid start_at).
   const audio = useSyncedAudio(round)
 
@@ -41,7 +41,6 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   const [markedRoundId, setMarkedRoundId] = useState(null) // runda där jag redan kryssat (optimistiskt)
   const ensured = useRef(false)
   const spunRef = useRef(0)
-  const recentRef = useRef([]) // nyligen spelade pott-index (undvik direkta repriser)
 
   // Säkerställ att jag har en bricka (täcker sena joins).
   useEffect(() => {
@@ -205,38 +204,9 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   }
 
   const onSpin = () => run(() => spinWheel(room.id))
-  // Slumpar en låt ur potten, slår upp ett preview-klipp (iTunes) och startar det
-  // synkat hos alla. Ingen inloggning krävs – klippet är en publik ljud-URL.
-  async function pickAndStart() {
-    // Svenskt läge → svensk pott, annars den vanliga. Potterna lazy-laddas
-    // (egen chunk) så de tusentals låtarna inte tynger huvudbundeln – bara
-    // värden behöver dem, och först här.
-    const pot = room.swedish_mode
-      ? (await import('../../data/swedishTracks.js')).SWEDISH_TRACKS
-      : (await import('../../data/tracks.js')).TRACKS
-    for (let attempt = 0; attempt < 15; attempt++) {
-      const idx = Math.floor(Math.random() * pot.length)
-      if (recentRef.current.includes(idx)) continue
-      const t = pot[idx]
-      let previewUrl = null
-      try {
-        previewUrl = await searchPreviewUrl(t.title, t.artist)
-      } catch {
-        continue // sökfel – prova en annan låt
-      }
-      if (previewUrl) {
-        recentRef.current = [idx, ...recentRef.current].slice(0, 50)
-        await startTrack(room.id, previewUrl, {
-          name: t.title,
-          artist: t.artist,
-          year: String(t.year),
-        })
-        return
-      }
-    }
-    throw new Error('Hittade ingen spelbar låt just nu – försök igen.')
-  }
-  const onStartTrack = () => run(pickAndStart)
+  // Servern väljer låt (rätt pott via rooms.swedish_mode), slår upp klippet
+  // och startar det synkat hos alla – facit stannar server-side tills reveal.
+  const onStartTrack = () => run(() => startRandomTrack(room.id))
   const onMark = (i) =>
     myCard &&
     optimistic(
@@ -284,10 +254,12 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
     <div className="space-y-6">
       {beforeStart && <Countdown secondsToStart={(startMs - now) / 1000} />}
 
-      <div className="flex items-center justify-between gap-3">
-        <div>
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <div className="min-w-0">
           <p className="label">Spelar nu</p>
-          <h1 className="font-display text-2xl text-cream">{room.name || 'Namnlöst rum'}</h1>
+          <h1 className="truncate font-display text-xl text-cream sm:text-2xl">
+            {room.name || 'Namnlöst rum'}
+          </h1>
         </div>
         <div className="flex items-center gap-2">
           <span className="chip" style={{ '--neon': '#22e6e6' }}>
@@ -344,15 +316,18 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
       )}
 
       {/* Scen: discokula + kategori + timer */}
-      <section className="panel relative p-6">
+      <section className="panel relative p-4 sm:p-6">
         {/* Kompakt volymkontroll i hörnet. */}
         <div className="absolute right-3 top-3 z-20">
           <VolumeControl volume={audio.volume} setVolume={audio.setVolume} />
         </div>
         <div className="flex flex-col items-center gap-4">
           <CategoryBanner round={round} spinning={wheelSpinning} />
-          <div className="flex items-center gap-5">
-            <DiscoWheel round={round} size={260} />
+          {/* På mobil staplas hjul + timer (ryms inte sida vid sida); på sm+ ligger de bredvid varandra. */}
+          <div className="flex w-full flex-col items-center gap-4 sm:flex-row sm:justify-center sm:gap-5">
+            <div className="w-full max-w-[230px] sm:max-w-[260px]">
+              <DiscoWheel round={round} size={260} />
+            </div>
             {timerRunning && (
               <RoundTimer remaining={remaining} total={TIMER_SECONDS} color={timerColor} />
             )}
@@ -407,6 +382,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
       {(clipPlaying || revealed) && (
         <AnswerPanel
           round={round}
+          facitMeta={facit}
           answers={answers}
           players={players}
           teams={teams}
