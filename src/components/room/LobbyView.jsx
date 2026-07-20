@@ -6,6 +6,7 @@ import { startGame, trackPoolCounts } from '../../lib/game.js'
 import PlayerList from '../PlayerList.jsx'
 import TeamSetup from '../TeamSetup.jsx'
 import NeonButton from '../ui/NeonButton.jsx'
+import ConfirmDialog from '../ui/ConfirmDialog.jsx'
 import CopyButton from '../ui/CopyButton.jsx'
 import SwedishFlag from '../ui/SwedishFlag.jsx'
 
@@ -13,6 +14,8 @@ export default function LobbyView({ room, players, teams, isHost, currentUserId 
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const [confirmLeave, setConfirmLeave] = useState(false)
+  const [leaving, setLeaving] = useState(false)
   // Antal låtar per pott – potten bor i databasen (oläsbar för klienter),
   // bara räknarna exponeras via en RPC.
   const [potCounts, setPotCounts] = useState(null)
@@ -41,6 +44,7 @@ export default function LobbyView({ room, players, teams, isHost, currentUserId 
   }
 
   async function handleLeave() {
+    setLeaving(true)
     try {
       await leaveRoom(room.id)
     } catch {
@@ -64,6 +68,21 @@ export default function LobbyView({ room, players, teams, isHost, currentUserId 
 
   return (
     <div className="space-y-6">
+      <ConfirmDialog
+        open={confirmLeave}
+        busy={leaving}
+        title={isHost ? 'Stäng rummet?' : 'Lämna rummet?'}
+        message={
+          isHost
+            ? 'Du är värd – lämnar du stängs rummet för alla som väntar. Det går inte att ångra.'
+            : 'Du tas bort ur rummet. Du kan gå med igen med rumskoden.'
+        }
+        confirmLabel={isHost ? 'Stäng för alla' : 'Lämna'}
+        cancelLabel="Stanna kvar"
+        onConfirm={handleLeave}
+        onCancel={() => setConfirmLeave(false)}
+      />
+
       <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
       <section className="panel p-6 sm:p-8">
         <div className="flex items-start justify-between gap-4">
@@ -177,8 +196,8 @@ export default function LobbyView({ room, players, teams, isHost, currentUserId 
           ) : (
             <span className="text-sm text-muted">Väntar på att värden startar spelet…</span>
           )}
-          <NeonButton variant="ghost" onClick={handleLeave}>
-            Lämna rummet
+          <NeonButton variant="ghost" onClick={() => setConfirmLeave(true)}>
+            🚪 Lämna rummet
           </NeonButton>
         </div>
       </section>

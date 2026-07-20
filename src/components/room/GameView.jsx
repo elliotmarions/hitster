@@ -26,6 +26,7 @@ import VolumeControl from '../VolumeControl.jsx'
 import Countdown from '../Countdown.jsx'
 import AnswerPanel from '../AnswerPanel.jsx'
 import NeonButton from '../ui/NeonButton.jsx'
+import ConfirmDialog from '../ui/ConfirmDialog.jsx'
 
 export default function GameView({ room, players, teams = [], me, isHost }) {
   const navigate = useNavigate()
@@ -39,6 +40,8 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [markedRoundId, setMarkedRoundId] = useState(null) // runda där jag redan kryssat (optimistiskt)
+  const [confirmLeave, setConfirmLeave] = useState(false)
+  const [leaving, setLeaving] = useState(false)
   const ensured = useRef(false)
   const spunRef = useRef(0)
 
@@ -240,6 +243,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   const onPlayAgain = () => run(() => resetGame(room.id, false))
   const onBackToLobby = () => run(() => resetGame(room.id, true))
   async function handleLeave() {
+    setLeaving(true)
     try {
       await leaveRoom(room.id)
     } catch {
@@ -254,6 +258,21 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
     <div className="space-y-6">
       {beforeStart && <Countdown secondsToStart={(startMs - now) / 1000} />}
 
+      <ConfirmDialog
+        open={confirmLeave}
+        busy={leaving}
+        title={isHost ? 'Avsluta matchen?' : 'Lämna matchen?'}
+        message={
+          isHost
+            ? 'Du är värd – lämnar du avslutas spelet för alla i rummet. Det går inte att ångra.'
+            : 'Matchen fortsätter utan dig och din bricka försvinner.'
+        }
+        confirmLabel={isHost ? 'Avsluta för alla' : 'Lämna'}
+        cancelLabel="Stanna kvar"
+        onConfirm={handleLeave}
+        onCancel={() => setConfirmLeave(false)}
+      />
+
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <div className="min-w-0">
           <p className="label">Spelar nu</p>
@@ -265,8 +284,8 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
           <span className="chip" style={{ '--neon': '#22e6e6' }}>
             {teamMode ? `${teams.length} lag · ${players.length} spelare` : `${players.length} spelare`}
           </span>
-          <NeonButton variant="ghost" onClick={handleLeave}>
-            Lämna
+          <NeonButton variant="ghost" onClick={() => setConfirmLeave(true)}>
+            🚪 Lämna
           </NeonButton>
         </div>
       </div>
