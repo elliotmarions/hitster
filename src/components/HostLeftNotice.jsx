@@ -1,11 +1,15 @@
+import { createPortal } from 'react-dom'
 import NeonButton from './ui/NeonButton.jsx'
 
 /**
  * Liten overlay-ruta som visas för kvarvarande spelare när VÄRDEN lämnat
  * rummet och spelet därmed avslutats (rooms.ended_reason = 'host_left').
+ *
+ * Portal till <body> av samma skäl som Countdown: förälderns `space-y-6` ger
+ * annars overlayen en bottenmarginal som kortar av den mot skärmens nederkant.
  */
 export default function HostLeftNotice({ onBack }) {
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(10,7,19,0.72)', backdropFilter: 'blur(2px)' }}
@@ -27,6 +31,7 @@ export default function HostLeftNotice({ onBack }) {
           </NeonButton>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
