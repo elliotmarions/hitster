@@ -148,6 +148,26 @@
       0 0 60px color-mix(in srgb, var(--color-disco) 80%, transparent);
   }
 
+  /* Hero-logotypen på startsidan.
+     "Låtsnurran" är ett enda obrytbart ord, så font-storleken måste ta hänsyn
+     till sidopaddingen i <main> (1rem per sida). Ren `13vw` räknade bara på
+     viewporten och gjorde ordet bredare än sin behållare – överskottet hamnade
+     till höger och kapades av `overflow-x: hidden`, så sista n:et halverades.
+     Ordets bredd är ca 7.8 × font-size (uppmätt); divisorn 8 ger lite luft. */
+  .wordmark-hero {
+    font-size: min(13vw, calc((100vw - 3rem) / 8));
+  }
+  @media (min-width: 640px) {
+    .wordmark-hero {
+      font-size: 3.75rem;
+    }
+  }
+  @media (min-width: 768px) {
+    .wordmark-hero {
+      font-size: 4.5rem;
+    }
+  }
+
   /* --- Paneler: upphöjda mörka ytor med tunn ljuskant --- */
   .panel {
     background:

@@ -70,7 +70,7 @@ export default function LandingPage() {
       {/* Hero – neon-marquee */}
       <section className="pt-4 text-center">
         <DiscoBall size={104} className="anim-float mx-auto" />
-        <h1 className="wordmark mt-2 text-[13vw] leading-none sm:text-6xl md:text-7xl">
+        <h1 className="wordmark wordmark-hero mt-2 leading-none">
           Låtsnurran
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-muted">
