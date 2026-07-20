@@ -6,14 +6,22 @@ import { createPortal } from 'react-dom'
  * Renderas via portal till <body>. Annars ärver overlayen förälderns
  * layoutmarginal – GameView ligger i en `space-y-6`, som ger varje barn utom
  * det sista `margin-bottom: 1.5rem`. På ett fixed-element med både top:0 och
- * bottom:0 dras den marginalen av från höjden, så nedräkningen slutade 24px
- * ovanför skärmens nederkant och lämnade en omörklagd remsa där.
+ * bottom:0 dras den marginalen av från höjden.
+ *
+ * Höjden sätts explicit i dvh i stället för att låta `inset-0` räkna ut den ur
+ * top+bottom, och `backdrop-blur` är medvetet borttaget: det tvingade fram ett
+ * eget kompositeringslager som Chrome klippte mot en mindre yta än elementet,
+ * så en remsa längst ned blev omålad trots att layouten mätte rätt. Mörkret är
+ * höjt från /40 till /70 som kompensation för den borttagna oskärpan.
  */
 export default function Countdown({ secondsToStart }) {
   const n = Math.ceil(secondsToStart)
   const label = n <= 0 ? '🎵' : n > 3 ? '3' : String(n)
   return createPortal(
-    <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-midnight/40 backdrop-blur-[2px]">
+    <div
+      className="pointer-events-none fixed left-0 top-0 z-40 m-0 flex w-full items-center justify-center bg-midnight/70"
+      style={{ height: '100dvh' }}
+    >
       <div className="flex flex-col items-center gap-3">
         <p className="label text-cream">Gör dig redo</p>
         <div

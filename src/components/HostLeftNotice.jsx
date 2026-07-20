@@ -11,8 +11,8 @@ import NeonButton from './ui/NeonButton.jsx'
 export default function HostLeftNotice({ onBack }) {
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(10,7,19,0.72)', backdropFilter: 'blur(2px)' }}
+      className="fixed left-0 top-0 z-50 m-0 flex w-full items-center justify-center p-4"
+      style={{ height: '100dvh', background: 'rgba(10,7,19,0.86)' }}
       role="dialog"
       aria-modal="true"
     >
