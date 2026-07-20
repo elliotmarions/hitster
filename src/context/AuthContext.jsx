@@ -12,6 +12,37 @@ const AuthContext = createContext(null)
 
 const NAME_KEY = 'hbo:display-name'
 
+/** Kortaste lösenord vi accepterar i formulären. Supabase har sitt eget krav
+ *  (minst 6 som standard) – vi är medvetet lite strängare. */
+export const MIN_PASSWORD_LENGTH = 8
+
+/**
+ * Supabase svarar på engelska. Vi översätter de fel användaren realistiskt
+ * kan råka ut för; okända fel går fram som de är hellre än att döljas.
+ */
+function translateAuthError(error) {
+  const msg = error?.message || ''
+  if (/invalid login credentials/i.test(msg))
+    return new Error('Fel e-post eller lösenord.')
+  if (/email not confirmed/i.test(msg))
+    return new Error('Du behöver bekräfta din e-post först – kolla inkorgen.')
+  if (/already registered|already been registered|user already/i.test(msg))
+    return new Error('Det finns redan ett konto med den e-posten. Logga in i stället.')
+  if (/password should be at least (\d+)/i.test(msg))
+    return new Error(
+      `Lösenordet måste vara minst ${msg.match(/at least (\d+)/i)[1]} tecken.`,
+    )
+  if (/weak password|password is too weak/i.test(msg))
+    return new Error('Lösenordet är för svagt – välj något längre och mindre gissningsbart.')
+  if (/unable to validate email|invalid format/i.test(msg))
+    return new Error('E-postadressen ser inte giltig ut.')
+  if (/rate limit|too many requests|over_email_send_rate/i.test(msg))
+    return new Error('För många försök. Vänta en stund och prova igen.')
+  if (/same as the old password|should be different/i.test(msg))
+    return new Error('Det nya lösenordet måste skilja sig från det gamla.')
+  return error instanceof Error ? error : new Error(msg || 'Något gick fel.')
+}
+
 /**
  * Hela app-trädet får tillgång till inloggningsläget.
  *
@@ -50,6 +81,14 @@ export function AuthProvider({ children }) {
         return
       }
       if (bootstrapped.current) return
+      // Kommer vi tillbaka från en e-postlänk (återställning, bekräftelse) ligger
+      // tokens i URL-hashen och Supabase håller på att växla in dem. Att logga in
+      // anonymt här skulle skriva över den sessionen – då kunde man aldrig sätta
+      // ett nytt lösenord. Låt bootstrapen vila; onAuthStateChange tar över.
+      if (/access_token=|type=recovery|error_code=/.test(window.location.hash)) {
+        setLoading(false)
+        return
+      }
       bootstrapped.current = true
       // Ingen session -> logga in anonymt så man kan skapa/gå med i rum direkt.
       const { data, error } = await supabase.auth.signInAnonymously()
@@ -116,6 +155,70 @@ export function AuthProvider({ children }) {
   }, [])
 
   /**
+   * Skapar ett konto med e-post + lösenord.
+   *
+   * Är man gäst uppgraderas det anonyma kontot PÅ PLATS (samma user-id), så
+   * rum, brickor och statistik följer med – allt i databasen nycklas på
+   * auth.uid(). Vi skapar alltså aldrig ett nytt id för en gäst.
+   *
+   * Returnerar { needsConfirmation } – är den true måste användaren klicka i
+   * mejlet innan kontot går att logga in på från en annan enhet.
+   */
+  const signUpWithPassword = useCallback(async (email, password) => {
+    if (!isSupabaseConfigured) throw new Error('Supabase är inte konfigurerat.')
+    const emailRedirectTo = window.location.origin
+    const {
+      data: { user: current },
+    } = await supabase.auth.getUser()
+
+    if (current?.is_anonymous) {
+      const { data, error } = await supabase.auth.updateUser(
+        { email, password },
+        { emailRedirectTo },
+      )
+      if (error) throw translateAuthError(error)
+      if (data?.user) setUser(data.user)
+      return { needsConfirmation: !data?.user?.email_confirmed_at, upgraded: true }
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo },
+    })
+    if (error) throw translateAuthError(error)
+    // Utan session tillbaka väntar Supabase på att e-posten bekräftas.
+    return { needsConfirmation: !data?.session, upgraded: false }
+  }, [])
+
+  /**
+   * Loggar in på ett befintligt konto. OBS: det byter user-id från gästens,
+   * så eventuell gäststatistik i den här webbläsaren lämnas kvar på gäst-id:t.
+   */
+  const signInWithPassword = useCallback(async (email, password) => {
+    if (!isSupabaseConfigured) throw new Error('Supabase är inte konfigurerat.')
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) throw translateAuthError(error)
+  }, [])
+
+  /** Skickar en återställningslänk som landar på /nytt-losenord. */
+  const requestPasswordReset = useCallback(async (email) => {
+    if (!isSupabaseConfigured) throw new Error('Supabase är inte konfigurerat.')
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/nytt-losenord`,
+    })
+    if (error) throw translateAuthError(error)
+  }, [])
+
+  /** Sätter ett nytt lösenord på den session återställningslänken gav oss. */
+  const updatePassword = useCallback(async (password) => {
+    if (!isSupabaseConfigured) throw new Error('Supabase är inte konfigurerat.')
+    const { data, error } = await supabase.auth.updateUser({ password })
+    if (error) throw translateAuthError(error)
+    if (data?.user) setUser(data.user)
+  }, [])
+
+  /**
    * Sparar ett visningsnamn på kontot (Supabase user_metadata.display_name).
    * Att uppdatera metadata kräver INGEN e-postbekräftelse – det gäller direkt.
    * Håller även det lokala "preferredName" i synk så landningssidan matchar.
@@ -154,6 +257,10 @@ export function AuthProvider({ children }) {
     preferredName,
     setPreferredName,
     signInWithEmail,
+    signUpWithPassword,
+    signInWithPassword,
+    requestPasswordReset,
+    updatePassword,
     updateAccountName,
     signOut,
   }

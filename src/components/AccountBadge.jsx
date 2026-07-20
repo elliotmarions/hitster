@@ -5,9 +5,11 @@ import NeonButton from './ui/NeonButton.jsx'
 import TextField from './ui/TextField.jsx'
 
 /**
- * Litet konto-märke uppe till höger. Gäster kan spela vidare men erbjuds att
- * logga in med e-post för att spara statistik. Inloggade ser sitt valda namn
- * (e-posten göms i menyn) och kan byta namn + logga ut.
+ * Konto-märke uppe till höger.
+ *
+ * Gäster får en tydlig "Logga in"-knapp som leder till /konto – själva
+ * inloggningen bor där, inte i en gömd meny. Inloggade ser sitt namn och kan
+ * fälla ut en meny för statistik, namnbyte och utloggning.
  */
 export default function AccountBadge() {
   const {
@@ -17,16 +19,10 @@ export default function AccountBadge() {
     accountEmail,
     accountName,
     preferredName,
-    signInWithEmail,
     updateAccountName,
     signOut,
   } = useAuth()
   const [open, setOpen] = useState(false)
-  const [email, setEmail] = useState('')
-  const [sent, setSent] = useState(null) // null | 'upgrade' | 'existing'
-  const [err, setErr] = useState('')
-  const [busy, setBusy] = useState(false)
-  // Namn-redigering (inloggad)
   const [nameField, setNameField] = useState(() => accountName || preferredName || '')
   const [nameBusy, setNameBusy] = useState(false)
   const [nameErr, setNameErr] = useState('')
@@ -35,23 +31,22 @@ export default function AccountBadge() {
   if (!isConfigured) return null
   if (loading) return <span className="text-xs text-muted">…</span>
 
-  // Gäster ser en uppmaning ("Logga in"), inloggade ser sitt namn – aldrig e-posten.
-  const badgeLabel = isGuest ? 'Logga in' : accountName || preferredName || 'Konto'
-  const needsName = !isGuest && !accountName
-
-  async function submit(e) {
-    e.preventDefault()
-    setErr('')
-    setBusy(true)
-    try {
-      const res = await signInWithEmail(email.trim())
-      setSent(res.mode)
-    } catch (e2) {
-      setErr(e2.message || 'Något gick fel. Försök igen.')
-    } finally {
-      setBusy(false)
-    }
+  // Gäst: chipen är en ren uppmaning som leder till kontosidan.
+  if (isGuest) {
+    return (
+      <Link
+        to="/konto"
+        className="chip chip-cta cursor-pointer transition hover:brightness-125"
+        style={{ '--neon': '#22e6e6' }}
+      >
+        <span aria-hidden>👤</span>
+        <span>Logga in</span>
+      </Link>
+    )
   }
+
+  const badgeLabel = accountName || preferredName || 'Konto'
+  const needsName = !accountName
 
   async function saveName(e) {
     e.preventDefault()
@@ -72,15 +67,12 @@ export default function AccountBadge() {
     <div className="relative">
       <button
         type="button"
-        className={`chip cursor-pointer transition hover:brightness-125 ${
-          isGuest ? 'chip-cta' : ''
-        }`}
-        style={{ '--neon': isGuest ? '#22e6e6' : '#b6ff3c' }}
+        className="chip cursor-pointer transition hover:brightness-125"
+        style={{ '--neon': '#b6ff3c' }}
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
       >
-        {isGuest && <span aria-hidden>👤</span>}
         <span className="max-w-[9rem] truncate">{badgeLabel}</span>
         {needsName && <span title="Välj ett namn" aria-hidden>·</span>}
         <span aria-hidden>▾</span>
@@ -104,79 +96,47 @@ export default function AccountBadge() {
               📊 Min statistik
             </Link>
             <div className="mb-3 border-t border-white/10" />
-            {isGuest ? (
-              sent ? (
-                <div className="text-sm">
-                  <p className="neon-text font-display" style={{ '--neon': '#b6ff3c' }}>
-                    Kolla din mejl!
-                  </p>
-                  <p className="mt-2 text-muted">
-                    {sent === 'upgrade'
-                      ? 'Klicka på länken för att spara ditt konto – du behåller ditt namn och din statistik.'
-                      : 'Vi hittade ett konto med den e-posten. Klicka på länken i mejlet för att logga in.'}
-                  </p>
-                </div>
-              ) : (
-                <form onSubmit={submit} className="space-y-3">
-                  <p className="text-sm text-muted">
-                    Du spelar som gäst. Logga in för att spara statistik mellan spel.
-                  </p>
-                  <TextField
-                    type="email"
-                    required
-                    label="E-post"
-                    placeholder="din@mejl.se"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                  {err && <p className="text-xs text-magenta">{err}</p>}
-                  <NeonButton type="submit" disabled={busy} className="w-full">
-                    {busy ? 'Skickar…' : 'Skicka inloggningslänk'}
-                  </NeonButton>
-                </form>
-              )
-            ) : (
-              <div className="space-y-3 text-sm">
-                <form onSubmit={saveName} className="space-y-2">
-                  <TextField
-                    label="Ditt namn"
-                    placeholder="Välj ett namn"
-                    maxLength={24}
-                    value={nameField}
-                    onChange={(e) => {
-                      setNameField(e.target.value)
-                      setNameSaved(false)
-                    }}
-                  />
-                  {needsName && !nameSaved && (
-                    <p className="text-xs text-muted">
-                      Välj ett namn så syns det här uppe i stället för din e-post.
-                    </p>
-                  )}
-                  {nameErr && <p className="text-xs text-magenta">{nameErr}</p>}
-                  {nameSaved && <p className="text-xs text-lime">Sparat ✓</p>}
-                  <NeonButton
-                    type="submit"
-                    disabled={nameBusy || !nameField.trim()}
-                    className="w-full"
-                  >
-                    {nameBusy ? 'Sparar…' : 'Spara namn'}
-                  </NeonButton>
-                </form>
 
-                <p className="truncate text-xs text-muted">Inloggad som {accountEmail}</p>
-                <NeonButton
-                  variant="ghost"
-                  className="w-full"
-                  onClick={async () => {
-                    await signOut()
-                    setOpen(false)
+            <div className="space-y-3 text-sm">
+              <form onSubmit={saveName} className="space-y-2">
+                <TextField
+                  label="Ditt namn"
+                  placeholder="Välj ett namn"
+                  maxLength={24}
+                  value={nameField}
+                  onChange={(e) => {
+                    setNameField(e.target.value)
+                    setNameSaved(false)
                   }}
+                />
+                {needsName && !nameSaved && (
+                  <p className="text-xs text-muted">
+                    Välj ett namn så syns det här uppe i stället för din e-post.
+                  </p>
+                )}
+                {nameErr && <p className="text-xs text-magenta">{nameErr}</p>}
+                {nameSaved && <p className="text-xs text-lime">Sparat ✓</p>}
+                <NeonButton
+                  type="submit"
+                  disabled={nameBusy || !nameField.trim()}
+                  className="w-full"
                 >
-                  Logga ut
+                  {nameBusy ? 'Sparar…' : 'Spara namn'}
                 </NeonButton>
-              </div>
-            )}
+              </form>
+
+              <p className="truncate text-xs text-muted">Inloggad som {accountEmail}</p>
+              <NeonButton
+                variant="ghost"
+                className="w-full"
+                onClick={async () => {
+                  await signOut()
+                  setOpen(false)
+                }}
+              >
+                Logga ut
+              </NeonButton>
+            </div>
           </div>
         </>
       )}

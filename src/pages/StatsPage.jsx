@@ -83,9 +83,17 @@ export default function StatsPage() {
           </section>
 
           <p className="text-center text-xs text-muted">
-            {isGuest
-              ? 'Du spelar som gäst – statistiken sparas i den här webbläsaren. Logga in för att behålla den mellan enheter.'
-              : `Inloggad som ${accountEmail}. Statistiken följer ditt konto.`}
+            {isGuest ? (
+              <>
+                Du spelar som gäst – statistiken sparas i den här webbläsaren.{' '}
+                <Link to="/konto" className="text-cyan hover:underline">
+                  Skapa ett konto
+                </Link>{' '}
+                för att behålla den mellan enheter.
+              </>
+            ) : (
+              `Inloggad som ${accountEmail}. Statistiken följer ditt konto.`
+            )}
           </p>
         </>
       )}

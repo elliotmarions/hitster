@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import { createRoom, joinRoom } from '../lib/rooms.js'
 import DiscoBall from '../components/DiscoBall.jsx'
@@ -8,7 +8,7 @@ import NeonButton from '../components/ui/NeonButton.jsx'
 import TextField from '../components/ui/TextField.jsx'
 
 const POINTS = [
-  { c: '#22e6e6', t: 'Ingen inloggning', d: 'Korta musikklipp spelas synkat hos alla – direkt i webbläsaren, funkar på mobil.' },
+  { c: '#22e6e6', t: 'Synkad musik', d: 'Korta musikklipp spelas synkat hos alla – direkt i webbläsaren, funkar på mobil.' },
   { c: '#ff2e9a', t: 'Delad discokula', d: 'Värden snurrar, alla ser samma kategori samtidigt.' },
   { c: '#b6ff3c', t: 'Solo eller i lag', d: 'Spela var för sig eller dela in gänget i lag – brickor uppdateras live.' },
 ]
@@ -75,7 +75,11 @@ export default function LandingPage() {
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-muted">
           Spela discospelet tillsammans på distans. En delad discokula, bingobrickor i
-          realtid och synkade musikklipp – helt utan inloggning. Spela solo eller i lag.
+          realtid och synkade musikklipp. Ingen registrering krävs – men{' '}
+          <Link to="/konto" className="text-cyan hover:underline">
+            skapa ett konto
+          </Link>{' '}
+          om du vill spara din statistik.
         </p>
       </section>
 

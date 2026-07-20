@@ -57,10 +57,19 @@ npm install
    `SUPABASE_DB_URL` i `.env.local`, se `.env.example`).
 3. **Aktivera anonyma inloggningar** (krävs – appen loggar in gäster automatiskt):
    **Authentication → Sign In / Providers → Anonymous sign-ins → På**.
-4. *(Valfritt, för kontoinloggning/statistik)* Under **Authentication → URL Configuration**
-   lägg till `http://127.0.0.1:5173` (och din produktions-URL) som **Site URL** och
-   **Redirect URL**.
-5. Hämta **Project URL** och **anon/public key** under **Project Settings → API**.
+4. **URL Configuration** (krävs för konto, bekräftelsemejl och lösenordsåterställning).
+   Under **Authentication → URL Configuration**, sätt **Site URL** till din
+   produktions-URL och lägg till dessa som **Redirect URLs**:
+   - `http://127.0.0.1:5173` och `http://127.0.0.1:5173/nytt-losenord`
+   - `https://latsnurran.vercel.app` och `https://latsnurran.vercel.app/nytt-losenord`
+
+   Saknas `/nytt-losenord` i listan hamnar den som klickar på en
+   återställningslänk på startsidan i stället, och kan aldrig byta lösenord.
+5. **Bekräftelsemejl** – under **Authentication → Sign In / Providers → Email**
+   styr **Confirm email** om nyregistrerade måste klicka i mejlet innan de kan
+   logga in från en annan enhet. Appen klarar båda lägena: är det på visas
+   "Kolla din mejl", är det av loggas man in direkt.
+6. Hämta **Project URL** och **anon/public key** under **Project Settings → API**.
 
 ### 3. Miljövariabler
 
@@ -134,10 +143,10 @@ slår upp den. Att helt stoppa en tekniskt kunnig fuskare kräver server-side-lj
 hitster-bingo-online/
 ├─ src/
 │  ├─ lib/            supabase-klient, spelkonstanter, RPC-wrappers, iTunes-sök
-│  ├─ context/        AuthContext – anonym gäst + valfri kontoinloggning
+│  ├─ context/        AuthContext – anonym gäst + konto (lösenord/magisk länk)
 │  ├─ hooks/          useRoom/useGame (realtid), useSyncedAudio (synkat ljud)
 │  ├─ components/     spelvyer (lobby/spel), bricka, discokula, svarspanel, ui/*
-│  ├─ pages/          LandingPage, RoomPage, StatsPage
+│  ├─ pages/          LandingPage, RoomPage, StatsPage, AuthPage, ResetPasswordPage
 │  ├─ data/           låtpotter (lazy-laddade chunkar): tracks.js, swedishTracks.js
 │  └─ main.jsx        router + providers
 ├─ supabase/migrations/   SQL-migrationer i nummerordning (körs med npm run migrate)
