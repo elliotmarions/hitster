@@ -197,7 +197,7 @@ export default function LobbyView({ room, players, teams, isHost, currentUserId 
             <span className="text-sm text-muted">Väntar på att värden startar spelet…</span>
           )}
           <NeonButton variant="ghost" onClick={() => setConfirmLeave(true)}>
-            🚪 Lämna rummet
+            Lämna rummet
           </NeonButton>
         </div>
       </section>

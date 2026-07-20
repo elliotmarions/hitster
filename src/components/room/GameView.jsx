@@ -285,7 +285,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
             {teamMode ? `${teams.length} lag · ${players.length} spelare` : `${players.length} spelare`}
           </span>
           <NeonButton variant="ghost" onClick={() => setConfirmLeave(true)}>
-            🚪 Lämna
+            Lämna
           </NeonButton>
         </div>
       </div>
