@@ -27,7 +27,6 @@ export default function AccountBadge() {
         className="chip chip-cta cursor-pointer transition hover:brightness-125"
         style={{ '--neon': '#22e6e6' }}
       >
-        <span aria-hidden>👤</span>
         <span>Logga in</span>
       </Link>
     )
