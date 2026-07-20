@@ -291,6 +291,16 @@
     color: var(--neon, var(--color-muted));
     background: color-mix(in srgb, var(--neon, var(--color-line)) 10%, transparent);
   }
+
+  /* Gäst-varianten är en uppmaning, inte en statusetikett – lite större,
+     fylligare och med glöd så ögat hittar den uppe i högra hörnet. */
+  .chip-cta {
+    font-size: 0.74rem;
+    padding: 0.4rem 0.85rem;
+    border-width: 1.5px;
+    background: color-mix(in srgb, var(--neon) 18%, transparent);
+    box-shadow: 0 0 14px color-mix(in srgb, var(--neon) 30%, transparent);
+  }
 }
 
 /* ============================================================

@@ -35,8 +35,8 @@ export default function AccountBadge() {
   if (!isConfigured) return null
   if (loading) return <span className="text-xs text-muted">…</span>
 
-  // Namnet som visas i brickan – aldrig e-posten.
-  const badgeLabel = isGuest ? 'Gäst' : accountName || preferredName || 'Konto'
+  // Gäster ser en uppmaning ("Logga in"), inloggade ser sitt namn – aldrig e-posten.
+  const badgeLabel = isGuest ? 'Logga in' : accountName || preferredName || 'Konto'
   const needsName = !isGuest && !accountName
 
   async function submit(e) {
@@ -72,10 +72,15 @@ export default function AccountBadge() {
     <div className="relative">
       <button
         type="button"
-        className="chip"
-        style={{ '--neon': isGuest ? '#9a8fbf' : '#b6ff3c' }}
+        className={`chip cursor-pointer transition hover:brightness-125 ${
+          isGuest ? 'chip-cta' : ''
+        }`}
+        style={{ '--neon': isGuest ? '#22e6e6' : '#b6ff3c' }}
+        aria-haspopup="dialog"
+        aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
       >
+        {isGuest && <span aria-hidden>👤</span>}
         <span className="max-w-[9rem] truncate">{badgeLabel}</span>
         {needsName && <span title="Välj ett namn" aria-hidden>·</span>}
         <span aria-hidden>▾</span>
