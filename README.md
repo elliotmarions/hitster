@@ -146,7 +146,7 @@ hitster-bingo-online/
 │  ├─ context/        AuthContext – anonym gäst + konto (lösenord/magisk länk)
 │  ├─ hooks/          useRoom/useGame (realtid), useSyncedAudio (synkat ljud)
 │  ├─ components/     spelvyer (lobby/spel), bricka, discokula, svarspanel, ui/*
-│  ├─ pages/          LandingPage, RoomPage, StatsPage, AuthPage, ResetPasswordPage
+│  ├─ pages/          LandingPage, RoomPage, ProfilePage, AuthPage, ResetPasswordPage
 │  ├─ data/           låtpotter (lazy-laddade chunkar): tracks.js, swedishTracks.js
 │  └─ main.jsx        router + providers
 ├─ supabase/migrations/   SQL-migrationer i nummerordning (körs med npm run migrate)

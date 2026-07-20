@@ -48,8 +48,8 @@ export default function AuthPage() {
         <p className="text-muted">Inloggad som {accountEmail}.</p>
         <div className="flex flex-col gap-3">
           <NeonButton onClick={() => navigate('/')}>Till start</NeonButton>
-          <Link to="/statistik" className="text-sm text-cyan hover:underline">
-            Se min statistik
+          <Link to="/profil" className="text-sm text-cyan hover:underline">
+            Till min profil
           </Link>
         </div>
       </div>

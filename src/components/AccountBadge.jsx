@@ -2,31 +2,19 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import NeonButton from './ui/NeonButton.jsx'
-import TextField from './ui/TextField.jsx'
 
 /**
  * Konto-märke uppe till höger.
  *
  * Gäster får en tydlig "Logga in"-knapp som leder till /konto – själva
- * inloggningen bor där, inte i en gömd meny. Inloggade ser sitt namn och kan
- * fälla ut en meny för statistik, namnbyte och utloggning.
+ * inloggningen bor där, inte i en gömd meny. Inloggade ser sitt namn och en
+ * liten meny med genväg till profilen och utloggning. All redigering (namn,
+ * statistik) sker på /profil, inte här i menyn.
  */
 export default function AccountBadge() {
-  const {
-    isConfigured,
-    loading,
-    isGuest,
-    accountEmail,
-    accountName,
-    preferredName,
-    updateAccountName,
-    signOut,
-  } = useAuth()
+  const { isConfigured, loading, isGuest, accountEmail, accountName, preferredName, signOut } =
+    useAuth()
   const [open, setOpen] = useState(false)
-  const [nameField, setNameField] = useState(() => accountName || preferredName || '')
-  const [nameBusy, setNameBusy] = useState(false)
-  const [nameErr, setNameErr] = useState('')
-  const [nameSaved, setNameSaved] = useState(false)
 
   if (!isConfigured) return null
   if (loading) return <span className="text-xs text-muted">…</span>
@@ -46,22 +34,8 @@ export default function AccountBadge() {
   }
 
   const badgeLabel = accountName || preferredName || 'Konto'
+  // Har man inte valt namn än: liten prick som lockar in i profilen.
   const needsName = !accountName
-
-  async function saveName(e) {
-    e.preventDefault()
-    setNameErr('')
-    setNameSaved(false)
-    setNameBusy(true)
-    try {
-      await updateAccountName(nameField.trim())
-      setNameSaved(true)
-    } catch (e2) {
-      setNameErr(e2.message || 'Kunde inte spara namnet.')
-    } finally {
-      setNameBusy(false)
-    }
-  }
 
   return (
     <div className="relative">
@@ -87,56 +61,30 @@ export default function AccountBadge() {
             className="fixed inset-0 z-30 cursor-default"
             onClick={() => setOpen(false)}
           />
-          <div className="panel absolute right-0 z-40 mt-2 w-72 p-4">
+          <div className="panel absolute right-0 z-40 mt-2 w-64 p-4">
             <Link
-              to="/statistik"
+              to="/profil"
               onClick={() => setOpen(false)}
-              className="mb-3 flex items-center gap-2 rounded-lg px-2 py-1.5 font-display text-cream hover:bg-white/5"
+              className="flex items-center gap-2 rounded-lg px-2 py-1.5 font-display text-cream hover:bg-white/5"
             >
-              📊 Min statistik
+              👤 Profil
             </Link>
-            <div className="mb-3 border-t border-white/10" />
 
-            <div className="space-y-3 text-sm">
-              <form onSubmit={saveName} className="space-y-2">
-                <TextField
-                  label="Ditt namn"
-                  placeholder="Välj ett namn"
-                  maxLength={24}
-                  value={nameField}
-                  onChange={(e) => {
-                    setNameField(e.target.value)
-                    setNameSaved(false)
-                  }}
-                />
-                {needsName && !nameSaved && (
-                  <p className="text-xs text-muted">
-                    Välj ett namn så syns det här uppe i stället för din e-post.
-                  </p>
-                )}
-                {nameErr && <p className="text-xs text-magenta">{nameErr}</p>}
-                {nameSaved && <p className="text-xs text-lime">Sparat ✓</p>}
-                <NeonButton
-                  type="submit"
-                  disabled={nameBusy || !nameField.trim()}
-                  className="w-full"
-                >
-                  {nameBusy ? 'Sparar…' : 'Spara namn'}
-                </NeonButton>
-              </form>
+            <div className="my-3 border-t border-white/10" />
 
-              <p className="truncate text-xs text-muted">Inloggad som {accountEmail}</p>
-              <NeonButton
-                variant="ghost"
-                className="w-full"
-                onClick={async () => {
-                  await signOut()
-                  setOpen(false)
-                }}
-              >
-                Logga ut
-              </NeonButton>
-            </div>
+            <p className="mb-3 truncate px-2 text-xs text-muted">
+              Inloggad som {accountEmail}
+            </p>
+            <NeonButton
+              variant="ghost"
+              className="w-full"
+              onClick={async () => {
+                await signOut()
+                setOpen(false)
+              }}
+            >
+              Logga ut
+            </NeonButton>
           </div>
         </>
       )}
