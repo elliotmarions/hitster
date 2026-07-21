@@ -50,6 +50,7 @@ export default function RoomPage() {
         room={room}
         players={players}
         teams={teams}
+        me={me}
         isHost={isHost}
         currentUserId={user?.id}
       />

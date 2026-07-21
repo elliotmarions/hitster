@@ -25,6 +25,7 @@ import HostLeftNotice from '../HostLeftNotice.jsx'
 import VolumeControl from '../VolumeControl.jsx'
 import Countdown from '../Countdown.jsx'
 import AnswerPanel from '../AnswerPanel.jsx'
+import TeamChat from '../TeamChat.jsx'
 import NeonButton from '../ui/NeonButton.jsx'
 import ConfirmDialog from '../ui/ConfirmDialog.jsx'
 
@@ -485,6 +486,9 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
           )}
         </section>
       )}
+
+      {/* Lagets privata chatt (bara i lagläge) – flytande, så spelet syns bakom. */}
+      <TeamChat room={room} me={me} teams={teams} />
     </div>
   )
 }

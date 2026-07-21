@@ -23,7 +23,8 @@ tidsstämpel. Röst/video för häcklandet sköts utanför appen (Discord e.d.).
 4. Rätt svar ger **ett kryss** i en matchande ruta på 5×5-brickan. Full rad,
    kolumn eller diagonal vinner – flera vinster i samma runda blir **oavgjort**.
 5. Extraregler: **suddregel** (rätt "exakt årtal" låter dig sudda hos en motståndare),
-   **lagläge** (gemensam bricka + gemensamt svar per lag), **svenskt läge** (bara
+   **lagläge** (gemensam bricka + gemensamt svar per lag, plus en **privat lagchatt**
+   där laget resonerar utan att motståndarna ser), **svenskt läge** (bara
    svenska låtar) och enkel **statistik** (spelade/vinster/oavgjorda) på `/statistik`.
 
 ---
@@ -111,7 +112,9 @@ npm run dev
 Härdad i migration `0023_security_hardening.sql` (2026-07-16):
 
 - **RLS på alla tabeller.** Bara ett rums medlemmar kan läsa dess data; svar är
-  dolda för andra tills rundan avslöjats; statistik ser bara ägaren.
+  dolda för andra tills rundan avslöjats; lagchatten (`team_messages`, `0026`) är
+  läsbar bara för det egna laget – även över realtidskanalen; statistik ser bara
+  ägaren.
 - **All skrivning via RPC:er.** Klienten har inga direkta INSERT/UPDATE/DELETE-
   rättigheter, med ETT undantag: värden får uppdatera exakt tre regel-kolumner
   på sitt eget rum (`erase_rule_enabled`, `team_mode`, `swedish_mode`) via

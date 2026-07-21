@@ -9,8 +9,9 @@ import NeonButton from '../ui/NeonButton.jsx'
 import ConfirmDialog from '../ui/ConfirmDialog.jsx'
 import CopyButton from '../ui/CopyButton.jsx'
 import SwedishFlag from '../ui/SwedishFlag.jsx'
+import TeamChat from '../TeamChat.jsx'
 
-export default function LobbyView({ room, players, teams, isHost, currentUserId }) {
+export default function LobbyView({ room, players, teams, me, isHost, currentUserId }) {
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
@@ -218,6 +219,9 @@ export default function LobbyView({ room, players, teams, isHost, currentUserId 
       {room.team_mode && (
         <TeamSetup room={room} players={players} teams={teams} isHost={isHost} />
       )}
+
+      {/* Lagchatten finns redan i lobbyn så laget kan snacka ihop sig innan start. */}
+      <TeamChat room={room} me={me} teams={teams} />
     </div>
   )
 }

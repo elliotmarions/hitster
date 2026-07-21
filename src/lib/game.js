@@ -141,6 +141,19 @@ export async function assignPlayer(roomId, playerId, teamId) {
   if (error) throw error
 }
 
+// --- Lagchatt ---
+
+// Skicka ett meddelande till mitt eget lag. Servern avgör vilket lag det
+// hamnar i (utifrån min players-rad) – klienten kan inte välja mottagare.
+export async function sendTeamMessage(roomId, body) {
+  const { data, error } = await supabase.rpc('send_team_message', {
+    p_room_id: roomId,
+    p_body: body,
+  })
+  if (error) throw error
+  return data
+}
+
 // --- Rena hjälpare (kosmetiskt på klienten; servern avgör vinst) ---
 
 // Returnerar index för en full rad/kolumn/diagonal om brickan har en
