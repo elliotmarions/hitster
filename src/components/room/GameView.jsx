@@ -84,7 +84,16 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   // Uppspelningsfaser (efter "Starta låt").
   const beforeStart = hasTrack && startMs != null && now < startMs
   const clipPlaying = hasTrack && startMs != null && now >= startMs && now < startMs + TIMER_SECONDS * 1000
-  const revealed = hasTrack && startMs != null && now >= startMs + TIMER_SECONDS * 1000
+  // OBS två skilda begrepp som är lätta att blanda ihop:
+  //   clipFinished   – klippet har spelat klart (ren klocka). Styr när man FÅR
+  //                    låsa in sitt svar.
+  //   answersRevealed – servern har avslöjat allas svar och satt facit
+  //                    (rounds.answers_revealed). Styr kryss-grinden.
+  // Kryss-grinden måste följa den senare – det är den mark_cross kollar. Följer
+  // den klockan i stället påstår brickan "Fel svar" så fort klippet tystnat,
+  // innan spelaren ens hunnit svara.
+  const clipFinished = hasTrack && startMs != null && now >= startMs + TIMER_SECONDS * 1000
+  const answersRevealed = Boolean(round?.answers_revealed)
   const timerRunning = clipPlaying && remaining > 0
 
   const teamMode = Boolean(room.team_mode)
@@ -119,7 +128,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   // Kryss kräver att DENNA rundas låt spelats, avslöjats och att det egna
   // svaret var rätt. Utan låt (nyss snurrat) är grinden stängd – annars kunde
   // man kryssa direkt efter snurret innan man gissat. Speglar mark_cross.
-  const answerGateOk = hasTrack && revealed && myAnswerCorrect
+  const answerGateOk = hasTrack && answersRevealed && myAnswerCorrect
 
   // Rätt svar ger bara ETT kryss per runda (server-styrt via round_answers.has_marked;
   // markedRoundId speglar det optimistiskt så knappen låses direkt vid klick).
@@ -142,7 +151,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
       ? null
       : !hasTrack
         ? 'Starta låten och gissa innan ni kryssar.'
-        : !revealed
+        : !answersRevealed
           ? 'Lås in ert svar och vänta på facit innan ni kryssar.'
           : !myAnswerCorrect
             ? 'Fel svar den här rundan – ingen kryssning.'
@@ -154,7 +163,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   // inte kryssat (och har en ledig ruta i kategorin att kryssa). Speglar spin_wheel.
   const pendingCross = Boolean(
     round &&
-      revealed &&
+      answersRevealed &&
       answers.some((a) => {
         if (a.round_id !== round.id) return false
         if ((a.override_correct ?? a.auto_correct) !== true) return false
@@ -399,7 +408,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
 
       {/* Svarsfas: rutan öppnas redan när klippet spelar (man kan skriva medan
           man lyssnar), men inlåsning tillåts först när klippet spelat klart. */}
-      {(clipPlaying || revealed) && (
+      {(clipPlaying || clipFinished) && (
         <AnswerPanel
           round={round}
           facitMeta={facit}
@@ -410,7 +419,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
           myUnitId={teamMode ? myTeamId : me?.id}
           isHost={isHost}
           busy={busy}
-          canLock={revealed}
+          canLock={clipFinished}
           onLock={onLockAnswer}
           onReveal={onRevealAnswers}
           onOverride={onOverrideAnswer}
