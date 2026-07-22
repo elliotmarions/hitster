@@ -36,6 +36,15 @@ function translateAuthError(error) {
     return new Error('Lösenordet är för svagt – välj något längre och mindre gissningsbart.')
   if (/unable to validate email|invalid format/i.test(msg))
     return new Error('E-postadressen ser inte giltig ut.')
+  // Anonym inloggning har en egen spärr: 30 per timme och IP-ADRESS, och den
+  // går inte att höja. Sitter ett helt gäng på samma wifi (eller bakom samma
+  // mobiloperatör) delar de på den potten, så felet är värt en egen förklaring
+  // – annars låter det som att användaren själv gjort något fel.
+  if (error?.code === 'over_request_rate_limit')
+    return new Error(
+      'Många har öppnat spelet från samma nätverk den senaste timmen. ' +
+        'Vänta en liten stund och försök igen.',
+    )
   if (/rate limit|too many requests|over_email_send_rate/i.test(msg))
     return new Error('För många försök. Vänta en stund och prova igen.')
   if (/same as the old password|should be different/i.test(msg))
@@ -238,12 +247,39 @@ export function AuthProvider({ children }) {
     [],
   )
 
+  /**
+   * Ser till att det finns en session INNAN vi gör något som kräver en.
+   *
+   * Bootstrapen ovan loggar in anonymt vid sidladdning, men den kan ha
+   * misslyckats (se spärren i translateAuthError). Då står vi utan session,
+   * och RPC:erna svarar "permission denied for function create_room" – en
+   * teknisk engelsk sträng som inte hjälper någon. Att försöka igen här är
+   * dessutom ofta nog: spärrens fönster rullar, så en plats kan ha frigjorts
+   * sedan sidan laddades.
+   */
+  const ensureSession = useCallback(async () => {
+    if (!isSupabaseConfigured) throw new Error('Supabase är inte konfigurerat.')
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+    if (session?.user) return session.user
+
+    const { data, error } = await supabase.auth.signInAnonymously()
+    if (error) throw translateAuthError(error)
+    bootstrapped.current = true
+    setUser(data.user)
+    return data.user
+  }, [])
+
   // Loggar ut från kontot men loggar genast in anonymt igen -> man kan spela vidare som gäst.
   const signOut = useCallback(async () => {
     if (!isSupabaseConfigured) return
     await supabase.auth.signOut()
     bootstrapped.current = false
-    const { data } = await supabase.auth.signInAnonymously()
+    // Misslyckas gästinloggningen (spärren) står vi utan användare – det är
+    // ensureSession som får försöka igen när man faktiskt gör något.
+    const { data, error } = await supabase.auth.signInAnonymously()
+    if (error) console.error('Anonym inloggning misslyckades:', error.message)
     setUser(data?.user ?? null)
   }, [])
 
@@ -262,6 +298,7 @@ export function AuthProvider({ children }) {
     requestPasswordReset,
     updatePassword,
     updateAccountName,
+    ensureSession,
     signOut,
   }
 

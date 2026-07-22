@@ -15,7 +15,7 @@ const POINTS = [
 
 export default function LandingPage() {
   const navigate = useNavigate()
-  const { isConfigured, loading, preferredName, setPreferredName } = useAuth()
+  const { isConfigured, loading, preferredName, setPreferredName, ensureSession } = useAuth()
 
   const [name, setName] = useState(preferredName)
   const [roomName, setRoomName] = useState('')
@@ -38,6 +38,7 @@ export default function LandingPage() {
     setBusy('create')
     try {
       setPreferredName(name.trim())
+      await ensureSession()
       const room = await createRoom({ name: roomName, displayName: name })
       navigate(`/rum/${room.code}`)
     } catch (e2) {
@@ -57,6 +58,7 @@ export default function LandingPage() {
     setBusy('join')
     try {
       setPreferredName(name.trim())
+      await ensureSession()
       const room = await joinRoom({ code, displayName: name })
       navigate(`/rum/${room.code}`)
     } catch (e2) {

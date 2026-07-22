@@ -7,7 +7,7 @@ import TextField from '../ui/TextField.jsx'
 
 // Visas när man öppnar en rumslänk utan att vara medlem ännu.
 export default function JoinGate({ code, onJoined }) {
-  const { preferredName, setPreferredName } = useAuth()
+  const { preferredName, setPreferredName, ensureSession } = useAuth()
   const [name, setName] = useState(preferredName)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
@@ -19,6 +19,7 @@ export default function JoinGate({ code, onJoined }) {
     setBusy(true)
     try {
       setPreferredName(name.trim())
+      await ensureSession()
       await joinRoom({ code, displayName: name })
       await onJoined()
     } catch (e2) {
