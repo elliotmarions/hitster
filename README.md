@@ -138,6 +138,11 @@ Härdad i migration `0023_security_hardening.sql` (2026-07-16):
   connect bara till Supabase/iTunes), `frame-ancestors 'none'`, nosniff, HSTS.
 - **Städning:** pg_cron raderar rum äldre än 30 dagar varje natt (cascade tar
   spelare/rundor/brickor/svar/lag; statistiken behålls).
+- **Samtidighet** (`0028_concurrency_locks.sql`): `lock_answer` låser rundan och
+  `mark_cross`/`unmark_cross` låser rummet (`select … for update`) innan de läser
+  räkneverk och vinnarlista. Utan låsen läste samtidiga spelare var sin föråldrad
+  bild och den som skrev sist vann – sex samtidiga inlåsningar gav `locked_count`
+  = 2 och rundan låste sig. Verifierat med sex parallella databasanslutningar.
 
 **Medveten begränsning (rate limiting):** ett PostgREST-anrop är en transaktion,
 så ett kastat fel rullar tillbaka även räknarens ökning. Anrop som ändå
