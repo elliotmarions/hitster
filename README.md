@@ -124,6 +124,13 @@ Härdad i migration `0023_security_hardening.sql` (2026-07-16):
   låt-metadata saneras till kända fält. Tak: 30 spelare/rum, 20 lag/rum,
   20 nya rum per värd och timme.
 - **Kryptografiska rumskoder** (`gen_random_bytes`, 31⁵ ≈ 28,6 M kombinationer).
+- **Rate limiting per användare** (`0027_rate_limits.sql`): varje RPC börjar med
+  `perform public._rate_limit('<hink>', <tak>, interval '1 minute')` som räknar i
+  tabellen `rate_limits` (unlogged, oåtkomlig för klienter). Överskridet tak ger
+  SQLSTATE `PT429` → HTTP **429 Too Many Requests**. Taken per minut: låtstart 20,
+  poll 200, snurr 30, kryss 60, svar 30, chatt 40, rumsskapande 5, rumsanslutning
+  15 – plus en global hink på 400/min. En hel spelrunda kostar ~10 anrop, så
+  vanligt spelande når aldrig taken. Gamla räknare städas varje timme av pg_cron.
 - **Funktionsrättigheter:** PUBLIC/anon-execute är återkallat på alla RPC:er
   (bara `authenticated`). OBS för nya migrationer: default privileges är ändrade
   → varje ny funktion måste själv `grant execute ... to authenticated`.
@@ -131,6 +138,15 @@ Härdad i migration `0023_security_hardening.sql` (2026-07-16):
   connect bara till Supabase/iTunes), `frame-ancestors 'none'`, nosniff, HSTS.
 - **Städning:** pg_cron raderar rum äldre än 30 dagar varje natt (cascade tar
   spelare/rundor/brickor/svar/lag; statistiken behålls).
+
+**Medveten begränsning (rate limiting):** ett PostgREST-anrop är en transaktion,
+så ett kastat fel rullar tillbaka även räknarens ökning. Anrop som ändå
+misslyckas av annan orsak ("Bara värden kan …") räknas alltså inte – de är
+billiga, indexerade uppslag och kräver dessutom ett känt rums-UUID. Undantaget
+är `join_room`, där de misslyckade försöken *är* attacken (gissa rumskoder): den
+returnerar därför `null` i stället för att kasta, så varje försök räknas. Riktig
+kantspärr kräver ett lager framför PostgREST – klienten pratar direkt med
+Supabase, inte via Vercel, så `vercel.json` hjälper inte där.
 
 **Medveten begränsning (hederssystem):** facit för pågående runda
 (`rounds.current_track_meta`) är tekniskt läsbart för rummets medlemmar via

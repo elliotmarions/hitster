@@ -20,12 +20,16 @@ export async function createRoom({ name, displayName }) {
 }
 
 // Går med i ett befintligt rum via kod. Returnerar rums-raden.
+// Okänd kod ger null (inte ett fel) från RPC:n – se migration 0027: ett kastat
+// fel hade rullat tillbaka anropets rate limit-räknare och gjort det gratis att
+// botta sig igenom rumskoder.
 export async function joinRoom({ code, displayName }) {
   const { data, error } = await supabase.rpc('join_room', {
     p_code: normalizeCode(code),
     p_display_name: displayName.trim(),
   })
   if (error) throw error
+  if (!data?.code) throw new Error('Hittade inget rum med den koden.')
   return data
 }
 
