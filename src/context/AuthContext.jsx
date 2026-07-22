@@ -60,6 +60,18 @@ function translateAuthError(error) {
  * Supabase anonym auth som bas så varje besökare får ett stabilt user-id
  * (sparas i webbläsaren). Loggar man in länkas kontot till SAMMA id, så man
  * behåller sin statistik när man går från gäst -> konto.
+ *
+ * NÄR skapas gästsessionen? Först när besökaren gör något som kräver den –
+ * skapar rum eller går med i ett – via ensureSession() längre ned. Tidigare
+ * skedde det redan vid sidladdning, men Supabase strypar anonyma inloggningar
+ * till 30 per timme och IP-ADRESS (går inte att höja), och mätning mot
+ * databasen visade att 68 av 97 gäster aldrig gick med i ett enda rum. Sju av
+ * tio platser i timpotten gick alltså åt till folk som bara tittade – illa när
+ * ett helt gäng sitter på samma wifi och delar IP.
+ *
+ * Följden är att `user` är null tills besökaren agerar. Det är hanterat:
+ * isGuest defaultar till true, getMyStats svarar med nollor utan användare,
+ * och RLS ger tomt svar i stället för fel så useRoom landar i JoinGate.
  */
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -67,8 +79,9 @@ export function AuthProvider({ children }) {
   const [preferredName, setPreferredNameState] = useState(
     () => localStorage.getItem(NAME_KEY) || '',
   )
-  // Skyddar mot dubbel anonym inloggning i React StrictMode (dev kör effekter två gånger).
-  const bootstrapped = useRef(false)
+  // Två samtidiga ensureSession() ska dela på EN inloggning – annars bränner
+  // samma besökare två platser i timpotten.
+  const signInFlight = useRef(null)
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -78,32 +91,15 @@ export function AuthProvider({ children }) {
 
     let active = true
 
+    // Plocka bara upp en session som redan finns (sparad i webbläsaren, eller
+    // på väg in från en e-postlänk – då tar onAuthStateChange över). Ingen
+    // gästinloggning här; den sker i ensureSession när den faktiskt behövs.
     async function bootstrap() {
       const {
         data: { session },
       } = await supabase.auth.getSession()
       if (!active) return
-
-      if (session?.user) {
-        setUser(session.user)
-        setLoading(false)
-        return
-      }
-      if (bootstrapped.current) return
-      // Kommer vi tillbaka från en e-postlänk (återställning, bekräftelse) ligger
-      // tokens i URL-hashen och Supabase håller på att växla in dem. Att logga in
-      // anonymt här skulle skriva över den sessionen – då kunde man aldrig sätta
-      // ett nytt lösenord. Låt bootstrapen vila; onAuthStateChange tar över.
-      if (/access_token=|type=recovery|error_code=/.test(window.location.hash)) {
-        setLoading(false)
-        return
-      }
-      bootstrapped.current = true
-      // Ingen session -> logga in anonymt så man kan skapa/gå med i rum direkt.
-      const { data, error } = await supabase.auth.signInAnonymously()
-      if (!active) return
-      if (error) console.error('Anonym inloggning misslyckades:', error.message)
-      setUser(data?.user ?? null)
+      setUser(session?.user ?? null)
       setLoading(false)
     }
     bootstrap()
@@ -248,14 +244,14 @@ export function AuthProvider({ children }) {
   )
 
   /**
-   * Ser till att det finns en session INNAN vi gör något som kräver en.
+   * Ser till att det finns en session INNAN vi gör något som kräver en – och
+   * är enda stället där en gästsession skapas.
    *
-   * Bootstrapen ovan loggar in anonymt vid sidladdning, men den kan ha
-   * misslyckats (se spärren i translateAuthError). Då står vi utan session,
-   * och RPC:erna svarar "permission denied for function create_room" – en
-   * teknisk engelsk sträng som inte hjälper någon. Att försöka igen här är
-   * dessutom ofta nog: spärrens fönster rullar, så en plats kan ha frigjorts
-   * sedan sidan laddades.
+   * Finns redan en session är det en ren uppslagning utan nätverksanrop.
+   * Annars loggas besökaren in anonymt här, i samma ögonblick som hen faktiskt
+   * ska skapa eller gå med i ett rum. Slår spärren till (30/timme och IP) kastas
+   * ett begripligt svenskt fel i stället för RPC:ns "permission denied for
+   * function create_room".
    */
   const ensureSession = useCallback(async () => {
     if (!isSupabaseConfigured) throw new Error('Supabase är inte konfigurerat.')
@@ -264,23 +260,24 @@ export function AuthProvider({ children }) {
     } = await supabase.auth.getSession()
     if (session?.user) return session.user
 
-    const { data, error } = await supabase.auth.signInAnonymously()
+    if (!signInFlight.current) {
+      signInFlight.current = supabase.auth.signInAnonymously().finally(() => {
+        signInFlight.current = null
+      })
+    }
+    const { data, error } = await signInFlight.current
     if (error) throw translateAuthError(error)
-    bootstrapped.current = true
     setUser(data.user)
     return data.user
   }, [])
 
-  // Loggar ut från kontot men loggar genast in anonymt igen -> man kan spela vidare som gäst.
+  // Loggar ut från kontot. Ingen gästinloggning här heller – man kan surfa
+  // vidare utan session, och ensureSession skapar en så fort man startar ett
+  // spel. Sparar en plats i timpotten för den som bara loggar ut och lämnar.
   const signOut = useCallback(async () => {
     if (!isSupabaseConfigured) return
     await supabase.auth.signOut()
-    bootstrapped.current = false
-    // Misslyckas gästinloggningen (spärren) står vi utan användare – det är
-    // ensureSession som får försöka igen när man faktiskt gör något.
-    const { data, error } = await supabase.auth.signInAnonymously()
-    if (error) console.error('Anonym inloggning misslyckades:', error.message)
-    setUser(data?.user ?? null)
+    setUser(null)
   }, [])
 
   const value = {

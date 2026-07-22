@@ -58,6 +58,14 @@ npm install
    `SUPABASE_DB_URL` i `.env.local`, se `.env.example`).
 3. **Aktivera anonyma inloggningar** (krävs – appen loggar in gäster automatiskt):
    **Authentication → Sign In / Providers → Anonymous sign-ins → På**.
+
+   Gästsessionen skapas först när någon **skapar eller går med i ett rum**, inte
+   vid sidladdning. Skälet: Supabase strypar anonyma inloggningar till **30 per
+   timme och IP-adress** och den gränsen går inte att höja, samtidigt som 70 % av
+   gästerna i praktiken aldrig gick med i ett rum. Ett helt gäng på samma wifi
+   delar på de 30 platserna, så potten ska inte gå åt till folk som bara tittar.
+   All gästinloggning sker därför i `ensureSession()` i `AuthContext`; slår
+   spärren till får användaren en begriplig förklaring i stället för ett RPC-fel.
 4. **URL Configuration** (krävs för konto, bekräftelsemejl och lösenordsåterställning).
    Under **Authentication → URL Configuration**, sätt **Site URL** till din
    produktions-URL och lägg till dessa som **Redirect URLs**:
