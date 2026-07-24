@@ -22,8 +22,16 @@ export async function spinWheel(roomId) {
 export async function startRandomTrack(roomId) {
   const { error } = await supabase.rpc('start_random_track', { p_room_id: roomId })
   if (error) throw error
-  for (let i = 0; i < 20; i++) {
-    await new Promise((resolve) => setTimeout(resolve, 400))
+  // Adaptiv pollning: kolla tidigt och tätt (iTunes svarar oftast <1s) och backa
+  // av gradvis. Första koll efter 120ms i stället för 400 → låten fångas så fort
+  // svaret landar. Samma antal polls (20) som förr → ingen extra press på
+  // rate-limitern (track_poll = 200/min). Totalt fönster ~10s.
+  const delays = [
+    120, 150, 180, 220, 260, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750,
+    800, 850, 900, 950, 1000,
+  ]
+  for (const wait of delays) {
+    await new Promise((resolve) => setTimeout(resolve, wait))
     const { data, error: pollError } = await supabase.rpc('poll_track_start', {
       p_room_id: roomId,
     })
