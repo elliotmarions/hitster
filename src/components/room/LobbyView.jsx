@@ -10,7 +10,7 @@ import ConfirmDialog from '../ui/ConfirmDialog.jsx'
 import CopyButton from '../ui/CopyButton.jsx'
 import SwedishFlag from '../ui/SwedishFlag.jsx'
 import TeamChat from '../TeamChat.jsx'
-import { AGE_GROUPS, ageGroupFor } from '../../lib/constants.js'
+import { POOL_CATEGORIES, poolCategoryFor } from '../../lib/constants.js'
 
 export default function LobbyView({ room, players, teams, me, isHost, currentUserId }) {
   const navigate = useNavigate()
@@ -78,26 +78,16 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
     await supabase.from('rooms').update({ team_mode: e.target.checked }).eq('id', room.id)
   }
 
-  async function setSwedishMode(value) {
-    setOptimistic((o) => ({ ...o, swedish_mode: value }))
-    const { error } = await supabase
-      .from('rooms')
-      .update({ swedish_mode: value })
-      .eq('id', room.id)
+  async function setCategory(cat) {
+    // En kategori sätter potten i ett svep: språk + årsfönster (null = ingen
+    // gräns). Filtreras server-side i start_random_track.
+    const patch = { swedish_mode: cat.swedish, year_min: cat.min, year_max: cat.max }
+    setOptimistic((o) => ({ ...o, ...patch }))
+    const { error } = await supabase.from('rooms').update(patch).eq('id', room.id)
     if (error) setOptimistic(null) // backa till serverns sanning
   }
 
-  async function setAgeGroup(group) {
-    // Årsfönstret filtrerar potten server-side (start_random_track). null = ingen gräns.
-    setOptimistic((o) => ({ ...o, year_min: group.min, year_max: group.max }))
-    const { error } = await supabase
-      .from('rooms')
-      .update({ year_min: group.min, year_max: group.max })
-      .eq('id', room.id)
-    if (error) setOptimistic(null)
-  }
-
-  const activeAge = ageGroupFor(view)
+  const activeCat = poolCategoryFor(view)
 
   return (
     <div className="space-y-6">
@@ -137,76 +127,45 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
           </div>
         </div>
 
-        {/* Musik – vilken låtpott spelet använder (egen väljare, inte en av/på-regel) */}
+        {/* Kategori – EN väljare som bestämmer hela låtpotten (Alla/Svenska/åldersspann) */}
         <div className="mt-6">
-          <p className="label mb-2">🎵 Musik</p>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              disabled={!isHost}
-              onClick={() => setSwedishMode(false)}
-              aria-pressed={!view.swedish_mode}
-              className="panel-inset flex cursor-pointer flex-col gap-1 p-3.5 text-left transition disabled:cursor-default disabled:opacity-60"
-              style={{
-                borderColor: !view.swedish_mode ? '#22e6e6' : undefined,
-                boxShadow: !view.swedish_mode ? '0 0 22px -8px #22e6e6' : undefined,
-              }}
-            >
-              <span className="font-display text-cream">🌍 Alla låtar</span>
-              <span className="text-xs text-muted">
-                Blandat från hela världen
-                {potCounts ? ` · ${potCounts.all.toLocaleString('sv-SE')} låtar` : ''}
-              </span>
-            </button>
-            <button
-              type="button"
-              disabled={!isHost}
-              onClick={() => setSwedishMode(true)}
-              aria-pressed={view.swedish_mode}
-              className="panel-inset flex cursor-pointer flex-col gap-1 p-3.5 text-left transition disabled:cursor-default disabled:opacity-60"
-              style={{
-                borderColor: view.swedish_mode ? '#ffd23f' : undefined,
-                boxShadow: view.swedish_mode ? '0 0 22px -8px #ffd23f' : undefined,
-              }}
-            >
-              <span className="inline-flex items-center gap-2 font-display text-cream">
-                <SwedishFlag size={20} /> Svenska
-              </span>
-              <span className="text-xs text-muted">
-                Svenska artister, 1950–idag
-                {potCounts ? ` · ${potCounts.sv} låtar` : ''}
-              </span>
-            </button>
-          </div>
-        </div>
-
-        {/* Åldersgrupp – riktar potten mot en era (fristående från Alla/Svenska) */}
-        <div className="mt-6">
-          <p className="label mb-2">🎂 Åldersgrupp</p>
+          <p className="label mb-2">🎵 Kategori</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {AGE_GROUPS.map((group) => {
-              const active = activeAge.key === group.key
+            {POOL_CATEGORIES.map((cat) => {
+              const active = activeCat.key === cat.key
+              const count =
+                cat.pot === 'all' && potCounts
+                  ? ` · ${potCounts.all.toLocaleString('sv-SE')} låtar`
+                  : cat.pot === 'sv' && potCounts
+                    ? ` · ${potCounts.sv} låtar`
+                    : ''
               return (
                 <button
-                  key={group.key}
+                  key={cat.key}
                   type="button"
                   disabled={!isHost}
-                  onClick={() => setAgeGroup(group)}
+                  onClick={() => setCategory(cat)}
                   aria-pressed={active}
                   className="panel-inset flex cursor-pointer flex-col gap-1 p-3.5 text-left transition disabled:cursor-default disabled:opacity-60"
                   style={{
-                    borderColor: active ? '#ff4d9d' : undefined,
-                    boxShadow: active ? '0 0 22px -8px #ff4d9d' : undefined,
+                    borderColor: active ? cat.neon : undefined,
+                    boxShadow: active ? `0 0 22px -8px ${cat.neon}` : undefined,
                   }}
                 >
-                  <span className="font-display text-cream">{group.label}</span>
-                  <span className="text-xs text-muted">{group.hint}</span>
+                  <span className="inline-flex items-center gap-2 font-display text-cream">
+                    {cat.key === 'sv' && <SwedishFlag size={18} />}
+                    {cat.label}
+                  </span>
+                  <span className="text-xs text-muted">
+                    {cat.hint}
+                    {count}
+                  </span>
                 </button>
               )
             })}
           </div>
           <p className="mt-2 text-xs text-muted">
-            Riktar musiken mot låtarna gruppen växte upp med – toppen av igenkänning.
+            Åldersspannen riktar musiken mot låtarna gruppen växte upp med – toppen av igenkänning.
           </p>
         </div>
 
