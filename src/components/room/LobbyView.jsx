@@ -89,6 +89,40 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
 
   const activeCat = poolCategoryFor(view)
 
+  // En kategori-knapp – delas av de breda potterna och åldersspannen.
+  function renderCategory(cat) {
+    const active = activeCat.key === cat.key
+    const count =
+      cat.pot === 'all' && potCounts
+        ? ` · ${potCounts.all.toLocaleString('sv-SE')} låtar`
+        : cat.pot === 'sv' && potCounts
+          ? ` · ${potCounts.sv} låtar`
+          : ''
+    return (
+      <button
+        key={cat.key}
+        type="button"
+        disabled={!isHost}
+        onClick={() => setCategory(cat)}
+        aria-pressed={active}
+        className="panel-inset flex cursor-pointer flex-col gap-1 p-3.5 text-left transition disabled:cursor-default disabled:opacity-60"
+        style={{
+          borderColor: active ? cat.neon : undefined,
+          boxShadow: active ? `0 0 22px -8px ${cat.neon}` : undefined,
+        }}
+      >
+        <span className="inline-flex items-center gap-2 font-display text-cream">
+          {cat.key === 'sv' && <SwedishFlag size={18} />}
+          {cat.label}
+        </span>
+        <span className="text-xs text-muted">
+          {cat.hint}
+          {count}
+        </span>
+      </button>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <ConfirmDialog
@@ -127,43 +161,27 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
           </div>
         </div>
 
-        {/* Kategori – EN väljare som bestämmer hela låtpotten (Alla/Svenska/åldersspann) */}
+        {/* Kategori – EN väljare, men breda potter och åldersspann visuellt avskilda */}
         <div className="mt-6">
           <p className="label mb-2">🎵 Kategori</p>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {POOL_CATEGORIES.map((cat) => {
-              const active = activeCat.key === cat.key
-              const count =
-                cat.pot === 'all' && potCounts
-                  ? ` · ${potCounts.all.toLocaleString('sv-SE')} låtar`
-                  : cat.pot === 'sv' && potCounts
-                    ? ` · ${potCounts.sv} låtar`
-                    : ''
-              return (
-                <button
-                  key={cat.key}
-                  type="button"
-                  disabled={!isHost}
-                  onClick={() => setCategory(cat)}
-                  aria-pressed={active}
-                  className="panel-inset flex cursor-pointer flex-col gap-1 p-3.5 text-left transition disabled:cursor-default disabled:opacity-60"
-                  style={{
-                    borderColor: active ? cat.neon : undefined,
-                    boxShadow: active ? `0 0 22px -8px ${cat.neon}` : undefined,
-                  }}
-                >
-                  <span className="inline-flex items-center gap-2 font-display text-cream">
-                    {cat.key === 'sv' && <SwedishFlag size={18} />}
-                    {cat.label}
-                  </span>
-                  <span className="text-xs text-muted">
-                    {cat.hint}
-                    {count}
-                  </span>
-                </button>
-              )
-            })}
+
+          {/* Breda potter */}
+          <div className="grid grid-cols-2 gap-3">
+            {POOL_CATEGORIES.filter((c) => c.group === 'broad').map(renderCategory)}
           </div>
+
+          {/* Avdelare mot åldersspannen – samma väljare, men tydligt en annan sak */}
+          <div className="my-4 flex items-center gap-3">
+            <span className="h-px flex-1 bg-cream/10" />
+            <span className="label">Eller efter ålder</span>
+            <span className="h-px flex-1 bg-cream/10" />
+          </div>
+
+          {/* Åldersspann */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {POOL_CATEGORIES.filter((c) => c.group === 'age').map(renderCategory)}
+          </div>
+
           <p className="mt-2 text-xs text-muted">
             Åldersspannen riktar musiken mot låtarna gruppen växte upp med – toppen av igenkänning.
           </p>

@@ -75,14 +75,16 @@ export const GRID = 5 // brickan är 5x5 (fritt slumpad, exakt 5 rutor per kateg
 //  (min/max = null → ingen årsgräns). Filtreras server-side i start_random_track
 //  (potten är oläsbar för klienter). `pot` = vilken räknare som visas (all/sv);
 //  åldersspannen är delmängder av världspotten och saknar egen räknare.
+//  `group` styr bara den visuella uppdelningen i lobbyn: 'broad' (Alla/Svenska)
+//  och 'age' (åldersspannen) – de är fortfarande ETT val, bara avskilda.
 export const POOL_CATEGORIES = [
-  { key: 'all', label: '🌍 Alla låtar', hint: 'Blandat från hela världen', swedish: false, min: null, max: null, neon: '#22e6e6', pot: 'all' },
-  { key: 'sv', label: 'Svenska', hint: 'Svenska artister, 1950–idag', swedish: true, min: null, max: null, neon: '#ffd23f', pot: 'sv' },
-  { key: '20s', label: '20–29 år', hint: 'Uppväxthits ~2008–idag', swedish: false, min: 2008, max: null, neon: '#ff4d9d' },
-  { key: '30s', label: '30–39 år', hint: 'Uppväxthits ~1997–2011', swedish: false, min: 1997, max: 2011, neon: '#b14dff' },
-  { key: '40s', label: '40–49 år', hint: 'Uppväxthits ~1987–2001', swedish: false, min: 1987, max: 2001, neon: '#3ee87b' },
-  { key: '50s', label: '50–59 år', hint: 'Uppväxthits ~1977–1991', swedish: false, min: 1977, max: 1991, neon: '#ff8a3c' },
-  { key: '60s', label: '60–69 år', hint: 'Uppväxthits ~1967–1981', swedish: false, min: 1967, max: 1981, neon: '#33a6ff' },
+  { key: 'all', group: 'broad', label: '🌍 Alla låtar', hint: 'Blandat från hela världen', swedish: false, min: null, max: null, neon: '#22e6e6', pot: 'all' },
+  { key: 'sv', group: 'broad', label: 'Svenska', hint: 'Svenska artister, 1950–idag', swedish: true, min: null, max: null, neon: '#ffd23f', pot: 'sv' },
+  { key: '20s', group: 'age', label: '20–29 år', hint: 'Uppväxthits ~2008–idag', swedish: false, min: 2008, max: null, neon: '#ff4d9d' },
+  { key: '30s', group: 'age', label: '30–39 år', hint: 'Uppväxthits ~1997–2011', swedish: false, min: 1997, max: 2011, neon: '#b14dff' },
+  { key: '40s', group: 'age', label: '40–49 år', hint: 'Uppväxthits ~1987–2001', swedish: false, min: 1987, max: 2001, neon: '#3ee87b' },
+  { key: '50s', group: 'age', label: '50–59 år', hint: 'Uppväxthits ~1977–1991', swedish: false, min: 1977, max: 1991, neon: '#ff8a3c' },
+  { key: '60s', group: 'age', label: '60–69 år', hint: 'Uppväxthits ~1967–1981', swedish: false, min: 1967, max: 1981, neon: '#33a6ff' },
 ]
 
 // Vilken pott-kategori rummet står på just nu. Svenska är sin egen kategori
