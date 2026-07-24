@@ -23,14 +23,13 @@ export async function startRandomTrack(roomId) {
   const { error } = await supabase.rpc('start_random_track', { p_room_id: roomId })
   if (error) throw error
   // Adaptiv pollning: kolla tidigt och tätt (iTunes svarar oftast <1s) och backa
-  // av till jämn takt. Pollningen är KLIENT-DRIVEN → servern letar bara vidare
-  // när vi pollar, så fönstret måste rymma serverns upp till 10 låtförsök
-  // (0035) när remixer hoppas över – annars slutar vi polla och låten spelas
-  // aldrig. Fönster ~30s; normalfallet svarar ändå på första pollen.
-  // ~50 polls på 30s ligger väl under rate-limitern (track_poll = 200/min).
+  // av till jämn takt. Pollningen är KLIENT-DRIVEN → fönstret måste rymma
+  // serverns låtförsök (0036: 3) när ett remix-bara resultat hoppas över.
+  // Original är normalfallet, så ~15s räcker gott; normalfallet svarar ändå på
+  // första pollen. Väl under rate-limitern (track_poll = 200/min).
   const ramp = [120, 150, 180, 220, 260, 300, 350, 400, 450, 500, 550, 600, 700]
   const steady = 700
-  const maxMs = 30000
+  const maxMs = 15000
   let elapsed = 0
   for (let i = 0; elapsed < maxMs; i++) {
     const wait = i < ramp.length ? ramp[i] : steady
