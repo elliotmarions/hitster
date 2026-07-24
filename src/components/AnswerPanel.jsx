@@ -64,6 +64,13 @@ export default function AnswerPanel({
     round.category === 'approx_year_1'
   const yearFormatBad = isYearCat && text.trim() !== '' && !/(?:19|20)\d{2}/.test(text)
 
+  // "Före eller efter" – ett binärt val mot ett känt pivot-år (rounds.pivot_year).
+  const isBeforeAfter = round.category === 'before_after'
+  const pivot = round.pivot_year
+  // Snyggare etikett för ett före/efter-svar vid avslöjandet.
+  const beforeAfterLabel = (val) =>
+    val === 'före' ? `Före ${pivot}` : val === 'efter' ? `${pivot} eller senare` : val
+
   // --- Avslöjat: visa allas svar + facit ---
   if (revealed) {
     const shown = [...roundAnswers].sort((a, b) => nameOf(a).localeCompare(nameOf(b), 'sv'))
@@ -101,7 +108,11 @@ export default function AnswerPanel({
                   </span>
                 </div>
                 <p className="mt-0.5 font-display text-lg text-cream break-words">
-                  {a.answer?.trim() ? a.answer : <span className="text-muted">— inget svar —</span>}
+                  {a.answer?.trim() ? (
+                    isBeforeAfter ? beforeAfterLabel(a.answer) : a.answer
+                  ) : (
+                    <span className="text-muted">— inget svar —</span>
+                  )}
                 </p>
 
                 {isHost && (
@@ -230,6 +241,44 @@ export default function AnswerPanel({
                     <p className="mt-1 text-xs text-muted">
                       Väntar på att alla {unitWord} låser in…
                     </p>
+                  </div>
+                ) : isBeforeAfter ? (
+                  <div className="mt-2 space-y-2">
+                    <p className="text-sm text-cream">
+                      Släpptes låten <b>före {pivot}</b> eller <b>{pivot} och senare</b>?
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        ['före', `Före ${pivot}`],
+                        ['efter', `${pivot} eller senare`],
+                      ].map(([val, lbl]) => (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => setText(val)}
+                          aria-pressed={text === val}
+                          className="panel-inset cursor-pointer p-3 text-center font-display text-cream transition"
+                          style={{
+                            borderColor: text === val ? '#b14dff' : undefined,
+                            boxShadow: text === val ? '0 0 18px -8px #b14dff' : undefined,
+                          }}
+                        >
+                          {lbl}
+                        </button>
+                      ))}
+                    </div>
+                    <NeonButton
+                      onClick={() => onLock(text)}
+                      disabled={busy || (text !== 'före' && text !== 'efter') || !canLock}
+                      className="w-full"
+                    >
+                      Lås in 🔒
+                    </NeonButton>
+                    {!canLock && (
+                      <p className="text-[11px] text-muted">
+                        🎵 Välj medan låten spelar – lås in när klippet är slut.
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div className="mt-2 space-y-2">

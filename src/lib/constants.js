@@ -55,15 +55,32 @@ export const CATEGORIES = {
     color: 'green',
     hex: '#3ee87b',
   },
+  // Bara i åldersläge: släpptes låten före eller efter ett givet år? Pivot-året
+  // (rounds.pivot_year) slumpas per runda. Vattentät auto-bedömning – året är känt.
+  before_after: {
+    key: 'before_after',
+    label: 'Före eller efter',
+    short: 'Före/efter',
+    desc: 'Släpptes låten före eller efter ett givet år?',
+    color: 'purple',
+    hex: '#b14dff',
+  },
 }
 
 // Fast ordning – t.ex. discokulans segment.
 export const CATEGORY_ORDER = ['decade', 'artist', 'exact_year', 'approx_year', 'title']
 
 // Åldersläge (rummet har ett årsfönster): årtionde + ±3 blir för lätt när eran
-// redan är smal, så de byts mot en enda tightare årtals-kategori (±1). Fyra
-// kategorier på snurran och brickan. MÅSTE spegla serverns _room_categories.
-export const AGE_CATEGORY_ORDER = ['exact_year', 'artist', 'title', 'approx_year_1']
+// redan är smal, så de byts mot en tightare ±1 år plus "Före eller efter" (mot
+// ett slumpat pivot-år). Fem kategorier på snurran och brickan, precis som
+// normalläget. MÅSTE spegla serverns _room_categories.
+export const AGE_CATEGORY_ORDER = [
+  'exact_year',
+  'artist',
+  'title',
+  'approx_year_1',
+  'before_after',
+]
 
 // Vilket kategori-set gäller för rummet just nu?
 export function categoryOrderFor(room) {
