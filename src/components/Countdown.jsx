@@ -14,9 +14,13 @@ import { createPortal } from 'react-dom'
  * så en remsa längst ned blev omålad trots att layouten mätte rätt. Mörkret är
  * höjt från /40 till /70 som kompensation för den borttagna oskärpan.
  */
-export default function Countdown({ secondsToStart }) {
-  const n = Math.ceil(secondsToStart)
-  const label = n <= 0 ? '🎵' : n > 3 ? '3' : String(n)
+export default function Countdown({ secondsToStart, preparing = false }) {
+  // preparing = värden har tryckt "Starta låt" men servern har inte hunnit sätta
+  // timer_start_at än (letar upp klippet). Visar en pulserande not tills den
+  // riktiga 3-2-1-nedräkningen tar över – ingen död lucka, ingen pop.
+  const n = Math.ceil(secondsToStart ?? 0)
+  const label = preparing ? '🎵' : n <= 0 ? '🎵' : n > 3 ? '3' : String(n)
+  const sub = preparing ? 'Letar upp låten…' : 'Samma låt startar hos alla samtidigt'
   return createPortal(
     <div
       className="pointer-events-none fixed left-0 top-0 z-40 m-0 flex w-full items-center justify-center bg-midnight/70"
@@ -30,7 +34,7 @@ export default function Countdown({ secondsToStart }) {
         >
           {label}
         </div>
-        <p className="text-sm text-muted">Samma låt startar hos alla samtidigt</p>
+        <p className="text-sm text-muted">{sub}</p>
       </div>
     </div>,
     document.body,

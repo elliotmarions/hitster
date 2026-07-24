@@ -41,6 +41,10 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [markedRoundId, setMarkedRoundId] = useState(null) // runda där jag redan kryssat (optimistiskt)
+  // Värden tryckte "Starta låt" och servern letar upp klippet. Visar en
+  // "Gör dig redo"-overlay direkt så det inte blir en död lucka innan
+  // nedräkningen (som väntar på timer_start_at).
+  const [startingTrack, setStartingTrack] = useState(false)
   const [confirmLeave, setConfirmLeave] = useState(false)
   const [leaving, setLeaving] = useState(false)
   const ensured = useRef(false)
@@ -95,6 +99,12 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   const clipFinished = hasTrack && startMs != null && now >= startMs + TIMER_SECONDS * 1000
   const answersRevealed = Boolean(round?.answers_revealed)
   const timerRunning = clipPlaying && remaining > 0
+
+  // Prep→nedräkning: så fort låten fått sin timer_start_at (beforeStart) eller
+  // redan spelar, släpp "Gör dig redo"-overlayn så 3-2-1 tar över utan glapp.
+  useEffect(() => {
+    if (beforeStart || clipPlaying) setStartingTrack(false)
+  }, [beforeStart, clipPlaying])
 
   const teamMode = Boolean(room.team_mode)
   const myTeamId = me?.team_id
@@ -190,7 +200,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
 
   // Värdens kontroller
   const canSpin = isHost && !finished && !wheelSpinning && !beforeStart && !clipPlaying && !pendingCross
-  const canStartTrack = isHost && !finished && !!round && !wheelSpinning && !hasTrack
+  const canStartTrack = isHost && !finished && !!round && !wheelSpinning && !hasTrack && !startingTrack
 
   async function run(fn) {
     setErr('')
@@ -219,7 +229,21 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   const onSpin = () => run(() => spinWheel(room.id))
   // Servern väljer låt (rätt pott via rooms.swedish_mode), slår upp klippet
   // och startar det synkat hos alla – facit stannar server-side tills reveal.
-  const onStartTrack = () => run(() => startRandomTrack(room.id))
+  // Prep-overlayn visas från klicket tills timer_start_at kommit (då tar
+  // 3-2-1-nedräkningen över, se effekten nedan) eller tills det blir fel.
+  async function onStartTrack() {
+    setErr('')
+    setBusy(true)
+    setStartingTrack(true)
+    try {
+      await startRandomTrack(room.id)
+    } catch (e) {
+      setErr(e.message || 'Något gick fel.')
+      setStartingTrack(false)
+    } finally {
+      setBusy(false)
+    }
+  }
   const onMark = (i) =>
     myCard &&
     optimistic(
@@ -267,6 +291,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   return (
     <div className="space-y-6">
       {beforeStart && <Countdown secondsToStart={(startMs - now) / 1000} />}
+      {startingTrack && !beforeStart && !clipPlaying && <Countdown preparing />}
 
       <ConfirmDialog
         open={confirmLeave}
