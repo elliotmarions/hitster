@@ -21,7 +21,21 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
   // Antal låtar per pott – potten bor i databasen (oläsbar för klienter),
   // bara räknarna exponeras via en RPC.
   const [potCounts, setPotCounts] = useState(null)
+  // Optimistiskt lager: valet ska synas direkt vid klick, utan att vänta på
+  // server-svar + realtidsstuds. Rensas när riktiga room-proppen hunnit ikapp.
+  const [optimistic, setOptimistic] = useState(null)
   const roomLink = `${window.location.origin}/rum/${room.code}`
+
+  // När servern speglat tillbaka vårt val (via realtid) matchar room-proppen
+  // det optimistiska värdet – då släpper vi övertäckningen.
+  useEffect(() => {
+    if (!optimistic) return
+    const matched = Object.entries(optimistic).every(([k, v]) => room[k] === v)
+    if (matched) setOptimistic(null)
+  }, [room, optimistic])
+
+  // Det klienten faktiskt renderar: room med ev. pågående val ovanpå.
+  const view = optimistic ? { ...room, ...optimistic } : room
 
   useEffect(() => {
     let active = true
@@ -65,18 +79,25 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
   }
 
   async function setSwedishMode(value) {
-    await supabase.from('rooms').update({ swedish_mode: value }).eq('id', room.id)
+    setOptimistic((o) => ({ ...o, swedish_mode: value }))
+    const { error } = await supabase
+      .from('rooms')
+      .update({ swedish_mode: value })
+      .eq('id', room.id)
+    if (error) setOptimistic(null) // backa till serverns sanning
   }
 
   async function setAgeGroup(group) {
     // Årsfönstret filtrerar potten server-side (start_random_track). null = ingen gräns.
-    await supabase
+    setOptimistic((o) => ({ ...o, year_min: group.min, year_max: group.max }))
+    const { error } = await supabase
       .from('rooms')
       .update({ year_min: group.min, year_max: group.max })
       .eq('id', room.id)
+    if (error) setOptimistic(null)
   }
 
-  const activeAge = ageGroupFor(room)
+  const activeAge = ageGroupFor(view)
 
   return (
     <div className="space-y-6">
@@ -124,11 +145,11 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
               type="button"
               disabled={!isHost}
               onClick={() => setSwedishMode(false)}
-              aria-pressed={!room.swedish_mode}
+              aria-pressed={!view.swedish_mode}
               className="panel-inset flex cursor-pointer flex-col gap-1 p-3.5 text-left transition disabled:cursor-default disabled:opacity-60"
               style={{
-                borderColor: !room.swedish_mode ? '#22e6e6' : undefined,
-                boxShadow: !room.swedish_mode ? '0 0 22px -8px #22e6e6' : undefined,
+                borderColor: !view.swedish_mode ? '#22e6e6' : undefined,
+                boxShadow: !view.swedish_mode ? '0 0 22px -8px #22e6e6' : undefined,
               }}
             >
               <span className="font-display text-cream">🌍 Alla låtar</span>
@@ -141,11 +162,11 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
               type="button"
               disabled={!isHost}
               onClick={() => setSwedishMode(true)}
-              aria-pressed={room.swedish_mode}
+              aria-pressed={view.swedish_mode}
               className="panel-inset flex cursor-pointer flex-col gap-1 p-3.5 text-left transition disabled:cursor-default disabled:opacity-60"
               style={{
-                borderColor: room.swedish_mode ? '#ffd23f' : undefined,
-                boxShadow: room.swedish_mode ? '0 0 22px -8px #ffd23f' : undefined,
+                borderColor: view.swedish_mode ? '#ffd23f' : undefined,
+                boxShadow: view.swedish_mode ? '0 0 22px -8px #ffd23f' : undefined,
               }}
             >
               <span className="inline-flex items-center gap-2 font-display text-cream">
