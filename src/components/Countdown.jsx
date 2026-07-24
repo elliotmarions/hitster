@@ -29,7 +29,9 @@ export default function Countdown({ secondsToStart, preparing = false }) {
       <div className="flex flex-col items-center gap-3">
         <p className="label text-cream">Gör dig redo</p>
         <div
-          className="anim-pulse font-display text-8xl leading-none neon-text sm:text-9xl"
+          className={`anim-pulse font-display leading-none neon-text ${
+            preparing ? 'text-5xl sm:text-6xl' : 'text-8xl sm:text-9xl'
+          }`}
           style={{ '--neon': '#22e6e6' }}
         >
           {label}
