@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CATEGORIES, TIMER_SECONDS, SPIN_MS } from '../../lib/constants.js'
+import { CATEGORIES, TIMER_SECONDS, SPIN_MS, categoryOrderFor } from '../../lib/constants.js'
 import { useGame } from '../../hooks/useGame.js'
 import {
   ensureCard,
@@ -380,7 +380,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
           {/* På mobil staplas hjul + timer (ryms inte sida vid sida); på sm+ ligger de bredvid varandra. */}
           <div className="flex w-full flex-col items-center gap-4 sm:flex-row sm:justify-center sm:gap-5">
             <div className="w-full max-w-[230px] sm:max-w-[260px]">
-              <DiscoWheel round={round} size={260} />
+              <DiscoWheel round={round} order={categoryOrderFor(room)} size={260} />
             </div>
             {timerRunning && (
               <RoundTimer remaining={remaining} total={TIMER_SECONDS} color={timerColor} />

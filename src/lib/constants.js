@@ -37,6 +37,16 @@ export const CATEGORIES = {
     color: 'blue',
     hex: '#33a6ff',
   },
+  // Tightare årtals-kategori (bara i åldersläge, där ±3 blir för lätt när
+  // eran redan är smal). Delar aldrig bräde med approx_year → samma blå färg ok.
+  approx_year_1: {
+    key: 'approx_year_1',
+    label: 'Årtal ±1 år',
+    short: '±1 år',
+    desc: 'Gissa utgivningsåret – rätt inom ±1 år räknas.',
+    color: 'blue',
+    hex: '#33a6ff',
+  },
   title: {
     key: 'title',
     label: 'Låttiteln',
@@ -49,6 +59,17 @@ export const CATEGORIES = {
 
 // Fast ordning – t.ex. discokulans segment.
 export const CATEGORY_ORDER = ['decade', 'artist', 'exact_year', 'approx_year', 'title']
+
+// Åldersläge (rummet har ett årsfönster): årtionde + ±3 blir för lätt när eran
+// redan är smal, så de byts mot en enda tightare årtals-kategori (±1). Fyra
+// kategorier på snurran och brickan. MÅSTE spegla serverns _room_categories.
+export const AGE_CATEGORY_ORDER = ['exact_year', 'artist', 'title', 'approx_year_1']
+
+// Vilket kategori-set gäller för rummet just nu?
+export function categoryOrderFor(room) {
+  const ageMode = room?.year_min != null || room?.year_max != null
+  return ageMode ? AGE_CATEGORY_ORDER : CATEGORY_ORDER
+}
 
 // Lagläge – neonfärger som tilldelas lag i tur och ordning.
 export const TEAM_COLORS = ['#22e6e6', '#ff4d9d', '#b6ff3c', '#ffc93c', '#b14dff', '#ff8a3c']

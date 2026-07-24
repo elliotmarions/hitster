@@ -6,25 +6,27 @@ const CX = 120
 const CY = 120
 const R = 112
 const LABEL_R = 76
-const N = CATEGORY_ORDER.length // antal kategorier = antal segment (5)
-const SEG = 360 / N // gradtal per segment
 
 // Vinkel mäts medurs från toppen (12-läget).
 function pointAt(deg, radius) {
   const rad = (deg * Math.PI) / 180
   return [CX + radius * Math.sin(rad), CY - radius * Math.cos(rad)]
 }
-function slicePath(centerDeg) {
-  const [x1, y1] = pointAt(centerDeg - SEG / 2, R)
-  const [x2, y2] = pointAt(centerDeg + SEG / 2, R)
-  const large = SEG > 180 ? 1 : 0
+function slicePath(centerDeg, seg) {
+  const [x1, y1] = pointAt(centerDeg - seg / 2, R)
+  const [x2, y2] = pointAt(centerDeg + seg / 2, R)
+  const large = seg > 180 ? 1 : 0
   return `M ${CX} ${CY} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${R} ${R} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`
 }
 
 // Dekorativa lampor runt kanten (disco-marquee), roterar inte.
 const BULBS = Array.from({ length: 30 }, (_, i) => pointAt(i * 12, R + 6))
 
-export default function DiscoWheel({ round, size = 300 }) {
+// `order` = kategori-set för rummet (5 normalt, 4 i åldersläge). Segmentantalet
+// följer med automatiskt.
+export default function DiscoWheel({ round, order = CATEGORY_ORDER, size = 300 }) {
+  const N = order.length
+  const SEG = 360 / N
   const [rotation, setRotation] = useState(0)
   const [spinning, setSpinning] = useState(false)
   const lastRound = useRef(0)
@@ -34,7 +36,7 @@ export default function DiscoWheel({ round, size = 300 }) {
   useEffect(() => {
     if (!round?.round_number || round.round_number === lastRound.current) return
     lastRound.current = round.round_number
-    const seg = CATEGORY_ORDER.indexOf(round.category)
+    const seg = order.indexOf(round.category)
     if (seg < 0) return
     const target = (((-seg * SEG) % 360) + 360) % 360 // önskad slutorientering (mod 360)
     setRotation((prev) => {
@@ -45,7 +47,7 @@ export default function DiscoWheel({ round, size = 300 }) {
     setSpinning(true)
     const t = setTimeout(() => setSpinning(false), SPIN_MS)
     return () => clearTimeout(t)
-  }, [round?.round_number, round?.category])
+  }, [round?.round_number, round?.category, order, SEG])
 
   const landedCat = round && !spinning ? CATEGORIES[round.category] : null
 
@@ -71,7 +73,7 @@ export default function DiscoWheel({ round, size = 300 }) {
             cx={x}
             cy={y}
             r={2.4}
-            fill={CATEGORIES[CATEGORY_ORDER[i % N]].hex}
+            fill={CATEGORIES[order[i % N]].hex}
             opacity={spinning ? 0.9 : 0.55}
           />
         ))}
@@ -87,13 +89,13 @@ export default function DiscoWheel({ round, size = 300 }) {
               : 'none',
           }}
         >
-          {CATEGORY_ORDER.map((key, i) => {
+          {order.map((key, i) => {
             const cat = CATEGORIES[key]
             const [lx, ly] = pointAt(i * SEG, LABEL_R)
             return (
               <g key={key}>
-                <path d={slicePath(i * SEG)} fill={cat.hex} opacity="0.92" stroke="#0a0713" strokeWidth="2" />
-                <path d={slicePath(i * SEG)} fill="url(#wheel-shade)" />
+                <path d={slicePath(i * SEG, SEG)} fill={cat.hex} opacity="0.92" stroke="#0a0713" strokeWidth="2" />
+                <path d={slicePath(i * SEG, SEG)} fill="url(#wheel-shade)" />
                 <text
                   x={lx}
                   y={ly}

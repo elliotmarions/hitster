@@ -58,7 +58,10 @@ export default function AnswerPanel({
   // Årtals-kategorier kräver ett HELT fyrsiffrigt årtal (1900–2099) – "67"
   // godtas inte. Speglar serverns facit-regex (?:19|20)\d{2}. Blockerar
   // inlåsning tills formatet stämmer.
-  const isYearCat = round.category === 'exact_year' || round.category === 'approx_year'
+  const isYearCat =
+    round.category === 'exact_year' ||
+    round.category === 'approx_year' ||
+    round.category === 'approx_year_1'
   const yearFormatBad = isYearCat && text.trim() !== '' && !/(?:19|20)\d{2}/.test(text)
 
   // --- Avslöjat: visa allas svar + facit ---
