@@ -10,6 +10,7 @@ import ConfirmDialog from '../ui/ConfirmDialog.jsx'
 import CopyButton from '../ui/CopyButton.jsx'
 import SwedishFlag from '../ui/SwedishFlag.jsx'
 import TeamChat from '../TeamChat.jsx'
+import { AGE_GROUPS, ageGroupFor } from '../../lib/constants.js'
 
 export default function LobbyView({ room, players, teams, me, isHost, currentUserId }) {
   const navigate = useNavigate()
@@ -66,6 +67,16 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
   async function setSwedishMode(value) {
     await supabase.from('rooms').update({ swedish_mode: value }).eq('id', room.id)
   }
+
+  async function setAgeGroup(group) {
+    // Årsfönstret filtrerar potten server-side (start_random_track). null = ingen gräns.
+    await supabase
+      .from('rooms')
+      .update({ year_min: group.min, year_max: group.max })
+      .eq('id', room.id)
+  }
+
+  const activeAge = ageGroupFor(room)
 
   return (
     <div className="space-y-6">
@@ -146,6 +157,36 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
               </span>
             </button>
           </div>
+        </div>
+
+        {/* Åldersgrupp – riktar potten mot en era (fristående från Alla/Svenska) */}
+        <div className="mt-6">
+          <p className="label mb-2">🎂 Åldersgrupp</p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {AGE_GROUPS.map((group) => {
+              const active = activeAge.key === group.key
+              return (
+                <button
+                  key={group.key}
+                  type="button"
+                  disabled={!isHost}
+                  onClick={() => setAgeGroup(group)}
+                  aria-pressed={active}
+                  className="panel-inset flex cursor-pointer flex-col gap-1 p-3.5 text-left transition disabled:cursor-default disabled:opacity-60"
+                  style={{
+                    borderColor: active ? '#ff4d9d' : undefined,
+                    boxShadow: active ? '0 0 22px -8px #ff4d9d' : undefined,
+                  }}
+                >
+                  <span className="font-display text-cream">{group.label}</span>
+                  <span className="text-xs text-muted">{group.hint}</span>
+                </button>
+              )
+            })}
+          </div>
+          <p className="mt-2 text-xs text-muted">
+            Riktar musiken mot låtarna gruppen växte upp med – toppen av igenkänning.
+          </p>
         </div>
 
         {/* Regler – av/på */}
