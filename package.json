@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "migrate": "node scripts/migrate.mjs"
+    "migrate": "node scripts/migrate.mjs",
+    "test:judging": "node scripts/test-judging.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.0",
