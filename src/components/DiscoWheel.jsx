@@ -22,8 +22,9 @@ function slicePath(centerDeg, seg) {
 // Dekorativa lampor runt kanten (disco-marquee), roterar inte.
 const BULBS = Array.from({ length: 30 }, (_, i) => pointAt(i * 12, R + 6))
 
-// `order` = kategori-set för rummet (5 normalt, 4 i åldersläge). Segmentantalet
-// följer med automatiskt.
+// `order` = kategori-set för rummet. Fem segment i båda lägena, men olika
+// kategorier i åldersläge (se AGE_CATEGORY_ORDER). Segmentantalet följer med
+// automatiskt om setet någon gång ändrar storlek.
 export default function DiscoWheel({ round, order = CATEGORY_ORDER, size = 300 }) {
   const N = order.length
   const SEG = 360 / N

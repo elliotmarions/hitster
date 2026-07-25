@@ -83,8 +83,16 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
     // gräns). Filtreras server-side i start_random_track.
     const patch = { swedish_mode: cat.swedish, year_min: cat.min, year_max: cat.max }
     setOptimistic((o) => ({ ...o, ...patch }))
-    const { error } = await supabase.from('rooms').update(patch).eq('id', room.id)
-    if (error) setOptimistic(null) // backa till serverns sanning
+    // .select() är inte kosmetik: nekar RLS skrivningen får man INGET error,
+    // bara noll rader tillbaka. Utan den här kontrollen skulle det optimistiska
+    // lagret aldrig matcha rummet och värden se fel kategori markerad ända tills
+    // sidan laddas om – exakt det som hände när year_min/year_max saknades i
+    // kolumn-granten (0029).
+    const { data, error } = await supabase.from('rooms').update(patch).eq('id', room.id).select()
+    if (error || !data?.length) {
+      setOptimistic(null) // backa till serverns sanning
+      setErr('Kunde inte byta kategori – ladda om sidan och försök igen.')
+    }
   }
 
   const activeCat = poolCategoryFor(view)

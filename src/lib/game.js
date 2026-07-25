@@ -26,11 +26,15 @@ export async function startRandomTrack(roomId) {
   // Adaptiv pollning: kolla tidigt och tätt (iTunes svarar oftast <1s) och backa
   // av till jämn takt. Pollningen är KLIENT-DRIVEN → fönstret måste rymma
   // serverns låtförsök (0036: 3) när ett remix-bara resultat hoppas över.
-  // Original är normalfallet, så ~15s räcker gott; normalfallet svarar ändå på
+  //
+  // Fönstret är satt efter serverns VÄRSTA fall, inte normalfallet: 3 låtar ×
+  // 2 sökningar × 4s timeout = 24s. Med de tidigare 15s gav klienten upp med
+  // "tog för lång tid" medan servern höll på och hittade en låt strax efter –
+  // värden fick ett fel trots att allt fungerade. Normalfallet svarar ändå på
   // första pollen. Väl under rate-limitern (track_poll = 200/min).
   const ramp = [120, 150, 180, 220, 260, 300, 350, 400, 450, 500, 550, 600, 700]
   const steady = 700
-  const maxMs = 15000
+  const maxMs = 26000
   let elapsed = 0
   for (let i = 0; elapsed < maxMs; i++) {
     const wait = i < ramp.length ? ramp[i] : steady
