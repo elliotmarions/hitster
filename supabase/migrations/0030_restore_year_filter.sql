@@ -1,14 +1,14 @@
 -- =====================================================================
 --  LÅTSNURRAN – Återställ årsfönstret i låtvalet (regressionsfix)
 --
---  0026_age_group_window la årsfiltret (year_min/year_max) i
+--  0026b_age_group_window la årsfiltret (year_min/year_max) i
 --  start_random_track + poll_track_start. 0027_rate_limits skrev SEDAN om
 --  samma funktioner för att lägga till anropsspärren – men utifrån den äldre
 --  0024-versionen, så årsfiltret försvann tyst. Följd: åldersspannen i lobbyn
 --  markeras men påverkar inte vilka låtar som slumpas.
 --
 --  Här återskapas båda funktionerna med BÅDE rate-limit (från 0027) och
---  årsfiltret (från 0026). Varje pott-SELECT får tillbaka:
+--  årsfiltret (från 0026b). Varje pott-SELECT får tillbaka:
 --    and (v_room.year_min is null or tp.year >= v_room.year_min)
 --    and (v_room.year_max is null or tp.year <= v_room.year_max)
 --

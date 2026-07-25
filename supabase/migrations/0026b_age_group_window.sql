@@ -14,7 +14,12 @@
 --    and (v_room.year_max is null or tp.year <= v_room.year_max)
 --
 --  Värden sätter fönstret direkt (RLS rooms_update_host). Additiv + idempotent.
---  Kör efter 0025.
+--
+--  NUMRERING: filen hette först 0026 och krockade med 0026_team_chat. Den är
+--  omdöpt till 0026b i stället för att flyttas sist, eftersom den återskapar
+--  start_random_track/poll_track_start från 0024 UTAN rate limiting – körd
+--  efter 0027 skulle den slå ut anropsspärren. Kör efter 0026_team_chat och
+--  före 0027 (0030 lägger sedan tillbaka årsfiltret ovanpå rate limiten).
 -- =====================================================================
 
 alter table public.rooms

@@ -45,7 +45,7 @@
 --  exakt en rad tillagd var. Ingen annan logik är ändrad (utom join_room,
 --  se ovan).
 --
---  Idempotent. Kör efter 0026.
+--  Idempotent. Kör efter 0026b.
 -- =====================================================================
 
 -- ====================================================================
