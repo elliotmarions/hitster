@@ -1,17 +1,18 @@
 import { supabase } from './supabase'
 import { GRID } from './constants'
+import { translateDbError } from './errors'
 
 // --- RPC-wrappers (all spellogik är server-auktoritativ) ---
 
 export async function startGame(roomId) {
   const { error } = await supabase.rpc('start_game', { p_room_id: roomId })
-  if (error) throw error
+  if (error) throw translateDbError(error)
 }
 
 // Snurra discokulan → slumpad kategori (ingen musik än).
 export async function spinWheel(roomId) {
   const { data, error } = await supabase.rpc('spin_wheel', { p_room_id: roomId })
-  if (error) throw error
+  if (error) throw translateDbError(error)
   return data
 }
 
@@ -21,7 +22,7 @@ export async function spinWheel(roomId) {
 // pg_net är asynkront → steg 1 begär, steg 2 pollas tills rundan fått låten.
 export async function startRandomTrack(roomId) {
   const { error } = await supabase.rpc('start_random_track', { p_room_id: roomId })
-  if (error) throw error
+  if (error) throw translateDbError(error)
   // Adaptiv pollning: kolla tidigt och tätt (iTunes svarar oftast <1s) och backa
   // av till jämn takt. Pollningen är KLIENT-DRIVEN → fönstret måste rymma
   // serverns låtförsök (0036: 3) när ett remix-bara resultat hoppas över.
@@ -38,7 +39,7 @@ export async function startRandomTrack(roomId) {
     const { data, error: pollError } = await supabase.rpc('poll_track_start', {
       p_room_id: roomId,
     })
-    if (pollError) throw pollError
+    if (pollError) throw translateDbError(pollError)
     if (data?.id) return data // klart – alla klienter startar via realtiden
   }
   throw new Error('Låtstarten tog för lång tid – försök igen.')
@@ -47,13 +48,13 @@ export async function startRandomTrack(roomId) {
 // Antal låtar per pott (lobbyns visning). Själva potten är oläsbar för klienter.
 export async function trackPoolCounts() {
   const { data, error } = await supabase.rpc('track_pool_counts')
-  if (error) throw error
+  if (error) throw translateDbError(error)
   return data
 }
 
 export async function ensureCard(roomId) {
   const { data, error } = await supabase.rpc('ensure_card', { p_room_id: roomId })
-  if (error) throw error
+  if (error) throw translateDbError(error)
   return data
 }
 
@@ -62,7 +63,7 @@ export async function markCross(roomId, cellIndex) {
     p_room_id: roomId,
     p_cell: cellIndex,
   })
-  if (error) throw error
+  if (error) throw translateDbError(error)
   return data
 }
 
@@ -72,7 +73,7 @@ export async function unmarkCross(roomId, cellIndex) {
     p_room_id: roomId,
     p_cell: cellIndex,
   })
-  if (error) throw error
+  if (error) throw translateDbError(error)
   return data
 }
 
@@ -82,7 +83,7 @@ export async function eraseCross(roomId, targetCardId, cellIndex) {
     p_target_card: targetCardId,
     p_cell: cellIndex,
   })
-  if (error) throw error
+  if (error) throw translateDbError(error)
   return data
 }
 
@@ -93,14 +94,14 @@ export async function lockAnswer(roomId, answer) {
     p_room_id: roomId,
     p_answer: answer,
   })
-  if (error) throw error
+  if (error) throw translateDbError(error)
   return data
 }
 
 // Värdens säkerhetsventil: avslöja svaren direkt även om något lag inte svarat.
 export async function revealAnswers(roomId) {
   const { error } = await supabase.rpc('reveal_answers', { p_room_id: roomId })
-  if (error) throw error
+  if (error) throw translateDbError(error)
 }
 
 // Värden överstyr en auto-bedömning. correct = true/false, eller null för att
@@ -111,7 +112,7 @@ export async function overrideAnswer(roomId, answerId, correct) {
     p_answer_id: answerId,
     p_correct: correct,
   })
-  if (error) throw error
+  if (error) throw translateDbError(error)
 }
 
 export async function resetGame(roomId, backToLobby = false) {
@@ -119,7 +120,7 @@ export async function resetGame(roomId, backToLobby = false) {
     p_room_id: roomId,
     p_back_to_lobby: backToLobby,
   })
-  if (error) throw error
+  if (error) throw translateDbError(error)
 }
 
 // --- Lagläge (bara värden) ---
@@ -130,7 +131,7 @@ export async function createTeam(roomId, name, color) {
     p_name: name ?? null,
     p_color: color ?? null,
   })
-  if (error) throw error
+  if (error) throw translateDbError(error)
   return data
 }
 
@@ -139,7 +140,7 @@ export async function deleteTeam(roomId, teamId) {
     p_room_id: roomId,
     p_team_id: teamId,
   })
-  if (error) throw error
+  if (error) throw translateDbError(error)
 }
 
 // Placera/flytta en spelare i ett lag. teamId = null → ta ur lag.
@@ -149,7 +150,7 @@ export async function assignPlayer(roomId, playerId, teamId) {
     p_player_id: playerId,
     p_team_id: teamId ?? null,
   })
-  if (error) throw error
+  if (error) throw translateDbError(error)
 }
 
 // --- Lagchatt ---
@@ -161,7 +162,7 @@ export async function sendTeamMessage(roomId, body) {
     p_room_id: roomId,
     p_body: body,
   })
-  if (error) throw error
+  if (error) throw translateDbError(error)
   return data
 }
 

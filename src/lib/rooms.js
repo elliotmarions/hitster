@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { translateDbError } from './errors'
 
 // Normaliserar en inklistrad rumskod: versaler, utan mellanslag/bindestreck.
 export function normalizeCode(input) {
@@ -15,7 +16,7 @@ export async function createRoom({ name, displayName }) {
     p_name: name?.trim() || null,
     p_display_name: displayName.trim(),
   })
-  if (error) throw error
+  if (error) throw translateDbError(error)
   return data
 }
 
@@ -28,7 +29,7 @@ export async function joinRoom({ code, displayName }) {
     p_code: normalizeCode(code),
     p_display_name: displayName.trim(),
   })
-  if (error) throw error
+  if (error) throw translateDbError(error)
   if (!data?.code) throw new Error('Hittade inget rum med den koden.')
   return data
 }
@@ -38,5 +39,5 @@ export async function joinRoom({ code, displayName }) {
 // ended_reason='host_left'). Se migration 0018.
 export async function leaveRoom(roomId) {
   const { error } = await supabase.rpc('leave_room', { p_room_id: roomId })
-  if (error) throw error
+  if (error) throw translateDbError(error)
 }
