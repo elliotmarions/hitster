@@ -233,7 +233,7 @@ export default function AnswerPanel({
                   <div className="mt-2">
                     <p className="font-display text-lg text-cream break-words">
                       {mine?.answer?.trim() ? (
-                        mine.answer
+                        isBeforeAfter ? beforeAfterLabel(mine.answer) : mine.answer
                       ) : (
                         <span className="text-muted">— inget svar —</span>
                       )}
