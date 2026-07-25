@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import { createRoom, joinRoom } from '../lib/rooms.js'
 import DiscoBall from '../components/DiscoBall.jsx'
+import HowToPlay from '../components/HowToPlay.jsx'
 import SetupNotice from '../components/SetupNotice.jsx'
 import NeonButton from '../components/ui/NeonButton.jsx'
 import TextField from '../components/ui/TextField.jsx'
@@ -75,17 +76,6 @@ export default function LandingPage() {
         <h1 className="wordmark wordmark-hero mt-2 leading-none">
           Låtsnurran
         </h1>
-        <p className="mx-auto mt-4 max-w-xl text-muted">
-          Snurra discokulan, lyssna på klippet och gissa: året, artisten eller låten.
-          Rätt svar ger ett kryss på brickan. Fem i rad vinner.
-        </p>
-        <p className="mx-auto mt-3 max-w-xl text-sm text-muted">
-          Ingen app och ingen registrering.{' '}
-          <Link to="/konto" className="text-cyan hover:underline">
-            Skapa ett konto
-          </Link>{' '}
-          om du vill spara statistiken.
-        </p>
       </section>
 
       {isConfigured ? (
@@ -167,6 +157,9 @@ export default function LandingPage() {
       ) : (
         <SetupNotice />
       )}
+
+      {/* Reglerna bakom ett "?" i hörnet – hjälten säljer, den här förklarar. */}
+      <HowToPlay />
     </div>
   )
 }
