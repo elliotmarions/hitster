@@ -76,12 +76,15 @@ export default function LandingPage() {
           Låtsnurran
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-muted">
-          Spela discospelet tillsammans på distans. En delad discokula, bingobrickor i
-          realtid och synkade musikklipp. Ingen registrering krävs – men{' '}
+          Snurra discokulan, lyssna på klippet och gissa: året, artisten eller låten.
+          Rätt svar ger ett kryss på brickan. Fem i rad vinner.
+        </p>
+        <p className="mx-auto mt-3 max-w-xl text-sm text-muted">
+          Ingen app och ingen registrering.{' '}
           <Link to="/konto" className="text-cyan hover:underline">
-            skapa ett konto
+            Skapa ett konto
           </Link>{' '}
-          om du vill spara din statistik.
+          om du vill spara statistiken.
         </p>
       </section>
 
