@@ -161,9 +161,19 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   const canErase =
     !finished && room.erase_rule_enabled && currentCategory === 'exact_year' && answerGateOk
 
+  // Brickan har exakt fem rutor per kategori. Har man kryssat alla fem kan ett
+  // rätt svar inte omsättas i något kryss – då ska hinten säga det i stället för
+  // att uppmana till ett kryss som inte finns. (Samma villkor som spin-spärren
+  // pendingCross använder, så värden får snurra vidare direkt.)
+  const freeCellInCategory = Boolean(
+    currentCategory &&
+      myCard?.grid?.some((cell) => cell.category === currentCategory && !cell.filled),
+  )
+
   // Förklaring till varför kryssning är låst/öppen just nu. Fel svar får ingen
   // text – svarspanelen har redan sagt ✗ Fel, och en rad till om det gör bara
-  // förlusten pratigare.
+  // förlusten pratigare. 'ok' och 'full' är sentinelvärden: de renderas nedan
+  // med kategorins namn och färg, allt annat är färdig text.
   const markHint =
     finished || !currentCategory || myCard?.has_won
       ? null
@@ -175,7 +185,9 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
             ? null
             : alreadyMarkedThisRound
               ? 'Kryss placerat – ett per runda. Klicka på krysset för att ändra.'
-              : 'ok'
+              : freeCellInCategory
+                ? 'ok'
+                : 'full'
 
   // Snurr-spärr: lämna inte en avslöjad runda medan någon rätt-svarande ännu
   // inte kryssat (och har en ledig ruta i kategorin att kryssa). Speglar spin_wheel.
@@ -474,7 +486,17 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
               </b>
               -ruta
             </span>
+          ) : markHint === 'full' && CATEGORIES[currentCategory] ? (
+            <span className="text-xs text-muted">
+              ✓ Rätt! Men alla{' '}
+              <b style={{ color: CATEGORIES[currentCategory].hex }}>
+                {CATEGORIES[currentCategory].short}
+              </b>
+              -rutor är redan ikryssade.
+            </span>
           ) : (
+            markHint !== 'ok' &&
+            markHint !== 'full' &&
             markHint && <span className="text-xs text-muted">{markHint}</span>
           )}
         </div>
