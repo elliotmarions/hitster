@@ -18,8 +18,9 @@ tidsstämpel. Röst/video för häcklandet sköts utanför appen (Discord e.d.).
 1. Värden skapar ett rum och delar rumskoden. Alla spelar som gäst (anonym auth).
 2. Värden snurrar **discokulan** → en av fem kategorier (årtionde, artist,
    exakt årtal, årtal ±3, låttitel) och trycker **Starta låt**.
-3. Alla hör samma klipp, skriver sitt svar och **låser in**. När alla låst
-   avslöjas svaren + facit, och servern rättar automatiskt (värden kan överstyra).
+3. Alla hör samma klipp och skriver sitt svar – **inlåsningen är öppen redan
+   medan låten spelar**. När alla låst stoppas klippet direkt och svaren + facit
+   avslöjas, och servern rättar automatiskt (värden kan överstyra).
 4. Rätt svar ger **ett kryss** i en matchande ruta på 5×5-brickan. Full rad,
    kolumn eller diagonal vinner – flera vinster i samma runda blir **oavgjort**.
 5. Extraregler: **suddregel** (rätt "exakt årtal" låter dig sudda hos en motståndare),

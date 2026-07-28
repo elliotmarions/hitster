@@ -4,9 +4,10 @@ import NeonButton from './ui/NeonButton.jsx'
 import TrackReveal from './TrackReveal.jsx'
 
 /**
- * Svarsfas: efter att låten spelat klart skriver varje enhet (lag i lagläge,
- * annars varje spelare) sitt svar och LÅSER IN det. När alla låst
- * (round.answers_revealed) visas allas svar + facit samtidigt.
+ * Svarsfas: så fort låten börjat spela skriver varje enhet (lag i lagläge,
+ * annars varje spelare) sitt svar och LÅSER IN det – man behöver inte vänta ut
+ * klippet. När alla låst (round.answers_revealed) tystnar låten och allas svar
+ * + facit visas samtidigt.
  *
  * Props:
  *   round    – senaste rundan (answers_revealed, locked_count)
@@ -19,6 +20,7 @@ import TrackReveal from './TrackReveal.jsx'
  *   me       – min player-rad
  *   isHost   – visar "Visa svar nu"-knappen
  *   busy     – knappar disablade under pågående RPC
+ *   clipPlaying – låten låter fortfarande (styr bara hjälptexterna)
  *   onLock   – (text) => void
  *   onReveal – () => void
  */
@@ -32,7 +34,7 @@ export default function AnswerPanel({
   myUnitId,
   isHost,
   busy,
-  canLock = true,
+  clipPlaying = false,
   onLock,
   onReveal,
   onOverride,
@@ -239,7 +241,9 @@ export default function AnswerPanel({
                       )}
                     </p>
                     <p className="mt-1 text-xs text-muted">
-                      Väntar på att alla {unitWord} låser in…
+                      {clipPlaying
+                        ? `Låten spelar vidare tills alla ${unitWord} låst in…`
+                        : `Väntar på att alla ${unitWord} låser in…`}
                     </p>
                   </div>
                 ) : isBeforeAfter ? (
@@ -269,14 +273,14 @@ export default function AnswerPanel({
                     </div>
                     <NeonButton
                       onClick={() => onLock(text)}
-                      disabled={busy || (text !== 'före' && text !== 'efter') || !canLock}
+                      disabled={busy || (text !== 'före' && text !== 'efter')}
                       className="w-full"
                     >
                       Lås in 🔒
                     </NeonButton>
-                    {!canLock && (
+                    {clipPlaying && (
                       <p className="text-[11px] text-muted">
-                        🎵 Välj medan låten spelar – lås in när klippet är slut.
+                        🎵 Lås in direkt om ni är säkra – låten stoppas när alla låst.
                       </p>
                     )}
                   </div>
@@ -299,14 +303,14 @@ export default function AnswerPanel({
                     )}
                     <NeonButton
                       onClick={() => onLock(text.trim())}
-                      disabled={busy || !text.trim() || yearFormatBad || !canLock}
+                      disabled={busy || !text.trim() || yearFormatBad}
                       className="w-full"
                     >
                       Lås in 🔒
                     </NeonButton>
-                    {!canLock && (
+                    {clipPlaying && (
                       <p className="text-[11px] text-muted">
-                        🎵 Skriv medan låten spelar – lås in när klippet är slut.
+                        🎵 Lås in direkt om ni är säkra – låten stoppas när alla låst.
                       </p>
                     )}
                   </div>
@@ -327,7 +331,7 @@ export default function AnswerPanel({
         })}
       </div>
 
-      {isHost && canLock && (
+      {isHost && (
         <div className="border-t border-white/10 pt-3 text-center">
           <NeonButton variant="ghost" onClick={onReveal} disabled={busy}>
             Visa svar nu

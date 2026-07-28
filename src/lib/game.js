@@ -91,8 +91,9 @@ export async function eraseCross(roomId, targetCardId, cellIndex) {
   return data
 }
 
-// Lås in mitt svar för senaste rundan (går bara efter att låten spelat klart).
-// När alla lag låst avslöjas svaren + facit för alla (servern sätter answers_revealed).
+// Lås in mitt svar för senaste rundan. Går så fort låten börjat spela – man
+// behöver inte vänta ut klippet. När alla lag låst avslöjas svaren + facit för
+// alla (servern sätter answers_revealed) och klienterna tystar låten.
 export async function lockAnswer(roomId, answer) {
   const { data, error } = await supabase.rpc('lock_answer', {
     p_room_id: roomId,

@@ -87,17 +87,23 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
 
   // Uppspelningsfaser (efter "Starta låt").
   const beforeStart = hasTrack && startMs != null && now < startMs
-  const clipPlaying = hasTrack && startMs != null && now >= startMs && now < startMs + TIMER_SECONDS * 1000
-  // OBS två skilda begrepp som är lätta att blanda ihop:
-  //   clipFinished   – klippet har spelat klart (ren klocka). Styr när man FÅR
-  //                    låsa in sitt svar.
+  // OBS tre skilda begrepp som är lätta att blanda ihop:
+  //   clipWindow      – klippets 25-sekundersfönster enligt klockan. Styr när
+  //                     svarsrutan visas (man skriver och kan låsa in medan
+  //                     låten spelar).
+  //   clipPlaying     – låten LÅTER faktiskt. Samma fönster, men avslöjas
+  //                     rundan i förtid (alla låste in) tystas låten direkt –
+  //                     se useSyncedAudio – så timern och "Lyssna!" ska bort.
   //   answersRevealed – servern har avslöjat allas svar och satt facit
-  //                    (rounds.answers_revealed). Styr kryss-grinden.
-  // Kryss-grinden måste följa den senare – det är den mark_cross kollar. Följer
+  //                     (rounds.answers_revealed). Styr kryss-grinden.
+  // Kryss-grinden måste följa den sista – det är den mark_cross kollar. Följer
   // den klockan i stället påstår brickan "Fel svar" så fort klippet tystnat,
   // innan spelaren ens hunnit svara.
+  const clipWindow =
+    hasTrack && startMs != null && now >= startMs && now < startMs + TIMER_SECONDS * 1000
   const clipFinished = hasTrack && startMs != null && now >= startMs + TIMER_SECONDS * 1000
   const answersRevealed = Boolean(round?.answers_revealed)
+  const clipPlaying = clipWindow && !answersRevealed
   const timerRunning = clipPlaying && remaining > 0
 
   // Prep→nedräkning: så fort låten fått sin timer_start_at (beforeStart) eller
@@ -431,9 +437,10 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
         </div>
       </section>
 
-      {/* Svarsfas: rutan öppnas redan när klippet spelar (man kan skriva medan
-          man lyssnar), men inlåsning tillåts först när klippet spelat klart. */}
-      {(clipPlaying || clipFinished) && (
+      {/* Svarsfas: rutan öppnas när klippet börjar spela – man både skriver OCH
+          låser in medan man lyssnar. Låser alla in innan klippet är slut tystnar
+          låten och facit visas direkt (servern sätter answers_revealed). */}
+      {(clipWindow || clipFinished) && (
         <AnswerPanel
           round={round}
           facitMeta={facit}
@@ -444,7 +451,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
           myUnitId={teamMode ? myTeamId : me?.id}
           isHost={isHost}
           busy={busy}
-          canLock={clipFinished}
+          clipPlaying={clipPlaying}
           onLock={onLockAnswer}
           onReveal={onRevealAnswers}
           onOverride={onOverrideAnswer}

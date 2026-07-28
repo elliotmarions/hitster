@@ -122,10 +122,17 @@ export function useSyncedAudio(round) {
   const url = round?.current_track_id
   const startMs = round?.timer_start_at ? new Date(round.timer_start_at).getTime() : null
   const roundNo = round?.round_number
+  // Rundan är avgjord i förtid: alla har låst in sina svar (eller värden tryckte
+  // "Visa svar nu") innan de 25 sekunderna gått. Då ska musiken tystna direkt –
+  // annars ligger klippet och spelar över facit.
+  const revealed = Boolean(round?.answers_revealed)
 
   // Starta klippet exakt vid start_at.
   useEffect(() => {
     if (!url || startMs == null) return
+    // Avslöjad runda → starta inte alls, och cleanup avbryter en redan schemalagd
+    // start (t.ex. om alla hann låsa in under nedräkningen).
+    if (revealed) return
     if (playedRef.current === roundNo) return
     const delay = startMs - Date.now()
     if (delay < -1500) return // för sent (sen anslutning) – hoppa denna runda
@@ -142,7 +149,17 @@ export function useSyncedAudio(round) {
       })
     }, Math.max(0, delay))
     return () => clearTimeout(id)
-  }, [roundNo, url, startMs])
+  }, [roundNo, url, startMs, revealed])
+
+  // Tysta klippet i samma ögonblick rundan avslöjas (alla låste in i förtid).
+  // pausedRef/playedRef sätts till rundan så varken 25s-pausen eller en ny
+  // start-effekt gör något mer med den här rundan.
+  useEffect(() => {
+    if (!revealed || roundNo == null) return
+    playedRef.current = roundNo
+    pausedRef.current = roundNo
+    if (audioRef.current) audioRef.current.pause()
+  }, [revealed, roundNo])
 
   // Pausa när 25s-klippet är slut.
   useEffect(() => {

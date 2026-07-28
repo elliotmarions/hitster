@@ -27,13 +27,13 @@ const STEG = [
     n: '2',
     c: '#22e6e6',
     t: 'Lyssna',
-    d: 'Ett klipp ur en slumpad låt spelas i 25 sekunder, samtidigt hos alla.',
+    d: 'Ett klipp ur en slumpad låt spelas i upp till 25 sekunder, samtidigt hos alla.',
   },
   {
     n: '3',
     c: '#b6ff3c',
     t: 'Gissa',
-    d: 'Skriv ditt svar och lås in det. När alla låst avslöjas svaren samtidigt.',
+    d: 'Skriv ditt svar och lås in det redan medan låten spelar. När alla låst stoppas låten och svaren avslöjas samtidigt.',
   },
   {
     n: '4',
