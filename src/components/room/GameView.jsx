@@ -161,7 +161,9 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   const canErase =
     !finished && room.erase_rule_enabled && currentCategory === 'exact_year' && answerGateOk
 
-  // Förklaring till varför kryssning är låst/öppen just nu.
+  // Förklaring till varför kryssning är låst/öppen just nu. Fel svar får ingen
+  // text – svarspanelen har redan sagt ✗ Fel, och en rad till om det gör bara
+  // förlusten pratigare.
   const markHint =
     finished || !currentCategory || myCard?.has_won
       ? null
@@ -170,7 +172,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
         : !answersRevealed
           ? 'Lås in ert svar och vänta på facit innan ni kryssar.'
           : !myAnswerCorrect
-            ? 'Fel svar den här rundan – ingen kryssning.'
+            ? null
             : alreadyMarkedThisRound
               ? 'Kryss placerat – ett per runda. Klicka på krysset för att ändra.'
               : 'ok'

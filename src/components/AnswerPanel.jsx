@@ -164,10 +164,6 @@ export default function AnswerPanel({
           })}
           {shown.length === 0 && <p className="text-sm text-muted">Inga svar registrerades.</p>}
         </div>
-        <p className="text-center text-[11px] text-muted">
-          ✓/✗ är auto-bedömt mot facit{isHost ? ' – tryck ✓/✗ för att rätta.' : '.'}
-        </p>
-
         <div className="flex justify-center pt-1">
           {/* Facit hämtas från round_tracks (RLS öppnar den först vid reveal). */}
           <TrackReveal meta={facitMeta} category={round.category} />
