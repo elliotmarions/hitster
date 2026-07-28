@@ -493,7 +493,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
             />
             {canUnmark && myCard.grid?.some((cell) => cell.filled) && (
               <p className="text-center text-xs text-muted">
-                Klicka på ett kryss för att ta bort det.
+                Klickade du fel? Klicka på ett kryss för att ta bort det.
               </p>
             )}
           </div>
