@@ -475,7 +475,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
               -ruta
             </span>
           ) : (
-            markHint && <span className="text-xs text-muted">🔒 {markHint}</span>
+            markHint && <span className="text-xs text-muted">{markHint}</span>
           )}
         </div>
         {myCard ? (

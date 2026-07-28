@@ -218,7 +218,7 @@ export default function AnswerPanel({
                 </p>
                 {unitLocked ? (
                   <span className="chip shrink-0" style={{ '--neon': good }}>
-                    🔒 Låst
+                    Låst
                   </span>
                 ) : (
                   <span className="shrink-0 text-xs text-muted">skriver…</span>
@@ -272,7 +272,7 @@ export default function AnswerPanel({
                       disabled={busy || (text !== 'före' && text !== 'efter')}
                       className="w-full"
                     >
-                      Lås in 🔒
+                      Lås in
                     </NeonButton>
                   </div>
                 ) : (
@@ -297,7 +297,7 @@ export default function AnswerPanel({
                       disabled={busy || !text.trim() || yearFormatBad}
                       className="w-full"
                     >
-                      Lås in 🔒
+                      Lås in
                     </NeonButton>
                   </div>
                 )
@@ -305,7 +305,7 @@ export default function AnswerPanel({
                 <div className="mt-2 flex flex-1 items-center justify-center py-3 text-center">
                   {unitLocked ? (
                     <p className="font-display text-lg" style={{ color: good }}>
-                      🔒 Klar!
+                      Klar!
                     </p>
                   ) : (
                     <p className="text-sm text-muted">Väntar…</p>
