@@ -278,11 +278,6 @@ export default function AnswerPanel({
                     >
                       Lås in 🔒
                     </NeonButton>
-                    {clipPlaying && (
-                      <p className="text-[11px] text-muted">
-                        🎵 Lås in direkt om ni är säkra – låten stoppas när alla låst.
-                      </p>
-                    )}
                   </div>
                 ) : (
                   <div className="mt-2 space-y-2">
@@ -308,11 +303,6 @@ export default function AnswerPanel({
                     >
                       Lås in 🔒
                     </NeonButton>
-                    {clipPlaying && (
-                      <p className="text-[11px] text-muted">
-                        🎵 Lås in direkt om ni är säkra – låten stoppas när alla låst.
-                      </p>
-                    )}
                   </div>
                 )
               ) : (
