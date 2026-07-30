@@ -89,16 +89,19 @@ export default function HowToPlay() {
 
   return (
     <>
-      {/* Mobil: fast uppe till höger, men NEDANFÖR den sticky headern (61 px) –
-          annars lägger den sig rakt över "Logga in", som sitter i samma hörn.
-          Desktop (sm+): nere till höger, där marginalerna ändå står tomma. */}
+      {/* Mobil: absolut i sidans övre högra hörn, alltså PARKERAD där uppe –
+          den ska inte följa med i vyn när man skrollar (fixed la sig mitt över
+          formulärfälten på vägen ned). Kräver `relative` på LandingPage-roten.
+          Desktop (sm+): fast nere till höger, där marginalerna ändå står tomma.
+          z-10 på mobil (headern är z-20): knappen ska glida IN UNDER den sticky
+          headern när man skrollar förbi, inte ovanpå den. */}
       <button
         ref={openerRef}
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Så spelar man"
         title="Så spelar man"
-        className="fixed right-4 top-[4.5rem] z-40 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-cyan/60 bg-midnight/80 font-display text-xl text-cyan transition hover:bg-cyan/10 sm:bottom-4 sm:top-auto"
+        className="absolute right-0 top-0 z-10 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-cyan/60 bg-midnight/80 font-display text-xl text-cyan transition hover:bg-cyan/10 sm:fixed sm:bottom-4 sm:right-4 sm:top-auto sm:z-40"
         style={{ boxShadow: '0 0 22px -6px #22e6e6' }}
       >
         ?

@@ -68,8 +68,10 @@ export default function LandingPage() {
     }
   }
 
+  // relative: HowToPlay-knappen ankras absolut i sidans övre högra hörn på
+  // mobil (se HowToPlay.jsx) i stället för att ligga fast i vyn.
   return (
-    <div className="space-y-10">
+    <div className="relative space-y-10">
       {/* Hero – neon-marquee */}
       <section className="pt-4 text-center">
         <DiscoBall size={104} className="anim-float mx-auto" />
