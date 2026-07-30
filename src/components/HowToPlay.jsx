@@ -89,13 +89,16 @@ export default function HowToPlay() {
 
   return (
     <>
+      {/* Mobil: fast uppe till höger, men NEDANFÖR den sticky headern (61 px) –
+          annars lägger den sig rakt över "Logga in", som sitter i samma hörn.
+          Desktop (sm+): nere till höger, där marginalerna ändå står tomma. */}
       <button
         ref={openerRef}
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Så spelar man"
         title="Så spelar man"
-        className="fixed bottom-4 right-4 z-40 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-cyan/60 bg-midnight/80 font-display text-xl text-cyan transition hover:bg-cyan/10"
+        className="fixed right-4 top-[4.5rem] z-40 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-cyan/60 bg-midnight/80 font-display text-xl text-cyan transition hover:bg-cyan/10 sm:bottom-4 sm:top-auto"
         style={{ boxShadow: '0 0 22px -6px #22e6e6' }}
       >
         ?
