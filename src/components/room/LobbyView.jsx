@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase.js'
 import { leaveRoom } from '../../lib/rooms.js'
-import { startGame, trackPoolCounts } from '../../lib/game.js'
+import { startGame, trackPoolCounts, trackPoolGenreCounts } from '../../lib/game.js'
 import PlayerList from '../PlayerList.jsx'
 import TeamSetup from '../TeamSetup.jsx'
 import NeonButton from '../ui/NeonButton.jsx'
@@ -21,6 +21,7 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
   // Antal låtar per pott – potten bor i databasen (oläsbar för klienter),
   // bara räknarna exponeras via en RPC.
   const [potCounts, setPotCounts] = useState(null)
+  const [genreCounts, setGenreCounts] = useState(null)
   // Optimistiskt lager: valet ska synas direkt vid klick, utan att vänta på
   // server-svar + realtidsstuds. Rensas när riktiga room-proppen hunnit ikapp.
   const [optimistic, setOptimistic] = useState(null)
@@ -41,6 +42,9 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
     let active = true
     trackPoolCounts()
       .then((c) => active && setPotCounts(c))
+      .catch(() => {})
+    trackPoolGenreCounts()
+      .then((c) => active && setGenreCounts(c))
       .catch(() => {})
     return () => {
       active = false
@@ -79,9 +83,16 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
   }
 
   async function setCategory(cat) {
-    // En kategori sätter potten i ett svep: språk + årsfönster (null = ingen
-    // gräns). Filtreras server-side i start_random_track.
-    const patch = { swedish_mode: cat.swedish, year_min: cat.min, year_max: cat.max }
+    // En kategori sätter potten i ett svep: språk + årsfönster + genre (null =
+    // ingen gräns). Alla tre skrivs alltid, så ett byte FRÅN en genre till ett
+    // åldersspann nollställer genren i stället för att lägga filtren ovanpå
+    // varandra och lämna en pott som nästan är tom.
+    const patch = {
+      swedish_mode: cat.swedish,
+      year_min: cat.min,
+      year_max: cat.max,
+      genre: cat.genre ?? null,
+    }
     setOptimistic((o) => ({ ...o, ...patch }))
     // .select() är inte kosmetik: nekar RLS skrivningen får man INGET error,
     // bara noll rader tillbaka. Utan den här kontrollen skulle det optimistiska
@@ -97,7 +108,7 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
 
   const activeCat = poolCategoryFor(view)
 
-  // En kategori-knapp – delas av de breda potterna och åldersspannen.
+  // En kategori-knapp – delas av de breda potterna, åldersspannen och genrerna.
   function renderCategory(cat) {
     const active = activeCat.key === cat.key
     const count =
@@ -105,7 +116,9 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
         ? ` · ${potCounts.all.toLocaleString('sv-SE')} låtar`
         : cat.pot === 'sv' && potCounts
           ? ` · ${potCounts.sv} låtar`
-          : ''
+          : cat.genre && genreCounts?.[cat.genre]
+            ? ` · ${genreCounts[cat.genre].toLocaleString('sv-SE')} låtar`
+            : ''
     return (
       <button
         key={cat.key}
@@ -190,8 +203,20 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
             {POOL_CATEGORIES.filter((c) => c.group === 'age').map(renderCategory)}
           </div>
 
+          {/* Avdelare mot genrerna – fortfarande samma enval */}
+          <div className="my-4 flex items-center gap-3">
+            <span className="h-px flex-1 bg-cream/10" />
+            <span className="label">Eller efter genre</span>
+            <span className="h-px flex-1 bg-cream/10" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {POOL_CATEGORIES.filter((c) => c.group === 'genre').map(renderCategory)}
+          </div>
+
           <p className="mt-2 text-xs text-muted">
             Åldersspannen riktar musiken mot låtarna gruppen växte upp med – toppen av igenkänning.
+            Genrerna spänner över alla år.
           </p>
         </div>
 

@@ -113,8 +113,14 @@ export const GRID = 5 // brickan är 5x5 (fritt slumpad, exakt 5 rutor per kateg
 //  (min/max = null → ingen årsgräns). Filtreras server-side i start_random_track
 //  (potten är oläsbar för klienter). `pot` = vilken räknare som visas (all/sv);
 //  åldersspannen är delmängder av världspotten och saknar egen räknare.
-//  `group` styr bara den visuella uppdelningen i lobbyn: 'broad' (Alla/Svenska)
-//  och 'age' (åldersspannen) – de är fortfarande ETT val, bara avskilda.
+//  `group` styr bara den visuella uppdelningen i lobbyn: 'broad' (Alla/Svenska),
+//  'age' (åldersspannen) och 'genre' – de är fortfarande ETT val, bara avskilda.
+//
+//  Genrerna filtrerar på track_pool.genre via _genre_key() server-side (0043).
+//  Deezers etiketter är grova, så mappningen slår ihop det folk ändå uppfattar
+//  som samma sak – "Alternativmusik" och "Metal" ligger under Rock. Antalen
+//  hämtas live från track_pool_genre_counts(), inte hårdkodade, eftersom potten
+//  växer.
 export const POOL_CATEGORIES = [
   { key: 'all', group: 'broad', label: '🌍 Alla låtar', hint: 'Blandat från hela världen', swedish: false, min: null, max: null, neon: '#22e6e6', pot: 'all' },
   { key: 'sv', group: 'broad', label: 'Svenska', hint: 'Svenska artister, 1950–idag', swedish: true, min: null, max: null, neon: '#ffd23f', pot: 'sv' },
@@ -123,11 +129,20 @@ export const POOL_CATEGORIES = [
   { key: '40s', group: 'age', label: '40–49 år', hint: 'Uppväxthits ~1987–2001', swedish: false, min: 1987, max: 2001, neon: '#3ee87b' },
   { key: '50s', group: 'age', label: '50–59 år', hint: 'Uppväxthits ~1977–1991', swedish: false, min: 1977, max: 1991, neon: '#ff8a3c' },
   { key: '60s', group: 'age', label: '60–69 år', hint: 'Uppväxthits ~1967–1981', swedish: false, min: 1967, max: 1981, neon: '#33a6ff' },
+  { key: 'pop', group: 'genre', label: 'Pop', swedish: false, min: null, max: null, genre: 'pop', neon: '#ff4d9d' },
+  { key: 'rock', group: 'genre', label: 'Rock', swedish: false, min: null, max: null, genre: 'rock', neon: '#ff8a3c' },
+  { key: 'hiphop', group: 'genre', label: 'Hiphop', swedish: false, min: null, max: null, genre: 'hiphop', neon: '#b6ff3c' },
+  { key: 'dance', group: 'genre', label: 'Dance', swedish: false, min: null, max: null, genre: 'dance', neon: '#22e6e6' },
+  { key: 'rnb', group: 'genre', label: 'R&B', swedish: false, min: null, max: null, genre: 'rnb', neon: '#b14dff' },
 ]
 
-// Vilken pott-kategori rummet står på just nu. Svenska är sin egen kategori
-// (årsfönstret ignoreras då); annars matchas årsfönstret mot ett åldersspann.
+// Vilken pott-kategori rummet står på just nu. Ordningen spelar roll: genre
+// först (den nollställer årsfönstret så ett genrerum annars hade matchat
+// "Alla låtar"), sedan svenska (som ignorerar årsfönstret), sedan årsspannen.
 export function poolCategoryFor(room) {
+  if (room?.genre) {
+    return POOL_CATEGORIES.find((c) => c.genre === room.genre) || POOL_CATEGORIES[0]
+  }
   if (room?.swedish_mode) return POOL_CATEGORIES.find((c) => c.key === 'sv')
   const min = room?.year_min ?? null
   const max = room?.year_max ?? null

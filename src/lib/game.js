@@ -56,6 +56,14 @@ export async function trackPoolCounts() {
   return data
 }
 
+// Antal låtar per genreläge, till lobbyns kategoriknappar. Returnerar rader
+// { genre, antal } – potten växer, så siffrorna hämtas i stället för hårdkodas.
+export async function trackPoolGenreCounts() {
+  const { data, error } = await supabase.rpc('track_pool_genre_counts')
+  if (error) throw translateDbError(error)
+  return Object.fromEntries((data || []).map((r) => [r.genre, Number(r.antal)]))
+}
+
 export async function ensureCard(roomId) {
   const { data, error } = await supabase.rpc('ensure_card', { p_room_id: roomId })
   if (error) throw translateDbError(error)
