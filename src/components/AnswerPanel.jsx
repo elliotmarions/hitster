@@ -180,7 +180,11 @@ export default function AnswerPanel({
   const units = teamMode
     ? teams.map((t) => ({ id: t.id, name: t.name || 'Lag' }))
     : players.map((p) => ({ id: p.id, name: p.display_name || 'Spelare' }))
-  const good = '#3ee87b'
+  // Låst-läget är MEDVETET blått, inte grönt. Grönt betyder "rätt svar" när
+  // facit väl visas, och samma färg i båda lägena fick folk att tro att de
+  // redan svarat rätt i det ögonblick de låste in. Blått säger bara "klar –
+  // vi väntar på de andra"; först vid avslöjandet blir det grönt eller rosa.
+  const lockedHue = '#33a6ff'
 
   return (
     <section className="panel p-5 space-y-4">
@@ -204,11 +208,11 @@ export default function AnswerPanel({
               className="panel-inset flex flex-col p-3"
               style={{
                 borderColor: unitLocked
-                  ? `${good}66`
+                  ? `${lockedHue}66`
                   : isMe
                     ? 'rgba(34,230,230,0.4)'
                     : undefined,
-                boxShadow: unitLocked ? `0 0 18px -8px ${good}` : undefined,
+                boxShadow: unitLocked ? `0 0 18px -8px ${lockedHue}` : undefined,
               }}
             >
               <div className="flex items-center justify-between gap-2">
@@ -217,7 +221,7 @@ export default function AnswerPanel({
                   {isMe ? (teamMode ? ' (ni)' : ' (du)') : ''}
                 </p>
                 {unitLocked ? (
-                  <span className="chip shrink-0" style={{ '--neon': good }}>
+                  <span className="chip shrink-0" style={{ '--neon': lockedHue }}>
                     Låst
                   </span>
                 ) : (
@@ -277,6 +281,10 @@ export default function AnswerPanel({
                   </div>
                 ) : (
                   <div className="mt-2 space-y-2">
+                    {/* Autocorrect MÅSTE vara av: mobiltangentbord skriver
+                        annars om låttitlar och artistnamn (ofta utan att man
+                        märker det) och man förlorar rundan på en rättstavning
+                        man aldrig bad om. */}
                     <textarea
                       className="field min-h-[64px] resize-none"
                       placeholder={
@@ -286,6 +294,11 @@ export default function AnswerPanel({
                       onChange={(e) => setText(e.target.value)}
                       maxLength={200}
                       autoFocus
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                      autoComplete="off"
+                      spellCheck={false}
+                      inputMode={isYearCat ? 'numeric' : 'text'}
                     />
                     {yearFormatBad && (
                       <p className="text-xs text-magenta">
@@ -304,7 +317,7 @@ export default function AnswerPanel({
               ) : (
                 <div className="mt-2 flex flex-1 items-center justify-center py-3 text-center">
                   {unitLocked ? (
-                    <p className="font-display text-lg" style={{ color: good }}>
+                    <p className="font-display text-lg" style={{ color: lockedHue }}>
                       Klar!
                     </p>
                   ) : (
