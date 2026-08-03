@@ -16,6 +16,7 @@ import {
 } from '../../lib/game.js'
 import { leaveRoom } from '../../lib/rooms.js'
 import { useSyncedAudio } from '../../hooks/useSyncedAudio.js'
+import { serverNow } from '../../lib/serverTime.js'
 import DiscoWheel from '../DiscoWheel.jsx'
 import CategoryBanner from '../CategoryBanner.jsx'
 import RoundTimer from '../RoundTimer.jsx'
@@ -36,7 +37,12 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   // Synkad uppspelning av preview-klippet (samma ljud-URL hos alla vid start_at).
   const audio = useSyncedAudio(round)
 
-  const [now, setNow] = useState(() => Date.now())
+  // MÅSTE vara serverns klocka, inte enhetens. Allt härunder jämförs mot
+  // timer_start_at (server-satt): nedräkningen, klippets 25s-fönster, timern
+  // och när svarsrutan dyker upp. Går enheten fel hamnar hela fasindelningen
+  // lika mycket fel – och eftersom ljudet numera följer serverklockan skulle
+  // UI och musik dessutom säga emot varandra.
+  const [now, setNow] = useState(() => serverNow())
   const [wheelSpinning, setWheelSpinning] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
@@ -59,7 +65,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
 
   // Tickande klocka.
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 200)
+    const t = setInterval(() => setNow(serverNow()), 200)
     return () => clearInterval(t)
   }, [])
 

@@ -19,7 +19,13 @@
 //  kvar på 0 = exakt det gamla beteendet. Synken blir alltså aldrig sämre av
 //  det här, bara bättre.
 
-import { supabase } from './supabase'
+// OBS: vi går medvetet förbi supabase-js och anropar RPC:n med rå fetch.
+// Klienten köar sina anrop bakom auth-initieringen, vilket gjorde att
+// mätningen blev klar först många sekunder efter sidladdning – och startade
+// en runda innan dess användes fortfarande enhetens felgående klocka.
+// server_now() är grantad till anon, så apikey-headern räcker.
+const URL_BASE = import.meta.env.VITE_SUPABASE_URL
+const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 // Flera stickprov – vi behåller det med kortast rundtur, eftersom osäkerheten
 // i mätningen är ungefär halva rundturstiden.
@@ -40,10 +46,19 @@ export function clockOffsetMs() {
 
 async function sample() {
   const t0 = Date.now()
-  const { data, error } = await supabase.rpc('server_now')
+  const res = await fetch(URL_BASE.replace(/\/+$/, '') + '/rest/v1/rpc/server_now', {
+    method: 'POST',
+    headers: {
+      apikey: ANON_KEY,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: '{}',
+    cache: 'no-store',
+  })
   const t1 = Date.now()
-  if (error || !data) return null
-  const serverMs = Date.parse(data)
+  if (!res.ok) return null
+  const serverMs = Date.parse(await res.json())
   if (!Number.isFinite(serverMs)) return null
   const rtt = t1 - t0
   // Servern läste sin klocka någonstans mitt i anropet → serverns tid vid t1
@@ -52,12 +67,13 @@ async function sample() {
 }
 
 /**
- * Mät klockskillnaden mot servern. Idempotent – första anropet gör jobbet,
- * senare anrop får samma löfte tillbaka.
+ * Mät klockskillnaden mot servern. En LYCKAD mätning cachas och återanvänds;
+ * en misslyckad gör det inte, så nästa anropare får försöka igen (annars hade
+ * ett enda hicka vid sidladdning låst appen till fel klocka för all framtid).
  */
 export function syncServerTime() {
   if (syncPromise) return syncPromise
-  if (!supabase) return Promise.resolve(0)
+  if (!URL_BASE || !ANON_KEY) return Promise.resolve(0)
   syncPromise = (async () => {
     let best = null
     for (let i = 0; i < SAMPLES; i++) {
@@ -68,7 +84,11 @@ export function syncServerTime() {
         /* offline e.d. – behåll den lokala klockan */
       }
     }
-    if (best) offsetMs = Math.round(best.offset)
+    if (!best) {
+      syncPromise = null // misslyckades – tillåt ett nytt försök
+      return 0
+    }
+    offsetMs = Math.round(best.offset)
     return offsetMs
   })()
   return syncPromise
