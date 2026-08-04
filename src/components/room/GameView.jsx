@@ -274,7 +274,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
     myCard &&
     optimistic(
       () => {
-        optimisticCell(myCard.id, i, true)
+        optimisticCell(myCard.id, i, true, round?.id)
         if (round?.id) setMarkedRoundId(round.id) // lås fler kryss direkt (ett per runda)
       },
       () => markCross(room.id, i),
@@ -515,13 +515,16 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
               currentCategory={currentCategory}
               canMark={canMark}
               canUnmark={canUnmark}
+              unmarkableRound={round?.id}
               onMark={onMark}
               onUnmark={onUnmark}
               variant="lg"
             />
-            {canUnmark && myCard.grid?.some((cell) => cell.filled) && (
+            {/* Hinten visas bara när det FINNS ett ångerbart kryss, dvs ett
+                som lades den här rundan. Tidigare rundors kryss sitter fast. */}
+            {canUnmark && myCard.grid?.some((cell) => cell.filled && cell.round === round?.id) && (
               <p className="text-center text-xs text-muted">
-                Klickade du fel? Klicka på ett kryss för att ta bort det.
+                Klickade du fel? Klicka på rundans kryss för att flytta det.
               </p>
             )}
           </div>

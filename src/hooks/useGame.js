@@ -115,11 +115,20 @@ export function useGame(roomId) {
 
   // Optimistiska ändringar: uppdatera lokalt DIREKT så klicket känns omedelbart.
   // Realtiden skriver sedan över med serverns sanning (eller refetch vid fel).
-  const optimisticCell = useCallback((cardId, cell, filled) => {
+  // roundId stämplas på rutan vid kryssning, precis som mark_cross gör
+  // server-side. Utan den skulle det egna krysset se ut att tillhöra en
+  // tidigare runda tills realtidshändelsen kommit, och ångerknappen vore
+  // död i just det glappet.
+  const optimisticCell = useCallback((cardId, cell, filled, roundId = null) => {
     setCards((prev) =>
       prev.map((c) =>
         c.id === cardId
-          ? { ...c, grid: c.grid.map((g, i) => (i === cell ? { ...g, filled } : g)) }
+          ? {
+              ...c,
+              grid: c.grid.map((g, i) =>
+                i === cell ? { ...g, filled, ...(filled ? { round: roundId } : {}) } : g,
+              ),
+            }
           : c,
       ),
     )

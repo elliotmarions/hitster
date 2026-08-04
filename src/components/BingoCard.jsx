@@ -36,6 +36,7 @@ export default function BingoCard({
   currentCategory = null,
   canMark = false,
   canUnmark = false,
+  unmarkableRound = null,
   canErase = false,
   onMark,
   onUnmark,
@@ -68,7 +69,12 @@ export default function BingoCard({
           // Fallback så en okänd/gammal kategori aldrig kraschar renderingen.
           const cat = CATEGORIES[cell.category] ?? { hex: '#6b5a9c', short: '?', label: 'Okänd' }
           const eligibleMark = isOwn && canMark && !cell.filled && cell.category === currentCategory
-          const eligibleUnmark = isOwn && canUnmark && cell.filled
+          // Ångerknappen gäller BARA krysset från den pågående rundan – den
+          // finns för att byta placering, inte för att plocka bort kryss man
+          // spelat ihop tidigare (de går inte att få tillbaka). Rutor utan
+          // round-stämpel är kryssade före migration 0049 = tidigare rundor.
+          const eligibleUnmark =
+            isOwn && canUnmark && cell.filled && !!unmarkableRound && cell.round === unmarkableRound
           const eligibleErase = canErase && !isOwn && cell.filled
           const inWin = win?.includes(i)
           const clickable = eligibleMark || eligibleUnmark || eligibleErase
