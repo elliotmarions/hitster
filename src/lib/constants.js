@@ -127,47 +127,94 @@ export const GRID = 5 // brickan är 5x5 (fritt slumpad, exakt 5 rutor per kateg
 //  som samma sak – "Alternativmusik" och "Metal" ligger under Rock. Antalen
 //  hämtas live från track_pool_genre_counts(), inte hårdkodade, eftersom potten
 //  växer.
+//  MULTIVAL (0057): varje chip väljs av och på fritt.
+//    union INOM en dimension  – "20–29 år" + "30–39 år" = låtar ur endera
+//    snitt MELLAN dimensioner – ålder + genre = låtar som är båda
+//    tom dimension            – ingen gräns alls på den dimensionen
+//  Inget valt = hela potten. Svenska är numera en chip som alla andra:
+//  vald = bara svenska, ovald = ingen språkgräns (inte "allt utom svenskt",
+//  vilket var innebörden före 0057).
 export const POOL_CATEGORIES = [
-  { key: 'all', group: 'broad', label: '🌍 Alla låtar', hint: 'Blandat från hela världen', swedish: false, min: null, max: null, neon: '#22e6e6', pot: 'all' },
-  { key: 'sv', group: 'broad', label: 'Svenska', hint: 'Svenska artister, 1950–idag', swedish: true, min: null, max: null, neon: '#ffd23f', pot: 'sv' },
-  { key: '20s', group: 'age', label: '20–29 år', hint: 'Uppväxthits ~2008–idag', swedish: false, min: 2008, max: null, neon: '#ff4d9d' },
-  { key: '30s', group: 'age', label: '30–39 år', hint: 'Uppväxthits ~1997–2011', swedish: false, min: 1997, max: 2011, neon: '#b14dff' },
-  { key: '40s', group: 'age', label: '40–49 år', hint: 'Uppväxthits ~1987–2001', swedish: false, min: 1987, max: 2001, neon: '#3ee87b' },
-  { key: '50s', group: 'age', label: '50–59 år', hint: 'Uppväxthits ~1977–1991', swedish: false, min: 1977, max: 1991, neon: '#ff8a3c' },
-  { key: '60s', group: 'age', label: '60–69 år', hint: 'Uppväxthits ~1967–1981', swedish: false, min: 1967, max: 1981, neon: '#33a6ff' },
-  { key: 'pop', group: 'genre', label: 'Pop', swedish: false, min: null, max: null, genre: 'pop', neon: '#ff4d9d' },
-  { key: 'rock', group: 'genre', label: 'Rock', swedish: false, min: null, max: null, genre: 'rock', neon: '#ff8a3c' },
-  { key: 'hiphop', group: 'genre', label: 'Hiphop', swedish: false, min: null, max: null, genre: 'hiphop', neon: '#b6ff3c' },
-  { key: 'dance', group: 'genre', label: 'Dance', swedish: false, min: null, max: null, genre: 'dance', neon: '#22e6e6' },
-  { key: 'rnb', group: 'genre', label: 'R&B', swedish: false, min: null, max: null, genre: 'rnb', neon: '#b14dff' },
+  { key: 'sv', group: 'lang', label: 'Svenska', hint: 'Bara svenska artister', neon: '#ffd23f' },
+  { key: '20s', group: 'age', label: '20–29 år', hint: 'Uppväxthits ~2008–idag', min: 2008, max: null, neon: '#ff4d9d' },
+  { key: '30s', group: 'age', label: '30–39 år', hint: 'Uppväxthits ~1997–2011', min: 1997, max: 2011, neon: '#b14dff' },
+  { key: '40s', group: 'age', label: '40–49 år', hint: 'Uppväxthits ~1987–2001', min: 1987, max: 2001, neon: '#3ee87b' },
+  { key: '50s', group: 'age', label: '50–59 år', hint: 'Uppväxthits ~1977–1991', min: 1977, max: 1991, neon: '#ff8a3c' },
+  { key: '60s', group: 'age', label: '60–69 år', hint: 'Uppväxthits ~1967–1981', min: 1967, max: 1981, neon: '#33a6ff' },
+  { key: 'pop', group: 'genre', label: 'Pop', genre: 'pop', neon: '#ff4d9d' },
+  { key: 'rock', group: 'genre', label: 'Rock', genre: 'rock', neon: '#ff8a3c' },
+  { key: 'hiphop', group: 'genre', label: 'Hiphop', genre: 'hiphop', neon: '#b6ff3c' },
+  { key: 'dance', group: 'genre', label: 'Dance', genre: 'dance', neon: '#22e6e6' },
+  { key: 'rnb', group: 'genre', label: 'R&B', genre: 'rnb', neon: '#b14dff' },
 ]
 
-// Vilken pott-kategori rummet står på just nu. Ordningen spelar roll: genre
-// först (den nollställer årsfönstret så ett genrerum annars hade matchat
-// "Alla låtar"), sedan årsspannen, sist de breda potterna.
-//
-// swedish_mode läses INTE här längre – den är en modifierare som kan ligga
-// ovanpå ett åldersspann eller en genre, se swedishOnly(). Läste vi den
-// först skulle "20–29 år + bara svenska" visa Svenska som markerad kategori
-// och åldersknappen som omarkerad, fast rummet står på båda.
-export function poolCategoryFor(room) {
-  if (room?.genre) {
-    return POOL_CATEGORIES.find((c) => c.genre === room.genre) || POOL_CATEGORIES[0]
+// Rummets val i den form servern vill ha det.
+export function selectionFrom(room) {
+  return {
+    swedish: !!room?.swedish_mode,
+    bands: Array.isArray(room?.year_bands) ? room.year_bands : [],
+    genres: Array.isArray(room?.genres) ? room.genres : [],
   }
-  const min = room?.year_min ?? null
-  const max = room?.year_max ?? null
-  if (min !== null || max !== null) {
-    return (
-      POOL_CATEGORIES.find((c) => c.group === 'age' && c.min === min && c.max === max) ||
-      POOL_CATEGORIES[0]
-    )
-  }
-  if (room?.swedish_mode) return POOL_CATEGORIES.find((c) => c.key === 'sv')
-  return POOL_CATEGORIES[0]
 }
 
-// Modifieraren: står rummet på bara svenska låtar? Gäller oavsett om
-// kategorin är en bred pott, ett åldersspann eller en genre.
-export function swedishOnly(room) {
-  return !!room?.swedish_mode
+const sammaBand = (b, cat) => (b?.min ?? null) === cat.min && (b?.max ?? null) === cat.max
+
+// Är den här chippen vald just nu?
+export function isSelected(room, cat) {
+  const s = selectionFrom(room)
+  if (cat.group === 'lang') return s.swedish
+  if (cat.group === 'age') return s.bands.some((b) => sammaBand(b, cat))
+  if (cat.group === 'genre') return s.genres.includes(cat.genre)
+  return false
+}
+
+// Valet efter att chippen slagits av/på. Returnerar de tre rums-fälten.
+export function toggleSelection(room, cat) {
+  const s = selectionFrom(room)
+  if (cat.group === 'lang') {
+    return { swedish_mode: !s.swedish, year_bands: s.bands, genres: s.genres }
+  }
+  if (cat.group === 'age') {
+    const finns = s.bands.some((b) => sammaBand(b, cat))
+    return {
+      swedish_mode: s.swedish,
+      year_bands: finns
+        ? s.bands.filter((b) => !sammaBand(b, cat))
+        : [...s.bands, { min: cat.min, max: cat.max }],
+      genres: s.genres,
+    }
+  }
+  const finns = s.genres.includes(cat.genre)
+  return {
+    swedish_mode: s.swedish,
+    year_bands: s.bands,
+    genres: finns ? s.genres.filter((g) => g !== cat.genre) : [...s.genres, cat.genre],
+  }
+}
+
+// Inget valt alls = hela potten.
+export function selectionEmpty(room) {
+  const s = selectionFrom(room)
+  return !s.swedish && s.bands.length === 0 && s.genres.length === 0
+}
+
+export const TOMT_VAL = { swedish_mode: false, year_bands: [], genres: [] }
+
+// En läsbar sammanfattning av valet, t.ex. "Svenska · 20–29 år, 30–39 år · Pop".
+// Ersätter poolCategoryFor(), som byggde på att rummet stod på EXAKT en
+// kategori – ett antagande som inte längre håller efter 0057.
+export function selectionLabel(room) {
+  const s = selectionFrom(room)
+  if (selectionEmpty(room)) return 'Alla låtar'
+  const delar = []
+  if (s.swedish) delar.push('Svenska')
+  const ald = POOL_CATEGORIES.filter(
+    (c) => c.group === 'age' && s.bands.some((b) => sammaBand(b, c)),
+  ).map((c) => c.label)
+  if (ald.length) delar.push(ald.join(', '))
+  const gen = POOL_CATEGORIES.filter(
+    (c) => c.group === 'genre' && s.genres.includes(c.genre),
+  ).map((c) => c.label)
+  if (gen.length) delar.push(gen.join(', '))
+  return delar.join(' · ')
 }

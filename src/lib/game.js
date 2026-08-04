@@ -68,12 +68,13 @@ export async function trackPoolGenreCounts() {
 // sedan "bara svenska" blev en modifierare: skärningen mellan två filter går
 // inte att räkna ut ur de andra räknarna, och en nästan tom pott ska synas i
 // lobbyn i stället för att upptäckas när snurren går i taket.
-export async function trackPoolSelectionCount({ swedish, yearMin, yearMax, genre }) {
+// Antal låtar i exakt det valda urvalet. bands/genres är listor (0057):
+// union inom varje dimension, snitt mellan dimensionerna.
+export async function trackPoolSelectionCount({ swedish, bands, genres }) {
   const { data, error } = await supabase.rpc('track_pool_selection_count', {
     p_swedish: !!swedish,
-    p_year_min: yearMin ?? null,
-    p_year_max: yearMax ?? null,
-    p_genre: genre ?? null,
+    p_bands: bands ?? [],
+    p_genres: genres ?? [],
   })
   if (error) throw translateDbError(error)
   return Number(data)

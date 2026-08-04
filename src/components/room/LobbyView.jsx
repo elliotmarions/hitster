@@ -15,7 +15,15 @@ import ConfirmDialog from '../ui/ConfirmDialog.jsx'
 import CopyButton from '../ui/CopyButton.jsx'
 import SwedishFlag from '../ui/SwedishFlag.jsx'
 import TeamChat from '../TeamChat.jsx'
-import { POOL_CATEGORIES, poolCategoryFor, swedishOnly } from '../../lib/constants.js'
+import {
+  POOL_CATEGORIES,
+  TOMT_VAL,
+  isSelected,
+  selectionEmpty,
+  selectionFrom,
+  selectionLabel,
+  toggleSelection,
+} from '../../lib/constants.js'
 
 export default function LobbyView({ room, players, teams, me, isHost, currentUserId }) {
   const navigate = useNavigate()
@@ -58,29 +66,24 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
     }
   }, [])
 
-  // Hur många SVENSKA låtar den valda kategorin innehåller. De breda
-  // räknarna räcker inte när filtren kan staplas – skärningen mellan
-  // "svenska" och "20–29 år" går inte att räkna ut ur deras summor.
+  // Hur många låtar det VALDA urvalet ger. De breda räknarna räcker inte när
+  // filtren staplas – skärningen mellan "svenska", "20–29 år" och "Pop" går
+  // inte att räkna ut ur deras summor, den måste frågas fram.
   //
-  // Frågan ställs alltid med swedish = true, oavsett om kryssrutan är i
-  // eller ur. Siffran ska svara på "vad ger den här kryssrutan?", och med
-  // rummets eget läge visade den potten UTAN svenskt läge när rutan var
-  // ur – 2 152 i stället för 90, precis tvärtemot vad texten lovade.
+  // Nyckeln är serialiserad: `val` är ett nytt objekt varje rendering, så en
+  // beroendelista på objektet självt hade kört effekten i all oändlighet.
+  const val = selectionFrom(view)
+  const valNyckel = JSON.stringify(val)
   useEffect(() => {
     let active = true
     setSelCount(null)
-    trackPoolSelectionCount({
-      swedish: true,
-      yearMin: view.year_min,
-      yearMax: view.year_max,
-      genre: view.genre,
-    })
+    trackPoolSelectionCount(JSON.parse(valNyckel))
       .then((n) => active && setSelCount(n))
       .catch(() => {})
     return () => {
       active = false
     }
-  }, [view.year_min, view.year_max, view.genre])
+  }, [valNyckel])
 
   async function handleStart() {
     setErr('')
@@ -113,21 +116,10 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
     await supabase.from('rooms').update({ team_mode: e.target.checked }).eq('id', room.id)
   }
 
-  async function setCategory(cat) {
-    // En kategori sätter potten i ett svep: språk + årsfönster + genre (null =
-    // ingen gräns). Alla tre skrivs alltid, så ett byte FRÅN en genre till ett
-    // åldersspann nollställer genren i stället för att lägga filtren ovanpå
-    // varandra och lämna en pott som nästan är tom.
-    //
-    // Undantag: de breda potterna (Alla/Svenska) BESTÄMMER språket, medan
-    // åldersspann och genrer BEHÅLLER det värdet står på. Annars skulle
-    // "bara svenska" nollställas varje gång värden bytte åldersgrupp.
-    const patch = {
-      swedish_mode: cat.group === 'broad' ? cat.swedish : !!view.swedish_mode,
-      year_min: cat.min,
-      year_max: cat.max,
-      genre: cat.genre ?? null,
-    }
+  // Skriv ett nytt urval till rummet. year_min/year_max sätts INTE här –
+  // en trigger (0057) härleder dem ur year_bands, eftersom åldersläget
+  // (hjulet och brickans kategorier) fortfarande läser dem.
+  async function skrivVal(patch) {
     setOptimistic((o) => ({ ...o, ...patch }))
     // .select() är inte kosmetik: nekar RLS skrivningen får man INGET error,
     // bara noll rader tillbaka. Utan den här kontrollen skulle det optimistiska
@@ -137,42 +129,33 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
     const { data, error } = await supabase.from('rooms').update(patch).eq('id', room.id).select()
     if (error || !data?.length) {
       setOptimistic(null) // backa till serverns sanning
-      setErr('Kunde inte byta kategori – ladda om sidan och försök igen.')
+      setErr('Kunde inte ändra urvalet – ladda om sidan och försök igen.')
     }
   }
 
-  const activeCat = poolCategoryFor(view)
-  const svOnly = swedishOnly(view)
+  // Slå en chip av eller på. Union inom dimensionen, snitt mellan dimensioner.
+  const onToggle = (cat) => skrivVal(toggleSelection(view, cat))
+  const onClearAll = () => skrivVal(TOMT_VAL)
 
-  // "Bara svenska" ovanpå ett åldersspann eller en genre. Rör bara språket –
-  // årsfönstret och genren står kvar.
-  async function toggleSwedishOnly(e) {
-    const patch = { swedish_mode: e.target.checked }
-    setOptimistic((o) => ({ ...o, ...patch }))
-    const { data, error } = await supabase.from('rooms').update(patch).eq('id', room.id).select()
-    if (error || !data?.length) {
-      setOptimistic(null)
-      setErr('Kunde inte byta språkfilter – ladda om sidan och försök igen.')
-    }
-  }
+  const tomtVal = selectionEmpty(view)
 
   // En kategori-knapp – delas av de breda potterna, åldersspannen och genrerna.
   function renderCategory(cat) {
-    const active = activeCat.key === cat.key
+    const active = isSelected(view, cat)
+    // Chipens egen storlek (hela potten för den chippen), inte urvalets –
+    // urvalets siffra visas samlat under valen.
     const count =
-      cat.pot === 'all' && potCounts
-        ? ` · ${potCounts.all.toLocaleString('sv-SE')} låtar`
-        : cat.pot === 'sv' && potCounts
-          ? ` · ${potCounts.sv} låtar`
-          : cat.genre && genreCounts?.[cat.genre]
-            ? ` · ${genreCounts[cat.genre].toLocaleString('sv-SE')} låtar`
-            : ''
+      cat.key === 'sv' && potCounts
+        ? ` · ${potCounts.sv.toLocaleString('sv-SE')} låtar`
+        : cat.genre && genreCounts?.[cat.genre]
+          ? ` · ${genreCounts[cat.genre].toLocaleString('sv-SE')} låtar`
+          : ''
     return (
       <button
         key={cat.key}
         type="button"
         disabled={!isHost}
-        onClick={() => setCategory(cat)}
+        onClick={() => onToggle(cat)}
         aria-pressed={active}
         className="panel-inset flex cursor-pointer flex-col gap-1 p-3.5 text-left transition disabled:cursor-default disabled:opacity-60"
         style={{
@@ -230,68 +213,52 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
           </div>
         </div>
 
-        {/* Kategori – EN väljare, men breda potter och åldersspann visuellt avskilda */}
+        {/* Urval – fritt multival. Union inom varje rad, snitt mellan raderna:
+            "Svenska + 20–29 år + 30–39 år + Pop" = svensk pop ur endera eran. */}
         <div className="mt-6">
-          <p className="label mb-2">🎵 Kategori</p>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="label">🎵 Urval</p>
+            {isHost && !tomtVal && (
+              <button
+                type="button"
+                onClick={onClearAll}
+                className="cursor-pointer text-xs text-muted underline hover:text-cream"
+              >
+                Rensa
+              </button>
+            )}
+          </div>
 
-          {/* Breda potter */}
+          <p className="label mb-2 opacity-70">Språk</p>
           <div className="grid grid-cols-2 gap-3">
-            {POOL_CATEGORIES.filter((c) => c.group === 'broad').map(renderCategory)}
+            {POOL_CATEGORIES.filter((c) => c.group === 'lang').map(renderCategory)}
           </div>
 
-          {/* Avdelare mot åldersspannen – samma väljare, men tydligt en annan sak */}
-          <div className="my-4 flex items-center gap-3">
-            <span className="h-px flex-1 bg-cream/10" />
-            <span className="label">Eller efter ålder</span>
-            <span className="h-px flex-1 bg-cream/10" />
-          </div>
-
-          {/* Åldersspann */}
+          <p className="label mb-2 mt-4 opacity-70">Ålder</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {POOL_CATEGORIES.filter((c) => c.group === 'age').map(renderCategory)}
           </div>
 
-          {/* Avdelare mot genrerna – fortfarande samma enval */}
-          <div className="my-4 flex items-center gap-3">
-            <span className="h-px flex-1 bg-cream/10" />
-            <span className="label">Eller efter genre</span>
-            <span className="h-px flex-1 bg-cream/10" />
-          </div>
-
+          <p className="label mb-2 mt-4 opacity-70">Genre</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {POOL_CATEGORIES.filter((c) => c.group === 'genre').map(renderCategory)}
           </div>
 
-          {/* Språket som modifierare – bara meningsfull ovanpå ålder/genre.
-              På de breda potterna är valet redan språket. */}
-          {activeCat.group !== 'broad' && (
-            <>
-              <label className="panel-inset mt-4 flex items-center justify-between gap-4 p-3.5">
-                <span>
-                  <span className="inline-flex items-center gap-2 font-display text-cream">
-                    <SwedishFlag size={18} />
-                    Bara svenska låtar
-                  </span>
-                  <span className="mt-0.5 block text-xs text-muted">
-                    Svenska artister inom {activeCat.label}
-                    {selCount !== null && ` – ${selCount.toLocaleString('sv-SE')} låtar`}
-                  </span>
-                </span>
-                <input
-                  type="checkbox"
-                  className="h-5 w-5 accent-magenta disabled:opacity-50"
-                  checked={svOnly}
-                  onChange={toggleSwedishOnly}
-                  disabled={!isHost}
-                />
-              </label>
-              {svOnly && selCount !== null && selCount < 25 && (
-                <p className="mt-2 text-xs" style={{ color: '#ff8a3c' }}>
-                  Tunn pott – {selCount} låtar. Samma låtar börjar återkomma, och med
-                  färre än 25 kan brickan bli svår att fylla.
-                </p>
-              )}
-            </>
+          {/* Sammanfattning + den enda siffra som betyder något: hur många
+              låtar just den här kombinationen faktiskt ger. */}
+          <div className="panel-inset mt-4 p-3.5">
+            <p className="font-display text-cream">{selectionLabel(view)}</p>
+            <p className="mt-0.5 text-xs text-muted">
+              {selCount === null
+                ? 'Räknar…'
+                : `${selCount.toLocaleString('sv-SE')} låtar i urvalet`}
+            </p>
+          </div>
+          {selCount !== null && selCount < 25 && (
+            <p className="mt-2 text-xs" style={{ color: '#ff8a3c' }}>
+              Tunn pott – {selCount} låtar. Samma låtar börjar återkomma, och med färre än
+              25 kan brickan bli svår att fylla.
+            </p>
           )}
         </div>
 
