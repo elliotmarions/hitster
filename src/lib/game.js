@@ -64,6 +64,21 @@ export async function trackPoolGenreCounts() {
   return Object.fromEntries((data || []).map((r) => [r.genre, Number(r.antal)]))
 }
 
+// Antal låtar i EN specifik kombination (språk + årsfönster + genre). Behövs
+// sedan "bara svenska" blev en modifierare: skärningen mellan två filter går
+// inte att räkna ut ur de andra räknarna, och en nästan tom pott ska synas i
+// lobbyn i stället för att upptäckas när snurren går i taket.
+export async function trackPoolSelectionCount({ swedish, yearMin, yearMax, genre }) {
+  const { data, error } = await supabase.rpc('track_pool_selection_count', {
+    p_swedish: !!swedish,
+    p_year_min: yearMin ?? null,
+    p_year_max: yearMax ?? null,
+    p_genre: genre ?? null,
+  })
+  if (error) throw translateDbError(error)
+  return Number(data)
+}
+
 export async function ensureCard(roomId) {
   const { data, error } = await supabase.rpc('ensure_card', { p_room_id: roomId })
   if (error) throw translateDbError(error)

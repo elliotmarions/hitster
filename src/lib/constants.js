@@ -100,9 +100,15 @@ export const GRID = 5 // brickan är 5x5 (fritt slumpad, exakt 5 rutor per kateg
 //  Låtpott-kategorier – EN väljare i lobbyn
 // ============================================================
 //
-//  Ett enda val bestämmer hela potten. Antingen en bred pott (Alla / Svenska)
-//  eller ett åldersspann som riktar världspotten mot en era. De är sidoordnade
-//  val – man väljer exakt ett, inte "musik först och sedan ålder".
+//  Ett val bestämmer potten: en bred pott (Alla / Svenska), ett åldersspann
+//  eller en genre. Man väljer exakt en av dem.
+//
+//  UNDANTAG – "bara svenska" är en MODIFIERARE. Den kan läggas ovanpå ett
+//  åldersspann eller en genre ("20–29 år, bara svenska låtar"). Servern
+//  klarade alltid det: start_random_track AND:ar sv, årsfönster och genre
+//  som tre oberoende villkor. Det var bara den här listan som beskrev dem
+//  som ömsesidigt uteslutande. Kombinationen kan bli tunn (svenska + 20–29
+//  är 90 låtar), så lobbyn visar antalet via track_pool_selection_count().
 //
 //  Åldersspannen bygger på "reminiscensbågen": man känner igen och älskar
 //  starkast musiken som var populär när man var ca 14–24 år, så en åldersgrupp
@@ -138,16 +144,30 @@ export const POOL_CATEGORIES = [
 
 // Vilken pott-kategori rummet står på just nu. Ordningen spelar roll: genre
 // först (den nollställer årsfönstret så ett genrerum annars hade matchat
-// "Alla låtar"), sedan svenska (som ignorerar årsfönstret), sedan årsspannen.
+// "Alla låtar"), sedan årsspannen, sist de breda potterna.
+//
+// swedish_mode läses INTE här längre – den är en modifierare som kan ligga
+// ovanpå ett åldersspann eller en genre, se swedishOnly(). Läste vi den
+// först skulle "20–29 år + bara svenska" visa Svenska som markerad kategori
+// och åldersknappen som omarkerad, fast rummet står på båda.
 export function poolCategoryFor(room) {
   if (room?.genre) {
     return POOL_CATEGORIES.find((c) => c.genre === room.genre) || POOL_CATEGORIES[0]
   }
-  if (room?.swedish_mode) return POOL_CATEGORIES.find((c) => c.key === 'sv')
   const min = room?.year_min ?? null
   const max = room?.year_max ?? null
-  return (
-    POOL_CATEGORIES.find((c) => !c.swedish && c.min === min && c.max === max) ||
-    POOL_CATEGORIES[0]
-  )
+  if (min !== null || max !== null) {
+    return (
+      POOL_CATEGORIES.find((c) => c.group === 'age' && c.min === min && c.max === max) ||
+      POOL_CATEGORIES[0]
+    )
+  }
+  if (room?.swedish_mode) return POOL_CATEGORIES.find((c) => c.key === 'sv')
+  return POOL_CATEGORIES[0]
+}
+
+// Modifieraren: står rummet på bara svenska låtar? Gäller oavsett om
+// kategorin är en bred pott, ett åldersspann eller en genre.
+export function swedishOnly(room) {
+  return !!room?.swedish_mode
 }

@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase.js'
 import { leaveRoom } from '../../lib/rooms.js'
-import { startGame, trackPoolCounts, trackPoolGenreCounts } from '../../lib/game.js'
+import {
+  startGame,
+  trackPoolCounts,
+  trackPoolGenreCounts,
+  trackPoolSelectionCount,
+} from '../../lib/game.js'
 import PlayerList from '../PlayerList.jsx'
 import TeamSetup from '../TeamSetup.jsx'
 import NeonButton from '../ui/NeonButton.jsx'
@@ -10,7 +15,7 @@ import ConfirmDialog from '../ui/ConfirmDialog.jsx'
 import CopyButton from '../ui/CopyButton.jsx'
 import SwedishFlag from '../ui/SwedishFlag.jsx'
 import TeamChat from '../TeamChat.jsx'
-import { POOL_CATEGORIES, poolCategoryFor } from '../../lib/constants.js'
+import { POOL_CATEGORIES, poolCategoryFor, swedishOnly } from '../../lib/constants.js'
 
 export default function LobbyView({ room, players, teams, me, isHost, currentUserId }) {
   const navigate = useNavigate()
@@ -22,6 +27,8 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
   // bara räknarna exponeras via en RPC.
   const [potCounts, setPotCounts] = useState(null)
   const [genreCounts, setGenreCounts] = useState(null)
+  // Antal låtar i exakt den kombination som är vald (språk + år + genre).
+  const [selCount, setSelCount] = useState(null)
   // Optimistiskt lager: valet ska synas direkt vid klick, utan att vänta på
   // server-svar + realtidsstuds. Rensas när riktiga room-proppen hunnit ikapp.
   const [optimistic, setOptimistic] = useState(null)
@@ -50,6 +57,25 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
       active = false
     }
   }, [])
+
+  // Antalet låtar i den kombination rummet står på just nu. De breda
+  // räknarna räcker inte när filtren kan staplas – skärningen mellan
+  // "svenska" och "20–29 år" går inte att räkna ut ur deras summor.
+  useEffect(() => {
+    let active = true
+    setSelCount(null)
+    trackPoolSelectionCount({
+      swedish: view.swedish_mode,
+      yearMin: view.year_min,
+      yearMax: view.year_max,
+      genre: view.genre,
+    })
+      .then((n) => active && setSelCount(n))
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [view.swedish_mode, view.year_min, view.year_max, view.genre])
 
   async function handleStart() {
     setErr('')
@@ -87,8 +113,12 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
     // ingen gräns). Alla tre skrivs alltid, så ett byte FRÅN en genre till ett
     // åldersspann nollställer genren i stället för att lägga filtren ovanpå
     // varandra och lämna en pott som nästan är tom.
+    //
+    // Undantag: de breda potterna (Alla/Svenska) BESTÄMMER språket, medan
+    // åldersspann och genrer BEHÅLLER det värdet står på. Annars skulle
+    // "bara svenska" nollställas varje gång värden bytte åldersgrupp.
     const patch = {
-      swedish_mode: cat.swedish,
+      swedish_mode: cat.group === 'broad' ? cat.swedish : !!view.swedish_mode,
       year_min: cat.min,
       year_max: cat.max,
       genre: cat.genre ?? null,
@@ -107,6 +137,19 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
   }
 
   const activeCat = poolCategoryFor(view)
+  const svOnly = swedishOnly(view)
+
+  // "Bara svenska" ovanpå ett åldersspann eller en genre. Rör bara språket –
+  // årsfönstret och genren står kvar.
+  async function toggleSwedishOnly(e) {
+    const patch = { swedish_mode: e.target.checked }
+    setOptimistic((o) => ({ ...o, ...patch }))
+    const { data, error } = await supabase.from('rooms').update(patch).eq('id', room.id).select()
+    if (error || !data?.length) {
+      setOptimistic(null)
+      setErr('Kunde inte byta språkfilter – ladda om sidan och försök igen.')
+    }
+  }
 
   // En kategori-knapp – delas av de breda potterna, åldersspannen och genrerna.
   function renderCategory(cat) {
@@ -213,6 +256,38 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {POOL_CATEGORIES.filter((c) => c.group === 'genre').map(renderCategory)}
           </div>
+
+          {/* Språket som modifierare – bara meningsfull ovanpå ålder/genre.
+              På de breda potterna är valet redan språket. */}
+          {activeCat.group !== 'broad' && (
+            <>
+              <label className="panel-inset mt-4 flex items-center justify-between gap-4 p-3.5">
+                <span>
+                  <span className="inline-flex items-center gap-2 font-display text-cream">
+                    <SwedishFlag size={18} />
+                    Bara svenska låtar
+                  </span>
+                  <span className="mt-0.5 block text-xs text-muted">
+                    Lägger svenskt läge ovanpå {activeCat.label}.
+                    {selCount !== null && ` Potten blir ${selCount.toLocaleString('sv-SE')} låtar.`}
+                  </span>
+                </span>
+                <input
+                  type="checkbox"
+                  className="h-5 w-5 accent-magenta disabled:opacity-50"
+                  checked={svOnly}
+                  onChange={toggleSwedishOnly}
+                  disabled={!isHost}
+                />
+              </label>
+              {selCount !== null && selCount < 25 && (
+                <p className="mt-2 text-xs" style={{ color: '#ff8a3c' }}>
+                  Tunn pott – {selCount} låtar. Samma låtar börjar återkomma, och med
+                  färre än 25 kan brickan bli svår att fylla.
+                </p>
+              )}
+            </>
+          )}
         </div>
 
         {/* Regler – av/på */}
