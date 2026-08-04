@@ -108,7 +108,7 @@ begin
        set captain_id = (
          select p.id from public.players p
           where p.team_id = t.id and p.id <> p_player_id
-          order by p.created_at nulls last, p.id limit 1)
+          order by p.joined_at, p.id limit 1)
      where t.id = v_gammalt and t.captain_id = p_player_id;
   end if;
 
@@ -216,7 +216,7 @@ update public.teams t
    set captain_id = (
      select p.id from public.players p
       where p.team_id = t.id
-      order by p.created_at nulls last, p.id limit 1)
+      order by p.joined_at, p.id limit 1)
  where t.captain_id is null;
 
 grant execute on function public.set_team_captain(uuid, uuid, uuid) to authenticated;
