@@ -58,14 +58,19 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
     }
   }, [])
 
-  // Antalet låtar i den kombination rummet står på just nu. De breda
+  // Hur många SVENSKA låtar den valda kategorin innehåller. De breda
   // räknarna räcker inte när filtren kan staplas – skärningen mellan
   // "svenska" och "20–29 år" går inte att räkna ut ur deras summor.
+  //
+  // Frågan ställs alltid med swedish = true, oavsett om kryssrutan är i
+  // eller ur. Siffran ska svara på "vad ger den här kryssrutan?", och med
+  // rummets eget läge visade den potten UTAN svenskt läge när rutan var
+  // ur – 2 152 i stället för 90, precis tvärtemot vad texten lovade.
   useEffect(() => {
     let active = true
     setSelCount(null)
     trackPoolSelectionCount({
-      swedish: view.swedish_mode,
+      swedish: true,
       yearMin: view.year_min,
       yearMax: view.year_max,
       genre: view.genre,
@@ -75,7 +80,7 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
     return () => {
       active = false
     }
-  }, [view.swedish_mode, view.year_min, view.year_max, view.genre])
+  }, [view.year_min, view.year_max, view.genre])
 
   async function handleStart() {
     setErr('')
@@ -268,8 +273,8 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
                     Bara svenska låtar
                   </span>
                   <span className="mt-0.5 block text-xs text-muted">
-                    Lägger svenskt läge ovanpå {activeCat.label}.
-                    {selCount !== null && ` Potten blir ${selCount.toLocaleString('sv-SE')} låtar.`}
+                    Svenska artister inom {activeCat.label}
+                    {selCount !== null && ` – ${selCount.toLocaleString('sv-SE')} låtar`}
                   </span>
                 </span>
                 <input
@@ -280,7 +285,7 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
                   disabled={!isHost}
                 />
               </label>
-              {selCount !== null && selCount < 25 && (
+              {svOnly && selCount !== null && selCount < 25 && (
                 <p className="mt-2 text-xs" style={{ color: '#ff8a3c' }}>
                   Tunn pott – {selCount} låtar. Samma låtar börjar återkomma, och med
                   färre än 25 kan brickan bli svår att fylla.
