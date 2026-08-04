@@ -32,13 +32,29 @@
 --  Samma beviskrav som 0048: ett år ändras bara när minst två oberoende
 --  källor säger emot potten och är överens med varandra.
 --
+--  DESSUTOM: 0048 hade `where tp.sv` i sin update. 71 låtar ligger med
+--  flit i BÅDA potterna (0039), så för dem rättades bara den svenska
+--  raden – tvillingen i den internationella potten behöll fel år. Två av
+--  de tolv råkade ut för det och har i dag två olika facit i databasen:
+--
+--    Kent – 747                  sv 1998 / intl 1996
+--    Veronica Maggio – Måndagsbarn   sv 2008 / intl 2006
+--
+--  Vilket år spelaren döms mot avgörs alltså av vilken rad snurren råkar
+--  dra. Rättas här, och alla årsupdateringar nedan saknar sv-villkor så
+--  att båda potterna hålls i synk.
+--
 --  Rör bara track_pool.year. Redan spelade rundor har sitt facit i
 --  round_tracks.meta och påverkas inte. Idempotent. Kör efter 0048.
 -- ====================================================================
 
 update public.track_pool tp set year = v.year
 from (values
+  -- de tre som 0048 parkerade (Roxette lämnas medvetet utanför)
   ('Kung för en dag','Magnus Uggla',1997),
-  ('En midsommarnattsdröm','Håkan Hellström',2005)
+  ('En midsommarnattsdröm','Håkan Hellström',2005),
+  -- 0048:s rättningar som aldrig nådde den internationella tvillingraden
+  ('747','Kent',1998),
+  ('Måndagsbarn','Veronica Maggio',2008)
 ) as v(title, artist, year)
-where tp.sv and tp.title = v.title and tp.artist = v.artist;
+where tp.title = v.title and tp.artist = v.artist and tp.year is distinct from v.year;
