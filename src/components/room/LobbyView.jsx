@@ -213,11 +213,6 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {POOL_CATEGORIES.filter((c) => c.group === 'genre').map(renderCategory)}
           </div>
-
-          <p className="mt-2 text-xs text-muted">
-            Åldersspannen riktar musiken mot låtarna gruppen växte upp med – toppen av igenkänning.
-            Genrerna spänner över alla år.
-          </p>
         </div>
 
         {/* Regler – av/på */}
