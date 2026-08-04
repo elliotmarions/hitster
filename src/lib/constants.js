@@ -135,7 +135,8 @@ export const GRID = 5 // brickan är 5x5 (fritt slumpad, exakt 5 rutor per kateg
 //  vald = bara svenska, ovald = ingen språkgräns (inte "allt utom svenskt",
 //  vilket var innebörden före 0057).
 export const POOL_CATEGORIES = [
-  { key: 'sv', group: 'lang', label: 'Svenska', hint: 'Bara svenska artister', neon: '#ffd23f' },
+  { key: 'sv', group: 'lang', label: 'Svenska', hint: 'Bara svenska artister', swedish: true, neon: '#ffd23f' },
+  { key: 'intl', group: 'lang', label: '🌍 Utländska', hint: 'Allt utom svenskt', swedish: false, neon: '#22e6e6' },
   { key: '20s', group: 'age', label: '20–29 år', hint: 'Uppväxthits ~2008–idag', min: 2008, max: null, neon: '#ff4d9d' },
   { key: '30s', group: 'age', label: '30–39 år', hint: 'Uppväxthits ~1997–2011', min: 1997, max: 2011, neon: '#b14dff' },
   { key: '40s', group: 'age', label: '40–49 år', hint: 'Uppväxthits ~1987–2001', min: 1987, max: 2001, neon: '#3ee87b' },
@@ -148,10 +149,12 @@ export const POOL_CATEGORIES = [
   { key: 'rnb', group: 'genre', label: 'R&B', genre: 'rnb', neon: '#b14dff' },
 ]
 
-// Rummets val i den form servern vill ha det.
+// Rummets val i den form servern vill ha det. `swedish` har TRE lägen (0058):
+// true = bara svenska, false = bara utländska, null = ingen språkgräns.
 export function selectionFrom(room) {
+  const sv = room?.swedish_mode
   return {
-    swedish: !!room?.swedish_mode,
+    swedish: sv === true || sv === false ? sv : null,
     bands: Array.isArray(room?.year_bands) ? room.year_bands : [],
     genres: Array.isArray(room?.genres) ? room.genres : [],
   }
@@ -162,7 +165,7 @@ const sammaBand = (b, cat) => (b?.min ?? null) === cat.min && (b?.max ?? null) =
 // Är den här chippen vald just nu?
 export function isSelected(room, cat) {
   const s = selectionFrom(room)
-  if (cat.group === 'lang') return s.swedish
+  if (cat.group === 'lang') return s.swedish === cat.swedish
   if (cat.group === 'age') return s.bands.some((b) => sammaBand(b, cat))
   if (cat.group === 'genre') return s.genres.includes(cat.genre)
   return false
@@ -172,7 +175,14 @@ export function isSelected(room, cat) {
 export function toggleSelection(room, cat) {
   const s = selectionFrom(room)
   if (cat.group === 'lang') {
-    return { swedish_mode: !s.swedish, year_bands: s.bands, genres: s.genres }
+    // Språkchipsen utesluter varandra: "svenska OCH utländska" är samma sak
+    // som ingen gräns alls, så att låta båda lysa vore bara förvirrande.
+    // Klick på den redan valda släcker den → ingen språkgräns.
+    return {
+      swedish_mode: s.swedish === cat.swedish ? null : cat.swedish,
+      year_bands: s.bands,
+      genres: s.genres,
+    }
   }
   if (cat.group === 'age') {
     const finns = s.bands.some((b) => sammaBand(b, cat))
@@ -195,10 +205,10 @@ export function toggleSelection(room, cat) {
 // Inget valt alls = hela potten.
 export function selectionEmpty(room) {
   const s = selectionFrom(room)
-  return !s.swedish && s.bands.length === 0 && s.genres.length === 0
+  return s.swedish === null && s.bands.length === 0 && s.genres.length === 0
 }
 
-export const TOMT_VAL = { swedish_mode: false, year_bands: [], genres: [] }
+export const TOMT_VAL = { swedish_mode: null, year_bands: [], genres: [] }
 
 // En läsbar sammanfattning av valet, t.ex. "Svenska · 20–29 år, 30–39 år · Pop".
 // Ersätter poolCategoryFor(), som byggde på att rummet stod på EXAKT en
@@ -207,7 +217,8 @@ export function selectionLabel(room) {
   const s = selectionFrom(room)
   if (selectionEmpty(room)) return 'Alla låtar'
   const delar = []
-  if (s.swedish) delar.push('Svenska')
+  if (s.swedish === true) delar.push('Svenska')
+  else if (s.swedish === false) delar.push('Utländska')
   const ald = POOL_CATEGORIES.filter(
     (c) => c.group === 'age' && s.bands.some((b) => sammaBand(b, c)),
   ).map((c) => c.label)

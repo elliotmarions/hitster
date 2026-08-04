@@ -147,9 +147,11 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
     const count =
       cat.key === 'sv' && potCounts
         ? ` · ${potCounts.sv.toLocaleString('sv-SE')} låtar`
-        : cat.genre && genreCounts?.[cat.genre]
-          ? ` · ${genreCounts[cat.genre].toLocaleString('sv-SE')} låtar`
-          : ''
+        : cat.key === 'intl' && potCounts
+          ? ` · ${(potCounts.all - potCounts.sv).toLocaleString('sv-SE')} låtar`
+          : cat.genre && genreCounts?.[cat.genre]
+            ? ` · ${genreCounts[cat.genre].toLocaleString('sv-SE')} låtar`
+            : ''
     return (
       <button
         key={cat.key}

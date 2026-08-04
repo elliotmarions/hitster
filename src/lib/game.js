@@ -70,9 +70,11 @@ export async function trackPoolGenreCounts() {
 // lobbyn i stället för att upptäckas när snurren går i taket.
 // Antal låtar i exakt det valda urvalet. bands/genres är listor (0057):
 // union inom varje dimension, snitt mellan dimensionerna.
+// swedish har tre lägen (0058): true = bara svenska, false = bara utländska,
+// null/undefined = ingen språkgräns. Därför ?? och inte !!.
 export async function trackPoolSelectionCount({ swedish, bands, genres }) {
   const { data, error } = await supabase.rpc('track_pool_selection_count', {
-    p_swedish: !!swedish,
+    p_swedish: swedish ?? null,
     p_bands: bands ?? [],
     p_genres: genres ?? [],
   })
