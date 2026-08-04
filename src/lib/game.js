@@ -171,6 +171,17 @@ export async function deleteTeam(roomId, teamId) {
   if (error) throw translateDbError(error)
 }
 
+// Utse lagets kapten – den enda som får låsa in lagets svar. playerId = null
+// tar bort kaptenen, och då får vem som helst i laget låsa igen.
+export async function setTeamCaptain(roomId, teamId, playerId) {
+  const { error } = await supabase.rpc('set_team_captain', {
+    p_room_id: roomId,
+    p_team_id: teamId,
+    p_player_id: playerId ?? null,
+  })
+  if (error) throw translateDbError(error)
+}
+
 // Placera/flytta en spelare i ett lag. teamId = null → ta ur lag.
 export async function assignPlayer(roomId, playerId, teamId) {
   const { error } = await supabase.rpc('assign_player', {

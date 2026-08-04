@@ -125,6 +125,19 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   // Namnet på den enhet (lag/spelare) som en bricka tillhör.
   const cardName = (c) => (teamMode ? teamName(c.team_id) : playerName(c.player_id))
 
+  // Lagkaptenen är den ENDA som får låsa in lagets svar (0056) – annars
+  // kapplöper lagkamrater om samma ruta och den snabbaste vinner tyst.
+  // "Effektiv" kapten: har kaptenen lämnat laget mitt i matchen faller laget
+  // tillbaka på fri turordning, annars vore laget helt utelåst från att svara.
+  // Speglar _team_captain() server-side.
+  const myTeam = teamMode ? teams.find((t) => t.id === myTeamId) : null
+  const captainId =
+    myTeam?.captain_id && players.some((p) => p.id === myTeam.captain_id && p.team_id === myTeam.id)
+      ? myTeam.captain_id
+      : null
+  const iMayAnswer = !teamMode || !captainId || captainId === me?.id
+  const answererName = captainId && !iMayAnswer ? playerName(captainId) : null
+
   // "Min" bricka = mitt lags bricka (lagläge) eller min egen (solo).
   const myCard = teamMode
     ? cards.find((c) => c.team_id && c.team_id === myTeamId)
@@ -472,6 +485,8 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
           isHost={isHost}
           busy={busy}
           clipPlaying={clipPlaying}
+          canAnswer={iMayAnswer}
+          answererName={answererName}
           onLock={onLockAnswer}
           onReveal={onRevealAnswers}
           onOverride={onOverrideAnswer}

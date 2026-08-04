@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { TEAM_COLORS } from '../lib/constants.js'
-import { createTeam, deleteTeam, assignPlayer } from '../lib/game.js'
+import { createTeam, deleteTeam, assignPlayer, setTeamCaptain } from '../lib/game.js'
 import NeonButton from './ui/NeonButton.jsx'
 
 /**
@@ -28,6 +28,7 @@ export default function TeamSetup({ room, players, teams, isHost }) {
   const onAddTeam = () => run(() => createTeam(room.id, `Lag ${teams.length + 1}`, nextColor))
   const onDeleteTeam = (id) => run(() => deleteTeam(room.id, id))
   const onAssign = (playerId, teamId) => run(() => assignPlayer(room.id, playerId, teamId || null))
+  const onSetCaptain = (teamId, playerId) => run(() => setTeamCaptain(room.id, teamId, playerId))
 
   const teamColor = (t) => t.color || TEAM_COLORS[0]
   const membersOf = (teamId) => players.filter((p) => p.team_id === teamId)
@@ -84,12 +85,40 @@ export default function TeamSetup({ room, players, teams, isHost }) {
                   {members.length === 0 ? (
                     <li className="text-xs text-muted">Inga spelare än</li>
                   ) : (
-                    members.map((p) => (
-                      <li key={p.id} className="text-sm text-cream">
-                        · {p.display_name}
-                        {p.is_host && <span className="ml-1 text-xs text-yellow">★</span>}
-                      </li>
-                    ))
+                    members.map((p) => {
+                      const arKapten = t.captain_id === p.id
+                      return (
+                        <li key={p.id} className="flex items-center gap-1.5 text-sm text-cream">
+                          {/* Kaptenen är den ENDA som får låsa lagets svar.
+                              Värden byter genom att klicka på stjärnan. */}
+                          <button
+                            type="button"
+                            disabled={!isHost || busy}
+                            onClick={() => onSetCaptain(t.id, p.id)}
+                            title={
+                              arKapten
+                                ? `${p.display_name} svarar för laget`
+                                : isHost
+                                  ? `Gör ${p.display_name} till lagkapten`
+                                  : undefined
+                            }
+                            className={`text-xs ${
+                              isHost ? 'cursor-pointer hover:brightness-125' : 'cursor-default'
+                            }`}
+                            style={{ color: arKapten ? teamColor(t) : 'rgba(255,255,255,0.22)' }}
+                          >
+                            ★
+                          </button>
+                          <span className="min-w-0 truncate">{p.display_name}</span>
+                          {arKapten && (
+                            <span className="shrink-0 text-[10px] uppercase tracking-wide text-muted">
+                              svarar
+                            </span>
+                          )}
+                          {p.is_host && <span className="shrink-0 text-xs text-yellow">värd</span>}
+                        </li>
+                      )
+                    })
                   )}
                 </ul>
               </div>

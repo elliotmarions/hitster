@@ -35,6 +35,10 @@ export default function AnswerPanel({
   isHost,
   busy,
   clipPlaying = false,
+  // Lagläge: bara lagkaptenen får låsa in. Övriga ser vem som svarar och
+  // hänvisas till lagchatten. Solo är canAnswer alltid true.
+  canAnswer = true,
+  answererName = null,
   onLock,
   onReveal,
   onOverride,
@@ -245,6 +249,15 @@ export default function AnswerPanel({
                         ? `Låten spelar vidare tills alla ${unitWord} låst in…`
                         : `Väntar på att alla ${unitWord} låser in…`}
                     </p>
+                  </div>
+                ) : !canAnswer ? (
+                  /* Lagkamrat utan kaptensbindeln: ingen skrivruta, så två i
+                     samma lag inte kapplöper om att låsa olika svar. */
+                  <div className="mt-2 flex flex-1 flex-col items-center justify-center gap-1 py-3 text-center">
+                    <p className="font-display text-cream">
+                      {answererName ? `${answererName} svarar` : 'Lagkaptenen svarar'}
+                    </p>
+                    <p className="text-xs text-muted">Resonera i lagchatten – kaptenen låser in.</p>
                   </div>
                 ) : isBeforeAfter ? (
                   <div className="mt-2 space-y-2">
