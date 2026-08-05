@@ -36,7 +36,10 @@ tidsstämpel. Röst/video för häcklandet sköts utanför appen (Discord e.d.).
 
 - **Frontend:** React + Vite, Tailwind CSS v4 (UI på svenska)
 - **Backend / realtid / auth:** Supabase (Postgres + Realtime + Auth, anonyma gäster)
-- **Ljud:** iTunes Search API → publika preview-klipp i ett `<audio>`-element
+- **Ljud:** iTunes Search API → publika preview-klipp i ett `<audio>`-element.
+  Uppslagen cachas på pott-raden (`track_pool.preview_url`, 30 dagar) och låtar
+  som inte går att hitta markeras och hoppas över i 7 dagar (`0066`, `0067`) –
+  potten värms alltså upp av spelandet och anropen mot Apple glesnar.
 - **Hosting:** Vercel (`git push` → auto-deploy)
 
 All spellogik är **server-auktoritativ**: snurr, kryss, vinst, svarslåsning och
