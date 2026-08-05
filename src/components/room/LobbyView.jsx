@@ -433,7 +433,7 @@ export default function LobbyView({
             <span>
               <span className="font-display text-cream">Suddregel</span>
               <span className="mt-0.5 block text-xs text-muted">
-                På "Exakt årtal": rätt gissning låter dig sudda ett kryss hos en medspelare.
+                På årtalskategorierna: rätt gissning låter dig sudda ett kryss hos en medspelare.
               </span>
             </span>
             <input

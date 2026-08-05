@@ -70,6 +70,13 @@ export const CATEGORIES = {
 // Fast ordning – t.ex. discokulans segment.
 export const CATEGORY_ORDER = ['decade', 'artist', 'exact_year', 'approx_year', 'title']
 
+// Kategorier som ger sudd-rätt när suddregeln är på: de där svaret ÄR ett
+// årtal. Inte 'decade' (då svarar man ett decennium) och inte 'before_after'
+// (då väljer man sida – en ren gissning träffar rätt varannan gång, och sudd
+// på femtio procents odds är en annan regel än den här).
+// MÅSTE spegla serverns erase_cross (0063).
+export const ERASE_CATEGORIES = ['exact_year', 'approx_year', 'approx_year_1']
+
 // Åldersläge (rummet har ett årsfönster): årtionde + ±3 blir för lätt när eran
 // redan är smal, så de byts mot en tightare ±1 år plus "Före eller efter" (mot
 // ett slumpat pivot-år). Fem kategorier på snurran och brickan, precis som

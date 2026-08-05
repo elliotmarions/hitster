@@ -23,7 +23,8 @@ tidsstämpel. Röst/video för häcklandet sköts utanför appen (Discord e.d.).
    avslöjas, och servern rättar automatiskt (värden kan överstyra).
 4. Rätt svar ger **ett kryss** i en matchande ruta på 5×5-brickan. Full rad,
    kolumn eller diagonal vinner – flera vinster i samma runda blir **oavgjort**.
-5. Extraregler: **suddregel** (rätt "exakt årtal" låter dig sudda hos en motståndare),
+5. Extraregler: **suddregel** (rätt årtalsgissning – exakt eller inom ±-spannet –
+   låter dig sudda hos en motståndare),
    **lagläge** (gemensam bricka + gemensamt svar per lag, plus en **privat lagchatt**
    där laget resonerar utan att motståndarna ser), **svenskt läge** (bara
    svenska låtar) och enkel **statistik** (spelade/vinster/oavgjorda) på `/statistik`.

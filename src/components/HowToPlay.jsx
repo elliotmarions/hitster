@@ -53,7 +53,7 @@ const BRA_ATT_VETA = [
   'Värden delar en rumskod. Alla spelar i webbläsaren, ingen app behövs.',
   'Välj musik efter sällskapet: alla låtar, bara svenska, eller ett åldersspann som riktar potten mot en era.',
   'Spela var för sig eller dela in gänget i lag – då delar laget bricka och svar.',
-  'Suddregeln (kan slås på): rätt svar på "Exakt årtal" låter dig sudda ett kryss hos någon annan.',
+  'Suddregeln (kan slås på): rätt svar på en årtalskategori – exakt årtal eller ±-gissning – låter dig sudda ett kryss hos någon annan.',
   'Rättningen är automatisk men värden kan ändra en dom som blivit fel.',
 ]
 

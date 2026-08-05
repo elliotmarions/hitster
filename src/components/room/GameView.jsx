@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CATEGORIES, TIMER_SECONDS, SPIN_MS, categoryOrderFor } from '../../lib/constants.js'
+import {
+  CATEGORIES,
+  TIMER_SECONDS,
+  SPIN_MS,
+  categoryOrderFor,
+  ERASE_CATEGORIES,
+} from '../../lib/constants.js'
 import { useGame } from '../../hooks/useGame.js'
 import {
   ensureCard,
@@ -178,7 +184,10 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
     !(hasTrack && alreadyMarkedThisRound)
   const canUnmark = !finished || inDecidingRound
   const canErase =
-    !finished && room.erase_rule_enabled && currentCategory === 'exact_year' && answerGateOk
+    !finished &&
+    room.erase_rule_enabled &&
+    ERASE_CATEGORIES.includes(currentCategory) &&
+    answerGateOk
 
   // Brickan har exakt fem rutor per kategori. Har man kryssat alla fem kan ett
   // rätt svar inte omsättas i något kryss – då ska hinten säga det i stället för
