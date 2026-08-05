@@ -309,6 +309,86 @@
     color: var(--color-muted);
   }
 
+  /* ---- Tidslinjen: två reglage ovanpå varandra --------------------
+     Ett intervall med två handtag finns inte som HTML-element. Receptet
+     är två range-input i samma ruta: spåret ritas av behållaren, och
+     input:arna är genomskinliga och genomsläppliga för pekaren – bara
+     tummarna tar emot klick. Utan pointer-events-växlingen hade det
+     översta reglaget lagt en osynlig hinna över hela det undre. */
+  .tidslinje {
+    position: relative;
+    height: 34px;
+  }
+  .tidslinje input[type='range'] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 34px;
+    margin: 0;
+    background: transparent;
+    pointer-events: none;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  .tidslinje input[type='range']:focus {
+    outline: none;
+  }
+  .tidslinje input[type='range']::-webkit-slider-thumb {
+    pointer-events: auto;
+    appearance: none;
+    -webkit-appearance: none;
+    height: 22px;
+    width: 22px;
+    border-radius: 50%;
+    background: var(--color-cream);
+    border: 3px solid var(--neon, var(--color-cyan));
+    box-shadow: 0 0 14px -2px var(--neon, var(--color-cyan));
+    cursor: grab;
+  }
+  .tidslinje input[type='range']::-moz-range-thumb {
+    pointer-events: auto;
+    height: 22px;
+    width: 22px;
+    border-radius: 50%;
+    background: var(--color-cream);
+    border: 3px solid var(--neon, var(--color-cyan));
+    box-shadow: 0 0 14px -2px var(--neon, var(--color-cyan));
+    cursor: grab;
+  }
+  .tidslinje input[type='range']:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-cyan) 40%, transparent);
+  }
+  .tidslinje input[type='range']:focus-visible::-moz-range-thumb {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-cyan) 40%, transparent);
+  }
+  .tidslinje input[type='range']:disabled::-webkit-slider-thumb {
+    cursor: default;
+    opacity: 0.55;
+  }
+  .tidslinje input[type='range']:disabled::-moz-range-thumb {
+    cursor: default;
+    opacity: 0.55;
+  }
+  .tidslinje-spar {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 6px;
+    transform: translateY(-50%);
+    border-radius: 999px;
+    background: var(--color-midnight-700);
+    border: 1px solid var(--color-line);
+  }
+  .tidslinje-valt {
+    position: absolute;
+    top: 50%;
+    height: 6px;
+    transform: translateY(-50%);
+    border-radius: 999px;
+    background: linear-gradient(90deg, #b14dff, var(--color-cyan));
+  }
+
   /* --- Rumskod-bricka: stor, avläsbar, som en display på dansgolvet --- */
   .code-badge {
     font-family: var(--font-display);

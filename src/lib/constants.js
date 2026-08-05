@@ -100,48 +100,33 @@ export const GRID = 5 // brickan är 5x5 (fritt slumpad, exakt 5 rutor per kateg
 //  Låtpott-kategorier – EN väljare i lobbyn
 // ============================================================
 //
-//  Ett val bestämmer potten: en bred pott (Alla / Svenska), ett åldersspann
-//  eller en genre. Man väljer exakt en av dem.
+//  Potten avgränsas i TRE oberoende dimensioner: språk, årtal och genre.
+//  Språk och genre är chip och bor i listan nedan; årtalet är ett fritt
+//  spann på en tidslinje (se AR_MIN/yearRangeFrom längre ner) och har
+//  därför inga chip alls.
 //
-//  UNDANTAG – "bara svenska" är en MODIFIERARE. Den kan läggas ovanpå ett
-//  åldersspann eller en genre ("20–29 år, bara svenska låtar"). Servern
-//  klarade alltid det: start_random_track AND:ar sv, årsfönster och genre
-//  som tre oberoende villkor. Det var bara den här listan som beskrev dem
-//  som ömsesidigt uteslutande. Kombinationen kan bli tunn (svenska + 20–29
-//  är 90 låtar), så lobbyn visar antalet via track_pool_selection_count().
+//    union INOM en dimension  – Pop + Rock = låtar ur endera
+//    snitt MELLAN dimensioner – årsspann + genre = låtar som är båda
+//    tom dimension            – ingen gräns alls på den dimensionen
 //
-//  Åldersspannen bygger på "reminiscensbågen": man känner igen och älskar
-//  starkast musiken som var populär när man var ca 14–24 år, så en åldersgrupp
-//  mappas till ERAN gruppen var ung – inte "låtar från de åren". Fönstren är
-//  medvetet lite bredare (~15 år) så varje grupp har gott om låtar. Ref-år: 2026.
+//  Inget valt = hela potten. Kombinationer kan bli tunna (svenska + 90-tal
+//  + pop är ~300 låtar), så lobbyn visar antalet via
+//  track_pool_selection_count() i stället för att gissa.
 //
-//  Varje kategori sätter tre fält på rummet: swedish_mode + year_min/year_max
-//  (min/max = null → ingen årsgräns). Filtreras server-side i start_random_track
-//  (potten är oläsbar för klienter). `pot` = vilken räknare som visas (all/sv);
-//  åldersspannen är delmängder av världspotten och saknar egen räknare.
-//  `group` styr bara den visuella uppdelningen i lobbyn: 'broad' (Alla/Svenska),
-//  'age' (åldersspannen) och 'genre' – de är fortfarande ETT val, bara avskilda.
+//  Allt filtreras server-side i _pool_match() – potten är oläsbar för
+//  klienter, så antalen är det enda som lämnar databasen.
+//
+//  Språkchipsen har tre lägen tillsammans (0058): Svenska = bara svenska,
+//  Utländska = allt utom svenskt, ingetdera = ingen språkgräns.
 //
 //  Genrerna filtrerar på track_pool.genre via _genre_key() server-side (0043).
 //  Deezers etiketter är grova, så mappningen slår ihop det folk ändå uppfattar
 //  som samma sak – "Alternativmusik" och "Metal" ligger under Rock. Antalen
 //  hämtas live från track_pool_genre_counts(), inte hårdkodade, eftersom potten
 //  växer.
-//  MULTIVAL (0057): varje chip väljs av och på fritt.
-//    union INOM en dimension  – "20–29 år" + "30–39 år" = låtar ur endera
-//    snitt MELLAN dimensioner – ålder + genre = låtar som är båda
-//    tom dimension            – ingen gräns alls på den dimensionen
-//  Inget valt = hela potten. Svenska är numera en chip som alla andra:
-//  vald = bara svenska, ovald = ingen språkgräns (inte "allt utom svenskt",
-//  vilket var innebörden före 0057).
 export const POOL_CATEGORIES = [
   { key: 'sv', group: 'lang', label: 'Svenska', hint: 'Bara svenska artister', swedish: true, neon: '#ffd23f' },
   { key: 'intl', group: 'lang', label: '🌍 Utländska', hint: 'Allt utom svenskt', swedish: false, neon: '#22e6e6' },
-  { key: '20s', group: 'age', label: '20–29 år', hint: 'Uppväxthits ~2008–idag', min: 2008, max: null, neon: '#ff4d9d' },
-  { key: '30s', group: 'age', label: '30–39 år', hint: 'Uppväxthits ~1997–2011', min: 1997, max: 2011, neon: '#b14dff' },
-  { key: '40s', group: 'age', label: '40–49 år', hint: 'Uppväxthits ~1987–2001', min: 1987, max: 2001, neon: '#3ee87b' },
-  { key: '50s', group: 'age', label: '50–59 år', hint: 'Uppväxthits ~1977–1991', min: 1977, max: 1991, neon: '#ff8a3c' },
-  { key: '60s', group: 'age', label: '60–69 år', hint: 'Uppväxthits ~1967–1981', min: 1967, max: 1981, neon: '#33a6ff' },
   { key: 'pop', group: 'genre', label: 'Pop', genre: 'pop', neon: '#ff4d9d' },
   { key: 'rock', group: 'genre', label: 'Rock', genre: 'rock', neon: '#ff8a3c' },
   { key: 'hiphop', group: 'genre', label: 'Hiphop', genre: 'hiphop', neon: '#b6ff3c' },
@@ -160,13 +145,52 @@ export function selectionFrom(room) {
   }
 }
 
-const sammaBand = (b, cat) => (b?.min ?? null) === cat.min && (b?.max ?? null) === cat.max
+// ---- Tidslinjen: årsspannet -----------------------------------------
+//
+// Åldersspannen var fem fasta chip byggda på reminiscensbågen ("20–29 år"
+// = uppväxthits ~2008–idag). De är ersatta av ett fritt spann: samma sak
+// för den som vill ha sin era, men utan att behöva översätta ålder till
+// årtal, och möjligt att smalna av eller vidga precis som sällskapet vill.
+//
+// Formen i databasen är oförändrad. year_bands är sedan 0057 en lista av
+// {min, max} och _pool_match() filtrerar på godtyckliga värden, så ett
+// spann är helt enkelt ETT band – ingen migration behövdes.
+//
+// Skalans ändar är inte pottens ytterligheter. Potten har enstaka spår
+// ända ner till 1908, men under ~1955 rör det sig om någon låt per år;
+// en tidslinje som la två tredjedelar av sin bredd på dem hade varit
+// oanvändbar. Ändarna betyder därför "ingen gräns åt det hållet", inte
+// "1950": dras reglaget ut helt skrivs ett tomt year_bands och de gamla
+// låtarna är med. Övre änden följer klockan så skalan inte rostar.
+export const AR_MIN = 1950
+export const AR_MAX = Math.max(2026, new Date().getFullYear())
+
+// Rummets spann som [från, till] på tidslinjens skala. Öppen kant (null)
+// blir skalans ände. Flera band kan inte ritas som ETT spann – gamla rum
+// från chip-tiden kan ha det – så då visas ytterkanterna, precis som
+// serverns _sync_year_envelope() räknar ut year_min/year_max.
+export function yearRangeFrom(room) {
+  const bands = selectionFrom(room).bands
+  if (!bands.length) return [AR_MIN, AR_MAX]
+  const mins = bands.map((b) => b?.min ?? null)
+  const maxs = bands.map((b) => b?.max ?? null)
+  const lo = mins.some((m) => m === null) ? AR_MIN : Math.min(...mins)
+  const hi = maxs.some((m) => m === null) ? AR_MAX : Math.max(...maxs)
+  return [Math.max(AR_MIN, lo), Math.min(AR_MAX, hi)]
+}
+
+// year_bands för ett valt spann. En kant som ligger i skalans ände skrivs
+// som null (= öppen) i stället för årtalet: "1990 och framåt" ska fortsätta
+// betyda det även när nästa års låtar kommer in i potten.
+export function yearBandsFor([lo, hi]) {
+  if (lo <= AR_MIN && hi >= AR_MAX) return []
+  return [{ min: lo <= AR_MIN ? null : lo, max: hi >= AR_MAX ? null : hi }]
+}
 
 // Är den här chippen vald just nu?
 export function isSelected(room, cat) {
   const s = selectionFrom(room)
   if (cat.group === 'lang') return s.swedish === cat.swedish
-  if (cat.group === 'age') return s.bands.some((b) => sammaBand(b, cat))
   if (cat.group === 'genre') return s.genres.includes(cat.genre)
   return false
 }
@@ -181,16 +205,6 @@ export function toggleSelection(room, cat) {
     return {
       swedish_mode: s.swedish === cat.swedish ? null : cat.swedish,
       year_bands: s.bands,
-      genres: s.genres,
-    }
-  }
-  if (cat.group === 'age') {
-    const finns = s.bands.some((b) => sammaBand(b, cat))
-    return {
-      swedish_mode: s.swedish,
-      year_bands: finns
-        ? s.bands.filter((b) => !sammaBand(b, cat))
-        : [...s.bands, { min: cat.min, max: cat.max }],
       genres: s.genres,
     }
   }
@@ -210,7 +224,23 @@ export function selectionEmpty(room) {
 
 export const TOMT_VAL = { swedish_mode: null, year_bands: [], genres: [] }
 
-// En läsbar sammanfattning av valet, t.ex. "Svenska · 20–29 år, 30–39 år · Pop".
+// Spannet i klartext. Öppen kant skrivs ut som "och framåt" / "till och med"
+// i stället för skalans ändår – annars hade sammanfattningen påstått en gräns
+// som inte finns, och gömt undan låtarna före 1950.
+export function yearSpanLabel(room) {
+  const bands = selectionFrom(room).bands
+  if (!bands.length) return null
+  const mins = bands.map((b) => b?.min ?? null)
+  const maxs = bands.map((b) => b?.max ?? null)
+  const lo = mins.some((m) => m === null) ? null : Math.min(...mins)
+  const hi = maxs.some((m) => m === null) ? null : Math.max(...maxs)
+  if (lo === null && hi === null) return null
+  if (lo !== null && hi !== null) return `${lo}–${hi}`
+  if (lo !== null) return `${lo} och framåt`
+  return `till och med ${hi}`
+}
+
+// En läsbar sammanfattning av valet, t.ex. "Svenska · 1985–2004 · Pop".
 // Ersätter poolCategoryFor(), som byggde på att rummet stod på EXAKT en
 // kategori – ett antagande som inte längre håller efter 0057.
 export function selectionLabel(room) {
@@ -219,10 +249,8 @@ export function selectionLabel(room) {
   const delar = []
   if (s.swedish === true) delar.push('Svenska')
   else if (s.swedish === false) delar.push('Utländska')
-  const ald = POOL_CATEGORIES.filter(
-    (c) => c.group === 'age' && s.bands.some((b) => sammaBand(b, c)),
-  ).map((c) => c.label)
-  if (ald.length) delar.push(ald.join(', '))
+  const ar = yearSpanLabel(room)
+  if (ar) delar.push(ar)
   const gen = POOL_CATEGORIES.filter(
     (c) => c.group === 'genre' && s.genres.includes(c.genre),
   ).map((c) => c.label)

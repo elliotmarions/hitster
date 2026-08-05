@@ -15,7 +15,10 @@ import ConfirmDialog from '../ui/ConfirmDialog.jsx'
 import CopyButton from '../ui/CopyButton.jsx'
 import SwedishFlag from '../ui/SwedishFlag.jsx'
 import TeamChat from '../TeamChat.jsx'
+import YearRangeSlider from '../ui/YearRangeSlider.jsx'
 import {
+  AR_MAX,
+  AR_MIN,
   POOL_CATEGORIES,
   TOMT_VAL,
   isSelected,
@@ -23,6 +26,9 @@ import {
   selectionFrom,
   selectionLabel,
   toggleSelection,
+  yearBandsFor,
+  yearRangeFrom,
+  yearSpanLabel,
 } from '../../lib/constants.js'
 
 // Hur länge en spelare får vara borta ur presence innan raden städas bort.
@@ -52,6 +58,8 @@ export default function LobbyView({
   // i minnet: en fjärde spelare som dyker upp ska inte väcka frågan igen, men
   // laddar värden om sidan är det rimligt att den ställs på nytt.
   const [lagFraganAvfardad, setLagFraganAvfardad] = useState(false)
+  // Tidslinjens läge under pågående dragning. null = följ rummet.
+  const [arUtkast, setArUtkast] = useState(null)
   // Antal låtar i exakt den kombination som är vald (språk + år + genre).
   const [selCount, setSelCount] = useState(null)
   // Optimistiskt lager: valet ska synas direkt vid klick, utan att vänta på
@@ -225,7 +233,29 @@ export default function LobbyView({
 
   // Slå en chip av eller på. Union inom dimensionen, snitt mellan dimensioner.
   const onToggle = (cat) => skrivVal(toggleSelection(view, cat))
-  const onClearAll = () => skrivVal(TOMT_VAL)
+  const onClearAll = () => {
+    setArUtkast(null)
+    skrivVal(TOMT_VAL)
+  }
+
+  // Tidslinjen dras kontinuerligt. Utkastet är det som ritas medan man håller
+  // i handtaget; först när dragningen lugnat sig skrivs det till rummet.
+  // Utan det hade varje pixel blivit både en UPDATE och en ny räkning av
+  // urvalet – och räkningen är en RPC som frågar hela potten.
+  const arSpann = arUtkast ?? yearRangeFrom(view)
+  useEffect(() => {
+    if (!arUtkast) return
+    const id = setTimeout(() => {
+      // Bara year_bands skrivs, inte hela urvalet: hinner någon slå på en
+      // genre medan dragningen pågår ska den inte skrivas över av ett utkast
+      // som skapades innan chippen klickades.
+      skrivVal({ year_bands: yearBandsFor(arUtkast) })
+      setArUtkast(null)
+    }, 350)
+    return () => clearTimeout(id)
+    // skrivVal läser room.id och sätter state – stabil nog att utelämna.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [arUtkast])
 
   const tomtVal = selectionEmpty(view)
 
@@ -331,9 +361,20 @@ export default function LobbyView({
             {POOL_CATEGORIES.filter((c) => c.group === 'lang').map(renderCategory)}
           </div>
 
-          <p className="label mb-2 mt-4 opacity-70">Ålder</p>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {POOL_CATEGORIES.filter((c) => c.group === 'age').map(renderCategory)}
+          <div className="mb-2 mt-4 flex items-baseline justify-between gap-3">
+            <p className="label opacity-70">Årtal</p>
+            <span className="font-display text-sm text-cream">
+              {yearSpanLabel(view) ?? 'Alla årtal'}
+            </span>
+          </div>
+          <div className="panel-inset px-4 pb-2 pt-3">
+            <YearRangeSlider
+              min={AR_MIN}
+              max={AR_MAX}
+              value={arSpann}
+              disabled={!isHost}
+              onChange={setArUtkast}
+            />
           </div>
 
           <p className="label mb-2 mt-4 opacity-70">Genre</p>
