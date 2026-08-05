@@ -245,11 +245,24 @@ export default function AnswerPanel({
 
   return (
     <section className="panel p-5 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-xl text-cream">Svar</h2>
-        <span className="text-sm text-muted">
-          {locked} av {total} {unitWord} klara
-        </span>
+      {/* Kategorin upprepas här, inte bara i banderollen med hjulet: på mobil
+          har man scrollat förbi den när man skriver sitt svar, och då är
+          "vad var det vi gissade på?" den enda fråga som spelar roll. */}
+      <div>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          <div className="flex items-center gap-2">
+            <h2 className="font-display text-xl text-cream">Svar</h2>
+            <span className="chip shrink-0" style={{ '--neon': cat?.hex || '#22e6e6' }}>
+              {cat?.short || 'Svar'}
+            </span>
+          </div>
+          <span className="text-sm text-muted">
+            {locked} av {total} {unitWord} klara
+          </span>
+        </div>
+        {cat?.desc && !isBeforeAfter && (
+          <p className="mt-1 text-xs text-muted">{cat.desc}</p>
+        )}
       </div>
 
       <div
