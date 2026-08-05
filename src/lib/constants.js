@@ -82,10 +82,33 @@ export const AGE_CATEGORY_ORDER = [
   'before_after',
 ]
 
+// Ett spann smalare än så här spelas i åldersläge. Gränsen är exklusiv:
+// 19 år ger åldersläge, 20 ger det vanliga hjulet.
+export const ALDERSLAGE_BREDD = 20
+
+// Bredden på rummets årsspann, i antal år (inklusive båda ändarna).
+// null = ingen årsgräns alls.
+//
+// Öppna kanter sluts, inte avfärdas: tidslinjen skriver null när ett handtag
+// står i skalans ände, så "2010 och framåt" är i praktiken 17 år och ska
+// räknas som det. Övre kanten sluts mot innevarande år, undre mot 1900 –
+// före pottens äldsta spår, så den blir aldrig den bindande gränsen.
+// MÅSTE spegla serverns _room_categories (0061).
+export function yearSpanWidth(room) {
+  const lo = room?.year_min ?? null
+  const hi = room?.year_max ?? null
+  if (lo === null && hi === null) return null
+  return (hi ?? new Date().getFullYear()) - (lo ?? 1900) + 1
+}
+
 // Vilket kategori-set gäller för rummet just nu?
+//
+// Åldersläget finns för att en SMAL era gör "Årtionde" och "±3 år" triviala.
+// Det är alltså bredden som motiverar bytet, inte att spannet existerar –
+// 1955–2025 är inget smalt fönster och ska spelas med vanliga hjulet.
 export function categoryOrderFor(room) {
-  const ageMode = room?.year_min != null || room?.year_max != null
-  return ageMode ? AGE_CATEGORY_ORDER : CATEGORY_ORDER
+  const bredd = yearSpanWidth(room)
+  return bredd !== null && bredd < ALDERSLAGE_BREDD ? AGE_CATEGORY_ORDER : CATEGORY_ORDER
 }
 
 // Lagläge – neonfärger som tilldelas lag i tur och ordning.
