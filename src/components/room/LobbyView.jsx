@@ -26,6 +26,10 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
   const [err, setErr] = useState('')
   const [confirmLeave, setConfirmLeave] = useState(false)
   const [leaving, setLeaving] = useState(false)
+  // "Nej, var för sig" tystar lagfrågan resten av lobbybesöket. Medvetet bara
+  // i minnet: en fjärde spelare som dyker upp ska inte väcka frågan igen, men
+  // laddar värden om sidan är det rimligt att den ställs på nytt.
+  const [lagFraganAvfardad, setLagFraganAvfardad] = useState(false)
   // Antal låtar i exakt den kombination som är vald (språk + år + genre).
   const [selCount, setSelCount] = useState(null)
   // Optimistiskt lager: valet ska synas direkt vid klick, utan att vänta på
@@ -90,8 +94,11 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
     await supabase.from('rooms').update({ erase_rule_enabled: e.target.checked }).eq('id', room.id)
   }
 
-  async function toggleTeamMode(e) {
-    await supabase.from('rooms').update({ team_mode: e.target.checked }).eq('id', room.id)
+  async function setTeamMode(on) {
+    // Lagen raderas INTE när lagläget stängs av. Ångrar sig värden och slår på
+    // det igen står indelningen kvar; att tömma den vid varje av-slag vore ett
+    // tyst dataras för ett klick som lika gärna var en felträff.
+    await supabase.from('rooms').update({ team_mode: on }).eq('id', room.id)
   }
 
   // Skriv ett nytt urval till rummet. year_min/year_max sätts INTE här –
@@ -251,24 +258,47 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
               disabled={!isHost}
             />
           </label>
+        </div>
 
-          {/* Lagläge */}
-          <label className="panel-inset mt-3 flex items-center justify-between gap-4 p-3.5">
+        {/* Lagläget frågas fram i stället för att ligga som en kryssruta bland
+            reglerna. Med två spelare är lag meningslöst – ett lag per person –
+            så frågan dyker upp först när en tredje spelare kommit in. Bara
+            värden ser den: det är värden som kan svara, och en fråga man inte
+            kan besvara är bara brus för de andra. */}
+        {isHost && room.team_mode ? (
+          <div className="panel-inset mt-6 flex flex-wrap items-center justify-between gap-3 p-3.5">
             <span>
-              <span className="font-display text-cream">Lagläge</span>
+              <span className="font-display text-cream">Ni spelar i lag</span>
               <span className="mt-0.5 block text-xs text-muted">
-                Spela i lag med gemensam bricka och gemensamt svar. Värden delar in lagen nedan.
+                Dela in lagen längst ner på sidan. Laget delar bricka, och kaptenen
+                låser svaret.
               </span>
             </span>
-            <input
-              type="checkbox"
-              className="h-5 w-5 accent-cyan disabled:opacity-50"
-              checked={room.team_mode}
-              onChange={toggleTeamMode}
-              disabled={!isHost}
-            />
-          </label>
-        </div>
+            <button
+              type="button"
+              onClick={() => setTeamMode(false)}
+              className="cursor-pointer text-xs text-muted underline hover:text-cream"
+            >
+              Spela var för sig
+            </button>
+          </div>
+        ) : isHost && players.length >= 3 && !lagFraganAvfardad ? (
+          <div className="panel-inset mt-6 p-3.5" style={{ borderColor: '#22e6e666' }}>
+            <p className="font-display text-cream">Vill ni spela i lag?</p>
+            <p className="mt-0.5 text-xs text-muted">
+              Ni är {players.length} i rummet. I lagläge delar laget bricka och svarar
+              tillsammans – en kapten per lag låser svaret.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-3">
+              <NeonButton variant="outline" neon="#22e6e6" onClick={() => setTeamMode(true)}>
+                Ja, dela in lag
+              </NeonButton>
+              <NeonButton variant="ghost" onClick={() => setLagFraganAvfardad(true)}>
+                Nej, var för sig
+              </NeonButton>
+            </div>
+          </div>
+        ) : null}
 
         {err && <p className="mt-4 text-sm text-magenta">{err}</p>}
 
