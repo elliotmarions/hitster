@@ -383,21 +383,45 @@ export default function LobbyView({
           </div>
 
           {/* Sammanfattning + den enda siffra som betyder något: hur många
-              låtar just den här kombinationen faktiskt ger. */}
-          <div className="panel-inset mt-4 p-3.5">
-            <p className="font-display text-cream">{selectionLabel(view)}</p>
-            <p className="mt-0.5 text-xs text-muted">
-              {selCount === null
-                ? 'Räknar…'
-                : `${selCount.toLocaleString('sv-SE')} låtar i urvalet`}
-            </p>
+              låtar just den här kombinationen faktiskt ger.
+              Den låg tidigare i en panel-inset, samma ram som chipen ovanför,
+              och läste därför som ännu ett genreval man glömt klicka på. Den
+              är inget val alls utan facit på de tre raderna ovanför, så den
+              har brutits ut: egen linje över, egen färgton, och antalet som
+              det stora talet i stället för en fotnot. */}
+          <div className="mt-5 border-t border-white/10 pt-4">
+            <div
+              className="flex items-center justify-between gap-4 rounded-xl px-4 py-3"
+              style={{
+                background:
+                  'linear-gradient(90deg, rgba(177,77,255,0.16), rgba(34,230,230,0.10))',
+                border: '1px solid rgba(34,230,230,0.35)',
+              }}
+            >
+              <div className="min-w-0">
+                <p className="label" style={{ color: '#22e6e6' }}>
+                  Ert urval
+                </p>
+                <p className="mt-0.5 truncate font-display text-cream">
+                  {selectionLabel(view)}
+                </p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="font-display text-2xl leading-none text-cream">
+                  {selCount === null ? '—' : selCount.toLocaleString('sv-SE')}
+                </p>
+                <p className="mt-1 text-[11px] text-muted">
+                  {selCount === null ? 'räknar…' : 'låtar'}
+                </p>
+              </div>
+            </div>
+            {selCount !== null && selCount < 25 && (
+              <p className="mt-2 text-xs" style={{ color: '#ff8a3c' }}>
+                Tunn pott – {selCount} låtar. Samma låtar börjar återkomma, och med färre än
+                25 kan brickan bli svår att fylla.
+              </p>
+            )}
           </div>
-          {selCount !== null && selCount < 25 && (
-            <p className="mt-2 text-xs" style={{ color: '#ff8a3c' }}>
-              Tunn pott – {selCount} låtar. Samma låtar börjar återkomma, och med färre än
-              25 kan brickan bli svår att fylla.
-            </p>
-          )}
         </div>
 
         {/* Regler – av/på */}
