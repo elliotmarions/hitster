@@ -37,6 +37,29 @@
   --font-logo: 'Monoton', ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Righteous ampersand är en smal, sluten form som vid brödtextstorlek läses
+   som ett dollartecken – "R&B" såg ut som "R$B". Den här regeln kapar ut
+   enbart U+0026 ur familjen så att just det tecknet hämtas från ett vanligt
+   grotesk-snitt i stället; övriga glyfer är orörda.
+
+   Deklarationen måste ligga efter Google Fonts-länken i index.html för att
+   vinna över deras Righteous-@font-face på det överlappande tecknet – den
+   gör den, eftersom Vites CSS-bundle injiceras senare i <head>.
+
+   local() träffar bara installerade systemsnitt (Space Grotesk är webfont
+   och matchar sällan). Missar alla fyra faller tecknet vidare till nästa
+   familj i font-display-stacken, alltså ui-sans-serif – också en läsbar
+   ampersand, så utfallet är korrekt oavsett plattform. */
+@font-face {
+  font-family: 'Righteous';
+  src:
+    local('Space Grotesk'),
+    local('Segoe UI'),
+    local('Helvetica Neue'),
+    local('Arial');
+  unicode-range: U+0026;
+}
+
 @layer base {
   :root {
     color-scheme: dark;
