@@ -268,8 +268,9 @@ begin
 end $function$;
 
 -- --- 3. kö för bakgrundsuppslagen ------------------------------------
+-- OBS: track_pool.id är `serial` (integer), inte uuid som rummens nycklar.
 create table if not exists public.pool_warm_queue (
-  pool_id      uuid primary key references public.track_pool (id) on delete cascade,
+  pool_id      int primary key references public.track_pool (id) on delete cascade,
   request_id   bigint not null,
   stage        int not null default 1,
   requested_at timestamptz not null default now()
