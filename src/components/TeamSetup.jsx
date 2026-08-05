@@ -7,6 +7,9 @@ import NeonButton from './ui/NeonButton.jsx'
  * Lag-indelning i lobbyn (bara värden styr). Värden skapar lag och placerar
  * varje spelare i ett lag via en dropdown. Alla ser indelningen i realtid.
  *
+ * Renderar ingen egen panel: den bor inuti Spelare-panelen, där spelarna man
+ * delar in redan står. Anroparen äger ramen.
+ *
  * Props: room, players, teams, isHost
  */
 export default function TeamSetup({ room, players, teams, isHost }) {
@@ -35,9 +38,9 @@ export default function TeamSetup({ room, players, teams, isHost }) {
   const unassigned = players.filter((p) => !p.team_id)
 
   return (
-    <section className="panel p-6">
+    <div>
       <div className="flex items-center justify-between gap-3">
-        <h2 className="font-display text-xl text-cream">Lagindelning</h2>
+        <h3 className="font-display text-lg text-cream">Lagindelning</h3>
         {isHost && (
           <NeonButton variant="outline" neon={nextColor} onClick={onAddTeam} disabled={busy}>
             + Lägg till lag
@@ -52,7 +55,9 @@ export default function TeamSetup({ room, players, teams, isHost }) {
             : 'Väntar på att värden delar in lagen…'}
         </p>
       ) : (
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        // En kolumn: panelen är den smala spalten bredvid inställningarna,
+        // och två lagkort i bredd blir för trångt för namnen.
+        <div className="mt-4 grid gap-3">
           {teams.map((t) => {
             const members = membersOf(t.id)
             return (
@@ -163,6 +168,6 @@ export default function TeamSetup({ room, players, teams, isHost }) {
       )}
 
       {err && <p className="mt-3 text-sm text-magenta">{err}</p>}
-    </section>
+    </div>
   )
 }

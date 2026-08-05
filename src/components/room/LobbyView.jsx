@@ -375,7 +375,7 @@ export default function LobbyView({
             <span>
               <span className="font-display text-cream">Ni spelar i lag</span>
               <span className="mt-0.5 block text-xs text-muted">
-                Dela in lagen längst ner på sidan. Laget delar bricka, och kaptenen
+                Dela in lagen under Spelare. Laget delar bricka, och kaptenen
                 låser svaret.
               </span>
             </span>
@@ -431,12 +431,18 @@ export default function LobbyView({
         <div className="mt-4">
           <PlayerList players={players} currentUserId={currentUserId} />
         </div>
+
+        {/* Lagindelningen hör hemma här, inte längst ner på sidan: det är
+            samma personer man delar in som står i listan ovanför, och att
+            behöva scrolla förbi hela inställningspanelen mellan namnen och
+            lagen gjorde en enkel sak onödigt omständlig. */}
+        {room.team_mode && (
+          <div className="mt-6 border-t border-white/10 pt-5">
+            <TeamSetup room={room} players={players} teams={teams} isHost={isHost} />
+          </div>
+        )}
       </section>
       </div>
-
-      {room.team_mode && (
-        <TeamSetup room={room} players={players} teams={teams} isHost={isHost} />
-      )}
 
       {/* Lagchatten finns redan i lobbyn så laget kan snacka ihop sig innan start. */}
       <TeamChat room={room} me={me} teams={teams} />
