@@ -170,6 +170,11 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   // svaret var rätt. Utan låt (nyss snurrat) är grinden stängd – annars kunde
   // man kryssa direkt efter snurret innan man gissat. Speglar mark_cross.
   const answerGateOk = hasTrack && answersRevealed && myAnswerCorrect
+  // Sudd har en egen grind sedan bonusrutan finns (0064): den kräver bara att
+  // rundan är avslöjad, inte att huvudsvaret var rätt. Vilken av de två vägarna
+  // som gäller avgörs av kategorin nedan.
+  const revealGateOk = hasTrack && answersRevealed
+  const bonusWon = myRoundAnswer?.bonus_correct === true
 
   // Rätt svar ger bara ETT kryss per runda (server-styrt via round_answers.has_marked;
   // markedRoundId speglar det optimistiskt så knappen låses direkt vid klick).
@@ -183,11 +188,16 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
     answerGateOk &&
     !(hasTrack && alreadyMarkedThisRound)
   const canUnmark = !finished || inDecidingRound
+  // Ett sudd per runda (server-styrt via round_answers.has_erased).
+  const alreadyErasedThisRound = myRoundAnswer?.has_erased === true
   const canErase =
     !finished &&
     room.erase_rule_enabled &&
-    ERASE_CATEGORIES.includes(currentCategory) &&
-    answerGateOk
+    revealGateOk &&
+    !alreadyErasedThisRound &&
+    // Årtalskategori → rundans eget svar måste vara rätt (0063).
+    // Övriga → bonusrutans årsgissning måste vara rätt (0064). Speglar erase_cross.
+    (ERASE_CATEGORIES.includes(currentCategory) ? myAnswerCorrect : bonusWon)
 
   // Brickan har exakt fem rutor per kategori. Har man kryssat alla fem kan ett
   // rätt svar inte omsättas i något kryss – då ska hinten säga det i stället för
@@ -315,7 +325,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
       () => optimisticCell(cardId, i, false),
       () => eraseCross(room.id, cardId, i),
     )
-  const onLockAnswer = (t) => run(() => lockAnswer(room.id, t))
+  const onLockAnswer = (t, bonusYear = '') => run(() => lockAnswer(room.id, t, bonusYear))
   const onRevealAnswers = () => run(() => revealAnswers(room.id))
   const onOverrideAnswer = (answerId, correct) =>
     optimistic(
@@ -496,6 +506,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
           clipPlaying={clipPlaying}
           canAnswer={iMayAnswer}
           answererName={answererName}
+          eraseRuleOn={Boolean(room.erase_rule_enabled)}
           onLock={onLockAnswer}
           onReveal={onRevealAnswers}
           onOverride={onOverrideAnswer}

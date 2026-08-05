@@ -120,10 +120,13 @@ export async function eraseCross(roomId, targetCardId, cellIndex) {
 // Lås in mitt svar för senaste rundan. Går så fort låten börjat spela – man
 // behöver inte vänta ut klippet. När alla lag låst avslöjas svaren + facit för
 // alla (servern sätter answers_revealed) och klienterna tystar låten.
-export async function lockAnswer(roomId, answer) {
+// bonusYear = extrarutans årsgissning (0064). Bara i spel när suddregeln är på
+// och rundans kategori inte redan handlar om årtal; annars tom sträng.
+export async function lockAnswer(roomId, answer, bonusYear = '') {
   const { data, error } = await supabase.rpc('lock_answer', {
     p_room_id: roomId,
     p_answer: answer,
+    p_bonus: bonusYear,
   })
   if (error) throw translateDbError(error)
   return data

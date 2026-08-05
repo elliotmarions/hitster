@@ -433,7 +433,9 @@ export default function LobbyView({
             <span>
               <span className="font-display text-cream">Suddregel</span>
               <span className="mt-0.5 block text-xs text-muted">
-                På årtalskategorierna: rätt gissning låter dig sudda ett kryss hos en medspelare.
+                Pricka utgivningsåret så får du sudda ett kryss hos en medspelare. På
+                kategorier som inte handlar om årtal gissar du året i en bonusruta bredvid
+                svaret.
               </span>
             </span>
             <input

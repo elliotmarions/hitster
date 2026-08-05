@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CATEGORIES } from '../lib/constants'
+import { CATEGORIES, ERASE_CATEGORIES } from '../lib/constants'
 import NeonButton from './ui/NeonButton.jsx'
 import TrackReveal from './TrackReveal.jsx'
 
@@ -21,7 +21,8 @@ import TrackReveal from './TrackReveal.jsx'
  *   isHost   – visar "Visa svar nu"-knappen
  *   busy     – knappar disablade under pågående RPC
  *   clipPlaying – låten låter fortfarande (styr bara hjälptexterna)
- *   onLock   – (text) => void
+ *   eraseRuleOn – suddregeln påslagen i rummet (styr bonusrutan)
+ *   onLock   – (text, bonusYear) => void
  *   onReveal – () => void
  */
 export default function AnswerPanel({
@@ -39,11 +40,13 @@ export default function AnswerPanel({
   // hänvisas till lagchatten. Solo är canAnswer alltid true.
   canAnswer = true,
   answererName = null,
+  eraseRuleOn = false,
   onLock,
   onReveal,
   onOverride,
 }) {
   const [text, setText] = useState('')
+  const [bonus, setBonus] = useState('')
   if (!round) return null
 
   const unitWord = teamMode ? 'lag' : 'spelare'
@@ -73,6 +76,12 @@ export default function AnswerPanel({
   // "Före eller efter" – ett binärt val mot ett känt pivot-år (rounds.pivot_year).
   const isBeforeAfter = round.category === 'before_after'
   const pivot = round.pivot_year
+
+  // Bonusruta (0064): är suddregeln på och rundan INTE handlar om årtal får man
+  // gissa året vid sidan av. Exakt träff ger ett sudd, oberoende av huvudsvaret.
+  // På årtalskategorierna vore rutan en dubblett av svaret – då visas den inte.
+  const showBonus = eraseRuleOn && !ERASE_CATEGORIES.includes(round.category)
+  const bonusFormatBad = bonus.trim() !== '' && !/^(?:19|20)\d{2}$/.test(bonus.trim())
   // Snyggare etikett för ett före/efter-svar vid avslöjandet.
   const beforeAfterLabel = (val) =>
     val === 'före' ? `Före ${pivot}` : val === 'efter' ? `${pivot} eller senare` : val
@@ -120,6 +129,20 @@ export default function AnswerPanel({
                     <span className="text-muted">— inget svar —</span>
                   )}
                 </p>
+
+                {/* Bonusgissningen (0064). Visas bara när rutan var i spel och
+                    någon faktiskt skrev ett år – tomma rutor är brus. */}
+                {a.bonus_year?.trim() && (
+                  <p className="mt-1 text-xs">
+                    <span className="text-muted">Bonusår: </span>
+                    <span style={{ color: a.bonus_correct ? good : bad }}>
+                      {a.bonus_year.trim()}
+                    </span>
+                    {a.bonus_correct && (
+                      <span className="text-cream"> · får sudda ett kryss</span>
+                    )}
+                  </p>
+                )}
 
                 {isHost && (
                   <div className="mt-2 flex items-center gap-1.5 text-xs">
@@ -190,6 +213,36 @@ export default function AnswerPanel({
   // vi väntar på de andra"; först vid avslöjandet blir det grönt eller rosa.
   const lockedHue = '#33a6ff'
 
+  // Bonusrutan ser likadan ut i båda inmatningslägena (fritext och före/efter),
+  // så den byggs en gång. Rosa = suddregelns färg, samma som Exakt årtal.
+  const bonusField = showBonus ? (
+    <div className="panel-inset p-2.5" style={{ borderColor: 'rgba(255,77,157,0.35)' }}>
+      <p className="label text-[11px]" style={{ color: '#ff4d9d' }}>
+        Bonus: gissa exakt årtal
+      </p>
+      <input
+        className="field mt-1.5 py-1.5 text-center font-display"
+        placeholder="t.ex. 1987"
+        value={bonus}
+        onChange={(e) => setBonus(e.target.value)}
+        maxLength={4}
+        inputMode="numeric"
+        autoCorrect="off"
+        autoCapitalize="off"
+        autoComplete="off"
+        spellCheck={false}
+      />
+      {bonusFormatBad ? (
+        <p className="mt-1 text-[11px] text-magenta">⚠ Skriv hela årtalet, t.ex. 1987.</p>
+      ) : (
+        <p className="mt-1 text-[11px] text-muted">
+          Frivilligt. Exakt rätt år låter dig sudda ett kryss hos någon annan – även om du
+          missar rundans egen fråga.
+        </p>
+      )}
+    </div>
+  ) : null
+
   return (
     <section className="panel p-5 space-y-4">
       <div className="flex items-center justify-between">
@@ -251,6 +304,11 @@ export default function AnswerPanel({
                         <span className="text-muted">Svaret är inlåst</span>
                       )}
                     </p>
+                    {mine?.bonus_year?.trim() && (
+                      <p className="mt-1 text-xs" style={{ color: '#ff4d9d' }}>
+                        Bonusår: {mine.bonus_year.trim()}
+                      </p>
+                    )}
                     <p className="mt-1 text-xs text-muted">
                       {clipPlaying
                         ? `Låten spelar vidare tills alla ${unitWord} låst in…`
@@ -291,9 +349,12 @@ export default function AnswerPanel({
                         </button>
                       ))}
                     </div>
+                    {bonusField}
                     <NeonButton
-                      onClick={() => onLock(text)}
-                      disabled={busy || (text !== 'före' && text !== 'efter')}
+                      onClick={() => onLock(text, bonus.trim())}
+                      disabled={
+                        busy || (text !== 'före' && text !== 'efter') || bonusFormatBad
+                      }
                       className="w-full"
                     >
                       Lås in
@@ -325,9 +386,10 @@ export default function AnswerPanel({
                         ⚠ Skriv hela årtalet, t.ex. <b>1967</b> – inte ”67”.
                       </p>
                     )}
+                    {bonusField}
                     <NeonButton
-                      onClick={() => onLock(text.trim())}
-                      disabled={busy || !text.trim() || yearFormatBad}
+                      onClick={() => onLock(text.trim(), bonus.trim())}
+                      disabled={busy || !text.trim() || yearFormatBad || bonusFormatBad}
                       className="w-full"
                     >
                       Lås in
