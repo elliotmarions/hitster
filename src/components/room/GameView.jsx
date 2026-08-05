@@ -5,6 +5,7 @@ import {
   TIMER_SECONDS,
   SPIN_MS,
   categoryOrderFor,
+  selectionLabel,
   ERASE_CATEGORIES,
 } from '../../lib/constants.js'
 import { useGame } from '../../hooks/useGame.js'
@@ -372,6 +373,13 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
           <h1 className="truncate font-display text-xl text-cream sm:text-2xl">
             {room.name || 'Namnlöst rum'}
           </h1>
+          {/* Urvalet stod bara i lobbyn. Mitt i spelet är "vad är det vi
+              spelar på?" en fråga som återkommer – inte minst för den som
+              gick med efter att värden ställt in potten. Samma text som
+              lobbyns "Ert urval", t.ex. "Svenska · 1990–2015 · Pop". */}
+          <p className="mt-0.5 truncate text-xs text-muted" title={selectionLabel(room)}>
+            {selectionLabel(room)}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <span className="chip" style={{ '--neon': '#22e6e6' }}>
