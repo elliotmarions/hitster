@@ -15,6 +15,9 @@ export default function ConfirmDialog({
   message,
   confirmLabel = 'Ja',
   cancelLabel = 'Avbryt',
+  // Rutan används numera till mer än att lämna rummet, så väntetexten måste
+  // gå att byta. Defaulten är kvar för den ursprungliga anroparen.
+  busyLabel = 'Lämnar…',
   neon = '#ff2e9a',
   busy = false,
   onConfirm,
@@ -59,7 +62,7 @@ export default function ConfirmDialog({
             {cancelLabel}
           </NeonButton>
           <NeonButton neon={neon} onClick={onConfirm} disabled={busy}>
-            {busy ? 'Lämnar…' : confirmLabel}
+            {busy ? busyLabel : confirmLabel}
           </NeonButton>
         </div>
       </div>

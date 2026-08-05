@@ -274,6 +274,22 @@ export default function LobbyView({
         onCancel={() => setConfirmLeave(false)}
       />
 
+      {/* Lagfrågan mitt på skärmen i stället för nederst i inställnings-
+          panelen: den ställs sällan, kräver ett svar och ska inte behöva
+          letas upp. Rutan stängs av att room.team_mode kommer tillbaka via
+          realtiden, inte av klicket – misslyckas skrivningen står frågan
+          kvar i stället för att tyst försvinna utan verkan. */}
+      <ConfirmDialog
+        open={isHost && !room.team_mode && players.length >= 3 && !lagFraganAvfardad}
+        title="Vill ni spela i lag?"
+        message={`Ni är ${players.length} i rummet. I lagläge delar laget bricka och svarar tillsammans – en kapten per lag låser svaret.`}
+        confirmLabel="Ja, dela in lag"
+        cancelLabel="Nej, var för sig"
+        neon="#22e6e6"
+        onConfirm={() => setTeamMode(true)}
+        onCancel={() => setLagFraganAvfardad(true)}
+      />
+
       <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
       <section className="panel p-6 sm:p-8">
         <div className="flex items-start justify-between gap-4">
@@ -370,7 +386,7 @@ export default function LobbyView({
             så frågan dyker upp först när en tredje spelare kommit in. Bara
             värden ser den: det är värden som kan svara, och en fråga man inte
             kan besvara är bara brus för de andra. */}
-        {isHost && room.team_mode ? (
+        {isHost && room.team_mode && (
           <div className="panel-inset mt-6 flex flex-wrap items-center justify-between gap-3 p-3.5">
             <span>
               <span className="font-display text-cream">Ni spelar i lag</span>
@@ -387,23 +403,7 @@ export default function LobbyView({
               Spela var för sig
             </button>
           </div>
-        ) : isHost && players.length >= 3 && !lagFraganAvfardad ? (
-          <div className="panel-inset mt-6 p-3.5" style={{ borderColor: '#22e6e666' }}>
-            <p className="font-display text-cream">Vill ni spela i lag?</p>
-            <p className="mt-0.5 text-xs text-muted">
-              Ni är {players.length} i rummet. I lagläge delar laget bricka och svarar
-              tillsammans – en kapten per lag låser svaret.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-3">
-              <NeonButton variant="outline" neon="#22e6e6" onClick={() => setTeamMode(true)}>
-                Ja, dela in lag
-              </NeonButton>
-              <NeonButton variant="ghost" onClick={() => setLagFraganAvfardad(true)}>
-                Nej, var för sig
-              </NeonButton>
-            </div>
-          </div>
-        ) : null}
+        )}
 
         {err && <p className="mt-4 text-sm text-magenta">{err}</p>}
 
