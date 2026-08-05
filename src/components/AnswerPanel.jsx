@@ -240,8 +240,15 @@ export default function AnswerPanel({
                     <p className="font-display text-lg text-cream break-words">
                       {mine?.answer?.trim() ? (
                         isBeforeAfter ? beforeAfterLabel(mine.answer) : mine.answer
-                      ) : (
+                      ) : mine ? (
                         <span className="text-muted">— inget svar —</span>
+                      ) : (
+                        /* Låst enligt rundan, men svarsraden har inte nått hit
+                           än. Att skriva "inget svar" vore en gissning – och
+                           fel gissning: raden finns, den är bara inte framme.
+                           Uppstår i lagläge det ögonblick rundans locked_units
+                           hinner före svaret genom realtiden. */
+                        <span className="text-muted">Svaret är inlåst</span>
                       )}
                     </p>
                     <p className="mt-1 text-xs text-muted">
