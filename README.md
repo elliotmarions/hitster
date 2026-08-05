@@ -38,8 +38,17 @@ tidsstämpel. Röst/video för häcklandet sköts utanför appen (Discord e.d.).
 - **Backend / realtid / auth:** Supabase (Postgres + Realtime + Auth, anonyma gäster)
 - **Ljud:** iTunes Search API → publika preview-klipp i ett `<audio>`-element.
   Uppslagen cachas på pott-raden (`track_pool.preview_url`, 30 dagar) och låtar
-  som inte går att hitta markeras och hoppas över i 7 dagar (`0066`, `0067`) –
-  potten värms alltså upp av spelandet och anropen mot Apple glesnar.
+  som inte går att hitta markeras och hoppas över i 7 dagar (`0066`, `0067`).
+  Ett pg_cron-jobb betar av okontrollerade låtar i bakgrunden, 6 per minut, och
+  pausar medan någon spelar (`0068`) – potten klassas alltså färdigt utan att
+  någon behöver vänta. Stängs av med `select cron.unschedule('warm-pool-enqueue')`
+  och `select cron.unschedule('warm-pool-collect')`.
+
+  **Varför det behövs:** ~22 % av den svenska potten finns inte hos iTunes SE,
+  och andelen är starkt ojämn – modern svensk hiphop (streamingfödd, aldrig
+  såld som köpmusik) missar 77 %, medan pop från samma år missar 9 %. Ingen
+  matchningsfix hjälper mot det; potten måste helt enkelt veta vad som går att
+  spela.
 - **Hosting:** Vercel (`git push` → auto-deploy)
 
 All spellogik är **server-auktoritativ**: snurr, kryss, vinst, svarslåsning och
