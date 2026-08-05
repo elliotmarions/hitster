@@ -2,12 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase.js'
 import { leaveRoom } from '../../lib/rooms.js'
-import {
-  startGame,
-  trackPoolCounts,
-  trackPoolGenreCounts,
-  trackPoolSelectionCount,
-} from '../../lib/game.js'
+import { startGame, trackPoolSelectionCount } from '../../lib/game.js'
 import PlayerList from '../PlayerList.jsx'
 import TeamSetup from '../TeamSetup.jsx'
 import NeonButton from '../ui/NeonButton.jsx'
@@ -31,10 +26,6 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
   const [err, setErr] = useState('')
   const [confirmLeave, setConfirmLeave] = useState(false)
   const [leaving, setLeaving] = useState(false)
-  // Antal låtar per pott – potten bor i databasen (oläsbar för klienter),
-  // bara räknarna exponeras via en RPC.
-  const [potCounts, setPotCounts] = useState(null)
-  const [genreCounts, setGenreCounts] = useState(null)
   // Antal låtar i exakt den kombination som är vald (språk + år + genre).
   const [selCount, setSelCount] = useState(null)
   // Optimistiskt lager: valet ska synas direkt vid klick, utan att vänta på
@@ -52,19 +43,6 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
 
   // Det klienten faktiskt renderar: room med ev. pågående val ovanpå.
   const view = optimistic ? { ...room, ...optimistic } : room
-
-  useEffect(() => {
-    let active = true
-    trackPoolCounts()
-      .then((c) => active && setPotCounts(c))
-      .catch(() => {})
-    trackPoolGenreCounts()
-      .then((c) => active && setGenreCounts(c))
-      .catch(() => {})
-    return () => {
-      active = false
-    }
-  }, [])
 
   // Hur många låtar det VALDA urvalet ger. De breda räknarna räcker inte när
   // filtren staplas – skärningen mellan "svenska", "20–29 år" och "Pop" går
@@ -140,18 +118,11 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
   const tomtVal = selectionEmpty(view)
 
   // En kategori-knapp – delas av de breda potterna, åldersspannen och genrerna.
+  // Chipen visar INTE sin egen pottstorlek: tolv siffror som ändå inte går att
+  // addera (dimensionerna snittas) blev bara brus. Den siffra som styr något,
+  // urvalets storlek, står samlat under valen.
   function renderCategory(cat) {
     const active = isSelected(view, cat)
-    // Chipens egen storlek (hela potten för den chippen), inte urvalets –
-    // urvalets siffra visas samlat under valen.
-    const count =
-      cat.key === 'sv' && potCounts
-        ? ` · ${potCounts.sv.toLocaleString('sv-SE')} låtar`
-        : cat.key === 'intl' && potCounts
-          ? ` · ${(potCounts.all - potCounts.sv).toLocaleString('sv-SE')} låtar`
-          : cat.genre && genreCounts?.[cat.genre]
-            ? ` · ${genreCounts[cat.genre].toLocaleString('sv-SE')} låtar`
-            : ''
     return (
       <button
         key={cat.key}
@@ -169,10 +140,7 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
           {cat.key === 'sv' && <SwedishFlag size={18} />}
           {cat.label}
         </span>
-        <span className="text-xs text-muted">
-          {cat.hint}
-          {count}
-        </span>
+        {cat.hint && <span className="text-xs text-muted">{cat.hint}</span>}
       </button>
     )
   }
