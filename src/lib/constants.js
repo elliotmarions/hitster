@@ -148,8 +148,8 @@ export const GRID = 5 // brickan är 5x5 (fritt slumpad, exakt 5 rutor per kateg
 //  hämtas live från track_pool_genre_counts(), inte hårdkodade, eftersom potten
 //  växer.
 export const POOL_CATEGORIES = [
-  { key: 'sv', group: 'lang', label: 'Svenska', hint: 'Bara svenska artister', swedish: true, neon: '#ffd23f' },
-  { key: 'intl', group: 'lang', label: '🌍 Utländska', hint: 'Allt utom svenskt', swedish: false, neon: '#22e6e6' },
+  { key: 'sv', group: 'lang', label: 'Svenska', hint: 'Svenska låtar/artister', swedish: true, neon: '#ffd23f' },
+  { key: 'intl', group: 'lang', label: '🌍 Utländska', hint: 'Internationella låtar/artister', swedish: false, neon: '#22e6e6' },
   { key: 'pop', group: 'genre', label: 'Pop', genre: 'pop', neon: '#ff4d9d' },
   { key: 'rock', group: 'genre', label: 'Rock', genre: 'rock', neon: '#ff8a3c' },
   { key: 'hiphop', group: 'genre', label: 'Hiphop', genre: 'hiphop', neon: '#b6ff3c' },
