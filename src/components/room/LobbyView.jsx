@@ -1,7 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase.js'
-import { leaveRoom } from '../../lib/rooms.js'
+import {
+  closeRoomIfHostAbsent,
+  leaveRoom,
+  removeAbsentPlayer,
+  touchLastSeen,
+} from '../../lib/rooms.js'
 import { startGame, trackPoolSelectionCount } from '../../lib/game.js'
 import PlayerList from '../PlayerList.jsx'
 import TeamSetup from '../TeamSetup.jsx'
@@ -20,7 +25,24 @@ import {
   toggleSelection,
 } from '../../lib/constants.js'
 
-export default function LobbyView({ room, players, teams, me, isHost, currentUserId }) {
+// Hur länge en spelare får vara borta ur presence innan raden städas bort.
+// Marginalen finns för omladdningar och korta tapp – websocket:en försvinner
+// direkt när fliken stängs, men den försvinner lika direkt vid en F5.
+const FRANVARO_INNAN_RENSNING_MS = 12_000
+// Hjärtslaget måste vara rundligt tätare än serverns 45-sekundersgräns i
+// close_room_if_host_absent, annars kan en värd som sitter kvar råka se ut
+// som borta bara för att ett anrop missade.
+const HJARTSLAG_MS = 15_000
+
+export default function LobbyView({
+  room,
+  players,
+  teams,
+  me,
+  isHost,
+  currentUserId,
+  presentUserIds,
+}) {
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
@@ -66,6 +88,89 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
       active = false
     }
   }, [valNyckel])
+
+  // --- Frånvaro: stänger man fliken ska man försvinna ur lobbyn ----------
+  //
+  // Presence säger vem som är ansluten just NU, men inte hur länge någon
+  // varit borta. Kartan håller tidpunkten då en spelare först saknades, så
+  // att ett kort tapp inte förväxlas med ett utträde.
+  const borttSedan = useRef(new Map())
+  // Pågående/misslyckade rensningar per user_id, så att en spelare inte
+  // anropas bort var tredje sekund medan raderingen speglas tillbaka. Ett
+  // misslyckat anrop får försökas om, men bara ett par gånger: går det inte
+  // är det något beständigt fel, och då är en evig loop mot servern fel svar.
+  const rensade = useRef(new Map())
+  const MAX_FORSOK = 3
+
+  useEffect(() => {
+    if (!room?.id) return
+    const slag = () => touchLastSeen(room.id).catch(() => {})
+    slag()
+    const id = setInterval(slag, HJARTSLAG_MS)
+    return () => clearInterval(id)
+  }, [room?.id])
+
+  useEffect(() => {
+    // null betyder "presence har inte synkat än" – att läsa det som "ingen är
+    // här" hade rensat bort hela rummet vid varje montering. Saknas jag själv
+    // i listan har kanalen inte satt sig, och då är den inte att lita på.
+    if (!presentUserIds || !currentUserId || !presentUserIds.has(currentUserId)) return
+
+    const karta = borttSedan.current
+    const nu = Date.now()
+    for (const p of players) {
+      if (presentUserIds.has(p.user_id)) {
+        karta.delete(p.user_id)
+        rensade.current.delete(p.user_id)
+      } else if (!karta.has(p.user_id)) {
+        karta.set(p.user_id, nu)
+      }
+    }
+    for (const uid of [...karta.keys()]) {
+      if (!players.some((p) => p.user_id === uid)) {
+        karta.delete(uid)
+        rensade.current.delete(uid)
+      }
+    }
+  }, [presentUserIds, players, currentUserId])
+
+  useEffect(() => {
+    if (!room?.id || !presentUserIds || !currentUserId) return
+    if (!presentUserIds.has(currentUserId)) return
+
+    const langeBorta = (uid) => {
+      const t = borttSedan.current.get(uid)
+      return t !== undefined && Date.now() - t >= FRANVARO_INNAN_RENSNING_MS
+    }
+
+    const tick = () => {
+      if (isHost) {
+        // Värden städar bort de andra. Servern kontrollerar att anroparen är
+        // värd och att rummet är i lobbyn; klienten bidrar bara med frånvaron.
+        for (const p of players) {
+          if (p.user_id === currentUserId) continue
+          const st = rensade.current.get(p.user_id)
+          if (st?.pagar || (st?.n ?? 0) >= MAX_FORSOK) continue
+          if (!langeBorta(p.user_id)) continue
+          const n = (st?.n ?? 0) + 1
+          rensade.current.set(p.user_id, { n, pagar: true })
+          // Lyckas anropet raderas raden, realtiden speglar det och effekten
+          // ovan städar bort posten härifrån. Bara felvägen behöver hanteras.
+          removeAbsentPlayer(room.id, p.id).catch(() =>
+            rensade.current.set(p.user_id, { n, pagar: false }),
+          )
+        }
+      } else if (room.host_user_id && langeBorta(room.host_user_id)) {
+        // Värden kan inte städa efter sig själv, och ingen annan får radera
+        // värdens rad. Servern avgör på värdens hjärtslagsstämpel om rummet
+        // ska stängas – klienten ber bara om en kontroll.
+        closeRoomIfHostAbsent(room.id).catch(() => {})
+      }
+    }
+
+    const id = setInterval(tick, 3000)
+    return () => clearInterval(id)
+  }, [room?.id, room?.host_user_id, isHost, players, presentUserIds, currentUserId])
 
   async function handleStart() {
     setErr('')

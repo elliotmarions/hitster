@@ -12,7 +12,7 @@ import GameView from '../components/room/GameView.jsx'
 export default function RoomPage() {
   const { code } = useParams()
   const { isConfigured, user } = useAuth()
-  const { room, players, teams, status, refresh } = useRoom(code)
+  const { room, players, teams, status, presentUserIds, refresh } = useRoom(code)
 
   if (!isConfigured) return <SetupNotice />
 
@@ -53,6 +53,7 @@ export default function RoomPage() {
         me={me}
         isHost={isHost}
         currentUserId={user?.id}
+        presentUserIds={presentUserIds}
       />
     )
   }

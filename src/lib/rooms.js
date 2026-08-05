@@ -41,3 +41,37 @@ export async function leaveRoom(roomId) {
   const { error } = await supabase.rpc('leave_room', { p_room_id: roomId })
   if (error) throw translateDbError(error)
 }
+
+// Värden rensar bort en spelare som tappat anslutningen (se 0059). Frånvaron
+// syns bara i Realtime Presence, så det är klienten som pekar ut raden –
+// servern kontrollerar att det är värden, att rummet är i lobbyn och att det
+// inte är värden själv.
+export async function removeAbsentPlayer(roomId, playerId) {
+  const { error } = await supabase.rpc('remove_absent_player', {
+    p_room_id: roomId,
+    p_player_id: playerId,
+  })
+  if (error) throw translateDbError(error)
+}
+
+// Hjärtslag: håller min last_seen_at färsk medan jag sitter i lobbyn, så att
+// servern kan avgöra om VÄRDEN försvunnit (se close_room_if_host_absent).
+//
+// Notera att det inte finns någon pagehide-hanterare som lämnar rummet när
+// fliken stängs. Det vore den uppenbara lösningen och den är fel: pagehide
+// utlöses även av en vanlig omladdning, så F5 hade raderat spelaren – och
+// för en värd stängt hela rummet – utan att någon lämnat något.
+export async function touchLastSeen(roomId) {
+  const { error } = await supabase.rpc('touch_last_seen', { p_room_id: roomId })
+  if (error) throw translateDbError(error)
+}
+
+// Ber servern kontrollera om värden är borta och i så fall stänga rummet.
+// Klienten påstår ingenting – servern avgör på värdens hjärtslagsstämpel.
+export async function closeRoomIfHostAbsent(roomId) {
+  const { data, error } = await supabase.rpc('close_room_if_host_absent', {
+    p_room_id: roomId,
+  })
+  if (error) throw translateDbError(error)
+  return Boolean(data)
+}

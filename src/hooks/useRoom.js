@@ -22,6 +22,12 @@ export function useRoom(rawCode) {
   const [players, setPlayers] = useState([])
   const [teams, setTeams] = useState([])
   const [status, setStatus] = useState('loading')
+  // Vilka user_id som just nu har en levande anslutning till rummet. Postgres
+  // vet det inte – en stängd flik skriver ingenting – men Realtime gör det:
+  // presence är knuten till websocket-anslutningen och släpper när den dör.
+  // null = presence har inte synkat än, vilket INTE är samma sak som "ingen
+  // är här"; den som rensar frånvarande måste kunna skilja de två åt.
+  const [presentUserIds, setPresentUserIds] = useState(null)
   // Bumpas av refresh() för att köra om hela effekten (t.ex. direkt efter att
   // man gått med via en delad länk) – då sätts även realtidskanalen upp på nytt.
   const [reloadKey, setReloadKey] = useState(0)
@@ -80,9 +86,15 @@ export function useRoom(rawCode) {
       if (cancelled) return
       setStatus('ready')
 
+      // Presence-nyckeln är användarens id, inte en slumpad anslutnings-id:
+      // öppnar någon rummet i två flikar ska de räknas som EN närvarande
+      // spelare, och sista fliken som stängs ska vara den som gör dem borta.
+      const { data: authData } = await supabase.auth.getUser()
+      const uid = authData?.user?.id ?? null
+
       // Prenumerera på förändringar för just detta rum.
       channel = supabase
-        .channel(`room:${roomRow.id}`)
+        .channel(`room:${roomRow.id}`, { config: { presence: { key: uid ?? 'anon' } } })
         .on(
           'postgres_changes',
           {
@@ -113,7 +125,14 @@ export function useRoom(rawCode) {
           },
           (payload) => setRoom(payload.new),
         )
-        .subscribe()
+        .on('presence', { event: 'sync' }, () => {
+          if (cancelled) return
+          setPresentUserIds(new Set(Object.keys(channel.presenceState())))
+        })
+        .subscribe((chStatus) => {
+          // track() måste vänta på att kanalen är ansluten, annars tappas den.
+          if (chStatus === 'SUBSCRIBED' && uid) channel.track({ user_id: uid })
+        })
     }
 
     init()
@@ -124,5 +143,5 @@ export function useRoom(rawCode) {
     }
   }, [code, reloadKey, fetchPlayers, fetchTeams])
 
-  return { room, players, teams, status, refresh }
+  return { room, players, teams, status, presentUserIds, refresh }
 }
