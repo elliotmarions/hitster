@@ -218,9 +218,8 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
         {/* Urval – fritt multival. Union inom varje rad, snitt mellan raderna:
             "Svenska + 20–29 år + 30–39 år + Pop" = svensk pop ur endera eran. */}
         <div className="mt-6">
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <p className="label">🎵 Urval</p>
-            {isHost && !tomtVal && (
+          {isHost && !tomtVal && (
+            <div className="mb-2 flex items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={onClearAll}
@@ -228,8 +227,8 @@ export default function LobbyView({ room, players, teams, me, isHost, currentUse
               >
                 Rensa
               </button>
-            )}
-          </div>
+            </div>
+          )}
 
           <p className="label mb-2 opacity-70">Språk</p>
           <div className="grid grid-cols-2 gap-3">
