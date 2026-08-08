@@ -247,8 +247,9 @@ export function mergeSpans(spans) {
 }
 
 // year_bands för de valda spannen. En kant som ligger i skalans ände skrivs
-// som null (= öppen) i stället för årtalet: "1990 och framåt" ska fortsätta
-// betyda det även när nästa års låtar kommer in i potten. Täcker något spann
+// som null (= öppen) i stället för årtalet: "1990 och uppåt" ska fortsätta
+// betyda det även när nästa års låtar kommer in i potten. (I sammanfattningen
+// skrivs den övre änden ändå ut som ett årtal, se bandLabel.) Täcker något spann
 // hela skalan finns ingen gräns kvar att skriva.
 export function yearBandsFor(spans) {
   const ihop = mergeSpans(spans)
@@ -321,16 +322,23 @@ export function selectionEmpty(room) {
 
 export const TOMT_VAL = { swedish_mode: null, year_bands: [], genres: [] }
 
-// Ett band i klartext. Öppen kant skrivs ut som "och framåt" / "till och med"
-// i stället för skalans ändår – annars hade sammanfattningen påstått en gräns
-// som inte finns, och gömt undan låtarna före 1950.
+// Ett band i klartext.
+//
+// Övre kanten lagras som null när handtaget står i skalans ände, så att nästa
+// års låtar följer med av sig själva. I TEXT är den ändå ett årtal: skalan
+// slutar vid innevarande år och det finns inga låtar bortom den, så "1990–2026"
+// säger samma sak som "1990 och framåt" – fast med det årtal man just drog till.
+//
+// Undre kanten är inte pottens. Under 1950 finns låtar ända ned till 1908, och
+// att skriva "1950–1969" hade gömt dem bakom en gräns som inte finns. Den änden
+// skrivs därför fortfarande ut som öppen.
 function bandLabel(b) {
   const lo = b?.min ?? null
   const hi = b?.max ?? null
   if (lo === null && hi === null) return null
-  if (lo !== null && hi !== null) return lo === hi ? `${lo}` : `${lo}–${hi}`
-  if (lo !== null) return `${lo} och framåt`
-  return `till och med ${hi}`
+  if (lo === null) return `till och med ${hi}`
+  const till = hi ?? AR_MAX
+  return lo === till ? `${lo}` : `${lo}–${till}`
 }
 
 // Årsvalet i klartext. Flera spann skrivs ut var för sig – "1965–1974 +

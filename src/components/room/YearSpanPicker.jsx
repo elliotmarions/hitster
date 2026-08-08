@@ -95,8 +95,8 @@ export default function YearSpanPicker({ spans, disabled = false, onCommit }) {
     satt([...valda, nasta])
   }
 
-  // Ett spann i klartext, via samma regler som sammanfattningen: öppna kanter
-  // blir "och framåt", full skala blir "Alla årtal". Årtalen står bara i
+  // Ett spann i klartext, via samma regler som sammanfattningen: öppen undre
+  // kant blir "till och med", full skala blir "Alla årtal". Årtalen står bara i
   // sammanfattningen ovanför – under tidslinjen upprepade de bara det som
   // redan stod där. Kvar behövs texten för att krysset ska säga VILKET spann
   // det tar bort när det läses upp.
