@@ -96,7 +96,10 @@ export default function YearSpanPicker({ spans, disabled = false, onCommit }) {
   }
 
   // Ett spann i klartext, via samma regler som sammanfattningen: öppna kanter
-  // blir "och framåt", full skala blir "Alla årtal".
+  // blir "och framåt", full skala blir "Alla årtal". Årtalen står bara i
+  // sammanfattningen ovanför – under tidslinjen upprepade de bara det som
+  // redan stod där. Kvar behövs texten för att krysset ska säga VILKET spann
+  // det tar bort när det läses upp.
   const spannText = (spann) =>
     yearSpanLabel({ year_bands: yearBandsFor([spann]) }) ?? 'Alla årtal'
 
@@ -158,9 +161,6 @@ export default function YearSpanPicker({ spans, disabled = false, onCommit }) {
                 <span className="mt-1 h-6 w-6 shrink-0" aria-hidden="true" />
               )}
             </div>
-            {/* Med flera tidslinjer räcker inte sammanfattningen ovanför – då
-                syns inte vilken rad som är vilket spann. */}
-            {rader.length > 1 && <p className="mt-1 text-xs text-muted">{spannText(spann)}</p>}
           </div>
         ))}
       </div>
