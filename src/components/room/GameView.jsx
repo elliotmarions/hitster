@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useNavGuard } from '../../context/NavGuardContext.jsx'
 import {
   CATEGORIES,
   TIMER_SECONDS,
@@ -93,6 +94,13 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   // Avgörande rundan = den där spelet avgjordes. Där får kvarvarande rätt-
   // svarande fortfarande kryssa för att bli MEDVINNARE (oavgjort).
   const inDecidingRound = finished && !!round && room.winner_round_id === round.id
+
+  // Logotypen i headern ska inte vara en tyst nödutgång ur matchen: den ställer
+  // samma fråga som "Lämna". Undantaget är när värden redan har lämnat – då är
+  // rummet slut och det finns inget kvar att bekräfta bort.
+  const askLeave = useCallback(() => setConfirmLeave(true), [])
+  useNavGuard(!hostLeft, askLeave)
+
   // timer_start_at sätts först när värden trycker "Starta låt" (= start_at).
   const startMs = round?.timer_start_at ? new Date(round.timer_start_at).getTime() : null
   const hasTrack = Boolean(round?.current_track_id)
