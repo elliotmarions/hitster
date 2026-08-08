@@ -132,8 +132,8 @@ export const GRID = 5 // brickan är 5x5 (fritt slumpad, exakt 5 rutor per kateg
 //
 //  Potten avgränsas i TRE oberoende dimensioner: språk, årtal och genre.
 //  Språk och genre är chip och bor i listan nedan; årtalet är ett fritt
-//  spann på en tidslinje (se AR_MIN/yearRangeFrom längre ner) och har
-//  därför inga chip alls.
+//  eller flera spann på en tidslinje (se AR_MIN/yearSpansFrom längre ner)
+//  och har därför inga chip alls.
 //
 //    union INOM en dimension  – Pop + Rock = låtar ur endera
 //    snitt MELLAN dimensioner – årsspann + genre = låtar som är båda
@@ -183,8 +183,15 @@ export function selectionFrom(room) {
 // årtal, och möjligt att smalna av eller vidga precis som sällskapet vill.
 //
 // Formen i databasen är oförändrad. year_bands är sedan 0057 en lista av
-// {min, max} och _pool_match() filtrerar på godtyckliga värden, så ett
-// spann är helt enkelt ETT band – ingen migration behövdes.
+// {min, max} som _pool_match() unionar, så ett spann är helt enkelt ETT band
+// – ingen migration behövdes, varken för tidslinjen eller för att lägga till
+// FLERA spann ("60-talet + 90-talet"). Servern kunde det redan; det var bara
+// lobbyn som skrev ett enda band.
+//
+// Åldersläget (0061) läser däremot det HÄRLEDDA spannet year_min/year_max,
+// alltså spannens ytterkanter. Två smala spann långt ifrån varandra ger en
+// bred ytterkant och därmed vanliga hjulet – vilket är rätt: kategorin
+// "Årtionde" är inte trivial när potten spänner över flera decennier.
 //
 // Skalans ändar är inte pottens ytterligheter. Potten har enstaka spår
 // ända ner till 1908, men under ~1955 rör det sig om någon låt per år;
@@ -195,26 +202,70 @@ export function selectionFrom(room) {
 export const AR_MIN = 1950
 export const AR_MAX = Math.max(2026, new Date().getFullYear())
 
-// Rummets spann som [från, till] på tidslinjens skala. Öppen kant (null)
-// blir skalans ände. Flera band kan inte ritas som ETT spann – gamla rum
-// från chip-tiden kan ha det – så då visas ytterkanterna, precis som
-// serverns _sync_year_envelope() räknar ut year_min/year_max.
-export function yearRangeFrom(room) {
-  const bands = selectionFrom(room).bands
-  if (!bands.length) return [AR_MIN, AR_MAX]
-  const mins = bands.map((b) => b?.min ?? null)
-  const maxs = bands.map((b) => b?.max ?? null)
-  const lo = mins.some((m) => m === null) ? AR_MIN : Math.min(...mins)
-  const hi = maxs.some((m) => m === null) ? AR_MAX : Math.max(...maxs)
-  return [Math.max(AR_MIN, lo), Math.min(AR_MAX, hi)]
+// Bredden på ett spann som läggs till med +. Ett decennium är brett nog att
+// ge en spelbar pott och smalt nog att lämna plats för fler spann.
+export const NYTT_SPANN_BREDD = 10
+
+// Rummets spann som en lista av [från, till] på tidslinjens skala, sorterad.
+// Öppen kant (null) blir skalans ände. Tom lista = ingen årsgräns alls.
+export function yearSpansFrom(room) {
+  return selectionFrom(room)
+    .bands.map((b) => [
+      Math.max(AR_MIN, b?.min ?? AR_MIN),
+      Math.min(AR_MAX, b?.max ?? AR_MAX),
+    ])
+    .filter(([lo, hi]) => hi >= lo)
+    .sort((a, b) => a[0] - b[0])
 }
 
-// year_bands för ett valt spann. En kant som ligger i skalans ände skrivs
+// Spann som överlappar eller ligger kant i kant är samma spann. Servern
+// unionar dem ändå i _pool_match(), så att slå ihop dem här ändrar ingen
+// pott – det håller bara listan sann mot vad man faktiskt valt.
+export function mergeSpans(spans) {
+  const sorterade = [...spans].sort((a, b) => a[0] - b[0])
+  const ihop = []
+  for (const [lo, hi] of sorterade) {
+    const forra = ihop[ihop.length - 1]
+    if (forra && lo <= forra[1] + 1) forra[1] = Math.max(forra[1], hi)
+    else ihop.push([lo, hi])
+  }
+  return ihop
+}
+
+// year_bands för de valda spannen. En kant som ligger i skalans ände skrivs
 // som null (= öppen) i stället för årtalet: "1990 och framåt" ska fortsätta
-// betyda det även när nästa års låtar kommer in i potten.
-export function yearBandsFor([lo, hi]) {
-  if (lo <= AR_MIN && hi >= AR_MAX) return []
-  return [{ min: lo <= AR_MIN ? null : lo, max: hi >= AR_MAX ? null : hi }]
+// betyda det även när nästa års låtar kommer in i potten. Täcker något spann
+// hela skalan finns ingen gräns kvar att skriva.
+export function yearBandsFor(spans) {
+  const ihop = mergeSpans(spans)
+  if (!ihop.length) return []
+  if (ihop.some(([lo, hi]) => lo <= AR_MIN && hi >= AR_MAX)) return []
+  return ihop.map(([lo, hi]) => ({
+    min: lo <= AR_MIN ? null : lo,
+    max: hi >= AR_MAX ? null : hi,
+  }))
+}
+
+// Var hamnar nästa spann? I den bredaste luckan mellan de redan valda, så
+// att + aldrig lägger ett spann ovanpå ett annat (två spann som överlappar
+// är ju ett spann). Utan valda spann är hela skalan lucka och det första
+// spannet hamnar mitt på tidslinjen. null = det finns ingen lucka kvar.
+export function nextSpanFor(spans) {
+  const ihop = mergeSpans(spans)
+  const luckor = []
+  let kant = AR_MIN
+  for (const [lo, hi] of ihop) {
+    if (lo - 1 >= kant) luckor.push([kant, lo - 1])
+    kant = Math.max(kant, hi + 1)
+  }
+  if (kant <= AR_MAX) luckor.push([kant, AR_MAX])
+  if (!luckor.length) return null
+
+  const [lo, hi] = luckor.reduce((bast, l) => (l[1] - l[0] > bast[1] - bast[0] ? l : bast))
+  if (hi - lo + 1 <= NYTT_SPANN_BREDD) return [lo, hi]
+  const mitt = Math.round((lo + hi) / 2)
+  const halva = Math.floor(NYTT_SPANN_BREDD / 2)
+  return [mitt - halva, mitt - halva + NYTT_SPANN_BREDD - 1]
 }
 
 // Är den här chippen vald just nu?
@@ -254,20 +305,30 @@ export function selectionEmpty(room) {
 
 export const TOMT_VAL = { swedish_mode: null, year_bands: [], genres: [] }
 
-// Spannet i klartext. Öppen kant skrivs ut som "och framåt" / "till och med"
+// Ett band i klartext. Öppen kant skrivs ut som "och framåt" / "till och med"
 // i stället för skalans ändår – annars hade sammanfattningen påstått en gräns
 // som inte finns, och gömt undan låtarna före 1950.
+function bandLabel(b) {
+  const lo = b?.min ?? null
+  const hi = b?.max ?? null
+  if (lo === null && hi === null) return null
+  if (lo !== null && hi !== null) return lo === hi ? `${lo}` : `${lo}–${hi}`
+  if (lo !== null) return `${lo} och framåt`
+  return `till och med ${hi}`
+}
+
+// Årsvalet i klartext. Flera spann skrivs ut var för sig – "1965–1974 +
+// 1990–1999" – eftersom de är en union: att bara visa ytterkanterna hade
+// påstått att allt däremellan också var med.
 export function yearSpanLabel(room) {
   const bands = selectionFrom(room).bands
   if (!bands.length) return null
-  const mins = bands.map((b) => b?.min ?? null)
-  const maxs = bands.map((b) => b?.max ?? null)
-  const lo = mins.some((m) => m === null) ? null : Math.min(...mins)
-  const hi = maxs.some((m) => m === null) ? null : Math.max(...maxs)
-  if (lo === null && hi === null) return null
-  if (lo !== null && hi !== null) return `${lo}–${hi}`
-  if (lo !== null) return `${lo} och framåt`
-  return `till och med ${hi}`
+  // Ett band utan gränser släpper in varje år, och då finns ingen gräns kvar.
+  if (bands.some((b) => (b?.min ?? null) === null && (b?.max ?? null) === null)) return null
+  return [...bands]
+    .sort((a, b) => (a?.min ?? AR_MIN) - (b?.min ?? AR_MIN))
+    .map(bandLabel)
+    .join(' + ')
 }
 
 // En läsbar sammanfattning av valet, t.ex. "Svenska · 1985–2004 · Pop".
