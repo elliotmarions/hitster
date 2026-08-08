@@ -269,13 +269,26 @@ export function nextSpanFor(spans) {
   // Luckorna räknas fram vänster till höger och kräver därför kronologi –
   // till skillnad från listan i lobbyn, som ligger i den ordning man valt.
   const ihop = mergeSpans(spans).sort((a, b) => a[0] - b[0])
+
+  // Ett års marginal mot grannarna. mergeSpans slår ihop spann som ligger
+  // KANT I KANT, så ett nytt spann som fyller en lucka helt skulle svälja
+  // både sig självt och sina grannar: + hade då inte lagt till en rad utan
+  // slagit ihop de befintliga till ett bredare spann. Skalans ändar har
+  // ingen granne och behöver ingen marginal.
   const luckor = []
+  const lagg = (fran, till) => {
+    const a = fran > AR_MIN ? fran + 1 : fran
+    const b = till < AR_MAX ? till - 1 : till
+    if (a <= b) luckor.push([a, b])
+  }
   let kant = AR_MIN
   for (const [lo, hi] of ihop) {
-    if (lo - 1 >= kant) luckor.push([kant, lo - 1])
+    if (lo - 1 >= kant) lagg(kant, lo - 1)
     kant = Math.max(kant, hi + 1)
   }
-  if (kant <= AR_MAX) luckor.push([kant, AR_MAX])
+  if (kant <= AR_MAX) lagg(kant, AR_MAX)
+  // Ingen lucka rymmer ett spann som inte klistrar ihop sig med en granne –
+  // då finns det inget att lägga till, och + släcks.
   if (!luckor.length) return null
 
   const [lo, hi] = luckor.reduce((bast, l) => (l[1] - l[0] > bast[1] - bast[0] ? l : bast))
