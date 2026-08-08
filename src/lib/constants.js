@@ -206,8 +206,12 @@ export const AR_MAX = Math.max(2026, new Date().getFullYear())
 // ge en spelbar pott och smalt nog att lämna plats för fler spann.
 export const NYTT_SPANN_BREDD = 10
 
-// Rummets spann som en lista av [från, till] på tidslinjens skala, sorterad.
+// Rummets spann som en lista av [från, till] på tidslinjens skala.
 // Öppen kant (null) blir skalans ände. Tom lista = ingen årsgräns alls.
+//
+// Ordningen är den de skrevs i, INTE kronologisk. Listan är också raderna i
+// lobbyn: sorterade vi här skulle en rad man just lagt till hoppa uppåt i
+// samma stund servern svarade, medan handen fortfarande låg kvar på reglaget.
 export function yearSpansFrom(room) {
   return selectionFrom(room)
     .bands.map((b) => [
@@ -215,19 +219,29 @@ export function yearSpansFrom(room) {
       Math.min(AR_MAX, b?.max ?? AR_MAX),
     ])
     .filter(([lo, hi]) => hi >= lo)
-    .sort((a, b) => a[0] - b[0])
 }
 
 // Spann som överlappar eller ligger kant i kant är samma spann. Servern
 // unionar dem ändå i _pool_match(), så att slå ihop dem här ändrar ingen
 // pott – det håller bara listan sann mot vad man faktiskt valt.
+//
+// Ordningen bevaras, och det ihopslagna spannet ärver platsen från det
+// tidigaste det rörde vid: drar man ihop två rader ska resultatet ligga kvar
+// där den översta låg, inte kastas ned i listan.
 export function mergeSpans(spans) {
-  const sorterade = [...spans].sort((a, b) => a[0] - b[0])
   const ihop = []
-  for (const [lo, hi] of sorterade) {
-    const forra = ihop[ihop.length - 1]
-    if (forra && lo <= forra[1] + 1) forra[1] = Math.max(forra[1], hi)
-    else ihop.push([lo, hi])
+  for (const [lo, hi] of spans) {
+    let nytt = [lo, hi]
+    let plats = ihop.length
+    for (let i = ihop.length - 1; i >= 0; i--) {
+      const [a, b] = ihop[i]
+      if (nytt[0] <= b + 1 && a <= nytt[1] + 1) {
+        nytt = [Math.min(a, nytt[0]), Math.max(b, nytt[1])]
+        ihop.splice(i, 1)
+        plats = i
+      }
+    }
+    ihop.splice(plats, 0, nytt)
   }
   return ihop
 }
@@ -251,7 +265,9 @@ export function yearBandsFor(spans) {
 // är ju ett spann). Utan valda spann är hela skalan lucka och det första
 // spannet hamnar mitt på tidslinjen. null = det finns ingen lucka kvar.
 export function nextSpanFor(spans) {
-  const ihop = mergeSpans(spans)
+  // Luckorna räknas fram vänster till höger och kräver därför kronologi –
+  // till skillnad från listan i lobbyn, som ligger i den ordning man valt.
+  const ihop = mergeSpans(spans).sort((a, b) => a[0] - b[0])
   const luckor = []
   let kant = AR_MIN
   for (const [lo, hi] of ihop) {
@@ -319,16 +335,14 @@ function bandLabel(b) {
 
 // Årsvalet i klartext. Flera spann skrivs ut var för sig – "1965–1974 +
 // 1990–1999" – eftersom de är en union: att bara visa ytterkanterna hade
-// påstått att allt däremellan också var med.
+// påstått att allt däremellan också var med. Ordningen är bandens egen, samma
+// som lobbyns rader, så texten går att läsa uppifrån och ned mot tidslinjerna.
 export function yearSpanLabel(room) {
   const bands = selectionFrom(room).bands
   if (!bands.length) return null
   // Ett band utan gränser släpper in varje år, och då finns ingen gräns kvar.
   if (bands.some((b) => (b?.min ?? null) === null && (b?.max ?? null) === null)) return null
-  return [...bands]
-    .sort((a, b) => (a?.min ?? AR_MIN) - (b?.min ?? AR_MIN))
-    .map(bandLabel)
-    .join(' + ')
+  return bands.map(bandLabel).join(' + ')
 }
 
 // En läsbar sammanfattning av valet, t.ex. "Svenska · 1985–2004 · Pop".

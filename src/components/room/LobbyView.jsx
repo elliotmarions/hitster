@@ -15,10 +15,8 @@ import ConfirmDialog from '../ui/ConfirmDialog.jsx'
 import CopyButton from '../ui/CopyButton.jsx'
 import SwedishFlag from '../ui/SwedishFlag.jsx'
 import TeamChat from '../TeamChat.jsx'
-import YearRangeSlider from '../ui/YearRangeSlider.jsx'
+import YearSpanPicker from './YearSpanPicker.jsx'
 import {
-  AR_MAX,
-  AR_MIN,
   POOL_CATEGORIES,
   TOMT_VAL,
   isSelected,
@@ -26,9 +24,6 @@ import {
   selectionFrom,
   selectionLabel,
   toggleSelection,
-  nextSpanFor,
-  yearBandsFor,
-  yearSpanLabel,
   yearSpansFrom,
 } from '../../lib/constants.js'
 
@@ -59,9 +54,6 @@ export default function LobbyView({
   // i minnet: en fjärde spelare som dyker upp ska inte väcka frågan igen, men
   // laddar värden om sidan är det rimligt att den ställs på nytt.
   const [lagFraganAvfardad, setLagFraganAvfardad] = useState(false)
-  // Tidslinjernas läge medan man drar eller lägger till spann, som en lista
-  // av [från, till]. null = följ rummet.
-  const [arUtkast, setArUtkast] = useState(null)
   // Antal låtar i exakt den kombination som är vald (språk + år + genre).
   const [selCount, setSelCount] = useState(null)
   // Optimistiskt lager: valet ska synas direkt vid klick, utan att vänta på
@@ -235,49 +227,14 @@ export default function LobbyView({
 
   // Slå en chip av eller på. Union inom dimensionen, snitt mellan dimensioner.
   const onToggle = (cat) => skrivVal(toggleSelection(view, cat))
-  const onClearAll = () => {
-    setArUtkast(null)
-    skrivVal(TOMT_VAL)
-  }
+  // Rensa slår igenom även i en pågående dragning: YearSpanPicker släpper sitt
+  // utkast så fort spannen ändras till något annat än det den själv skrev.
+  const onClearAll = () => skrivVal(TOMT_VAL)
 
-  // Tidslinjen dras kontinuerligt. Utkastet är det som ritas medan man håller
-  // i handtaget; först när dragningen lugnat sig skrivs det till rummet.
-  // Utan det hade varje pixel blivit både en UPDATE och en ny räkning av
-  // urvalet – och räkningen är en RPC som frågar hela potten.
-  const arSpann = arUtkast ?? yearSpansFrom(view)
-  // Utan valda spann finns ingen årsgräns – då ritas EN tidslinje i fullt
-  // utslag, så "Alla årtal" ser ut som det den är: hela skalan vald.
-  const arRader = arSpann.length ? arSpann : [[AR_MIN, AR_MAX]]
-  useEffect(() => {
-    if (!arUtkast) return
-    const id = setTimeout(() => {
-      // Bara year_bands skrivs, inte hela urvalet: hinner någon slå på en
-      // genre medan dragningen pågår ska den inte skrivas över av ett utkast
-      // som skapades innan chippen klickades.
-      skrivVal({ year_bands: yearBandsFor(arUtkast) })
-      setArUtkast(null)
-    }, 350)
-    return () => clearTimeout(id)
-    // skrivVal läser room.id och sätter state – stabil nog att utelämna.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [arUtkast])
-
-  // Ett spann i taget: dra ett handtag, lägg till ett nytt spann i den
-  // bredaste luckan, eller ta bort ett. Alla tre går via utkastet och samma
-  // fördröjda skrivning – ett tillägg är ju bara ett spann till att skriva.
-  const andraSpann = (i, nytt) => setArUtkast(arRader.map((s, ix) => (ix === i ? nytt : s)))
-  const nastaSpann = nextSpanFor(arSpann)
-  const laggTillSpann = () => {
-    if (!nastaSpann) return
-    // Från "Alla årtal" är tillägget det FÖRSTA spannet: hela skalan plus ett
-    // spann till är fortfarande hela skalan, så den öppna raden ersätts.
-    setArUtkast([...arSpann, nastaSpann])
-  }
-  const taBortSpann = (i) => setArUtkast(arRader.filter((_, ix) => ix !== i))
-  // Ett spann i klartext, via samma regler som sammanfattningen: öppna kanter
-  // blir "och framåt", full skala blir "Alla årtal".
-  const spannText = (spann) =>
-    yearSpanLabel({ year_bands: yearBandsFor([spann]) }) ?? 'Alla årtal'
+  // Årsvalet skriver bara year_bands, inte hela urvalet: hinner någon slå på
+  // en genre medan dragningen pågår ska den inte skrivas över av ett utkast
+  // som skapades innan chippen klickades.
+  const skrivArsspann = (bands) => skrivVal({ year_bands: bands })
 
   const tomtVal = selectionEmpty(view)
 
@@ -384,69 +341,14 @@ export default function LobbyView({
           </div>
 
           {/* Årtalet kan vara FLERA spann – "60-talet + 90-talet" – och de
-              unionas i potten precis som genrechipen. Sammanfattningen läses
-              ur utkastet, inte ur rummet, så texten och antalet följer med
-              medan man drar i stället för att hoppa till 350 ms senare. */}
-          <div className="mb-2 mt-4 flex items-baseline justify-between gap-3">
-            <p className="label opacity-70">Årtal</p>
-            <div className="flex items-baseline gap-2">
-              <span className="font-display text-sm text-cream">
-                {yearSpanLabel({ year_bands: yearBandsFor(arSpann) }) ?? 'Alla årtal'}
-              </span>
-              {isHost && (
-                <button
-                  type="button"
-                  onClick={laggTillSpann}
-                  disabled={!nastaSpann}
-                  aria-label="Lägg till ett årsspann"
-                  title="Lägg till ett årsspann"
-                  className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center self-center rounded-full border border-cyan/60 font-display text-base leading-none text-cyan transition hover:bg-cyan/15 disabled:cursor-default disabled:opacity-40"
-                >
-                  +
-                </button>
-              )}
-            </div>
-          </div>
-          <div className="space-y-2">
-            {arRader.map((spann, i) => (
-              <div key={i} className="panel-inset px-4 pb-2 pt-3">
-                <div className="flex items-start gap-3">
-                  <div className="min-w-0 flex-1">
-                    <YearRangeSlider
-                      min={AR_MIN}
-                      max={AR_MAX}
-                      value={spann}
-                      disabled={!isHost}
-                      onChange={(nytt) => andraSpann(i, nytt)}
-                    />
-                  </div>
-                  {/* Krysset saknas på den öppna raden: där finns inget spann
-                      att ta bort, bara frånvaron av gräns. Platsen står kvar
-                      tom – annars byter tidslinjen bredd (och decennierna
-                      under den kryper ihop) i samma stund man lägger till
-                      sitt första spann. */}
-                  {isHost && arSpann.length > 0 ? (
-                    <button
-                      type="button"
-                      onClick={() => taBortSpann(i)}
-                      aria-label={`Ta bort spannet ${spannText(spann)}`}
-                      title="Ta bort spannet"
-                      className="mt-1 flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full border border-line text-muted transition hover:border-magenta hover:text-magenta"
-                    >
-                      ×
-                    </button>
-                  ) : (
-                    <span className="mt-1 h-6 w-6 shrink-0" aria-hidden="true" />
-                  )}
-                </div>
-                {/* Med flera tidslinjer räcker inte sammanfattningen ovanför –
-                    då syns inte vilken rad som är vilket spann. */}
-                {arRader.length > 1 && (
-                  <p className="mt-1 text-xs text-muted">{spannText(spann)}</p>
-                )}
-              </div>
-            ))}
-          </div>
+              unionas i potten precis som genrechipen. Egen komponent för att
+              dragningen ska stanna där: utkastet bor i den, så lobbyn ritas
+              inte om vid varje pixel man drar. */}
+          <YearSpanPicker
+            spans={yearSpansFrom(view)}
+            disabled={!isHost}
+            onCommit={skrivArsspann}
+          />
 
           <p className="label mb-2 mt-4 opacity-70">Genre</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
