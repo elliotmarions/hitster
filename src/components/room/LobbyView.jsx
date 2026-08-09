@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase.js'
+import { useNavGuard } from '../../context/NavGuardContext.jsx'
 import {
   closeRoomIfHostAbsent,
   leaveRoom,
@@ -61,11 +62,26 @@ export default function LobbyView({
   const [optimistic, setOptimistic] = useState(null)
   const roomLink = `${window.location.origin}/rum/${room.code}`
 
+  // Logotypen uppe till vänster är annars en tyst nödutgång även härifrån:
+  // ett klick (eller en felträff nära skärmkanten på mobil) navigerade hem
+  // UTAN leaveRoom, så spelarraden låg kvar och ett värdrum stod öppet med en
+  // frånvarande värd tills städningen löste ut. Samma fråga som "Lämna rummet".
+  const askLeave = useCallback(() => setConfirmLeave(true), [])
+  useNavGuard(true, askLeave)
+
   // När servern speglat tillbaka vårt val (via realtid) matchar room-proppen
   // det optimistiska värdet – då släpper vi övertäckningen.
+  //
+  // Jämförelsen måste gå på VÄRDE: year_bands och genres är arrayer, och en
+  // referensjämförelse blir aldrig sann för dem. Övertäckningen låg därför kvar
+  // för all framtid efter första genre- eller årsvalet – innehållet råkade
+  // stämma, så det syntes inte, men skyddsnätet "backa till serverns sanning"
+  // var i praktiken bortkopplat.
   useEffect(() => {
     if (!optimistic) return
-    const matched = Object.entries(optimistic).every(([k, v]) => room[k] === v)
+    const matched = Object.entries(optimistic).every(
+      ([k, v]) => JSON.stringify(room[k] ?? null) === JSON.stringify(v ?? null),
+    )
     if (matched) setOptimistic(null)
   }, [room, optimistic])
 

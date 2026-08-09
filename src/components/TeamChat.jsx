@@ -21,8 +21,14 @@ export default function TeamChat({ room, me, teams = [] }) {
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
   // Allt som skrivits av någon annan efter den här tidpunkten räknas som oläst.
-  // Startar på "nu" så gammal historik inte lyser upp bricka-knappen vid join.
-  const [seenAt, setSeenAt] = useState(() => new Date().toISOString())
+  //
+  // Värdet MÅSTE komma ur ett created_at från databasen, inte ur en egen
+  // new Date().toISOString(). Jämförelsen nedan är en strängjämförelse, och
+  // Postgres skriver "…123456+00:00" medan webbläsaren skriver "…123Z" – de
+  // sorterar mot varandra på fel tecken. Dessutom är enhetens klocka inte
+  // serverns (se lib/serverTime.js), så gränsen kunde ligga sekunder fel.
+  // null = vi vet inte var gränsen går än; då räknas ingenting som oläst.
+  const [seenAt, setSeenAt] = useState(null)
   const listRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -30,7 +36,23 @@ export default function TeamChat({ room, me, teams = [] }) {
 
   const team = teams.find((t) => t.id === teamId)
   const neon = team?.color || '#22e6e6'
-  const unread = messages.filter((m) => m.user_id !== me?.user_id && m.created_at > seenAt).length
+  const unread =
+    seenAt === null
+      ? 0
+      : messages.filter((m) => m.user_id !== me?.user_id && m.created_at > seenAt).length
+
+  // Byter man lag är den gamla gränsen inte längre värd något.
+  useEffect(() => {
+    setSeenAt(null)
+  }, [teamId])
+
+  // Första hämtningen sätter gränsen: historiken som redan fanns när man kom
+  // in ska inte lysa upp knappen. Tom sträng när det inte finns någon historik –
+  // varje riktigt created_at sorterar efter den.
+  useEffect(() => {
+    if (loading || seenAt !== null) return
+    setSeenAt(messages.length ? messages[messages.length - 1].created_at : '')
+  }, [loading, messages, seenAt])
 
   // Öppen chatt = allt är läst (även det som trillar in medan den är öppen).
   useEffect(() => {

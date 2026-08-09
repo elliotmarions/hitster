@@ -37,8 +37,20 @@ export default function AuthPage() {
 
   if (!isConfigured) return <SetupNotice />
 
+  // Vänta in sessionen innan vi bestämmer vilken vy det ska bli. Utan det
+  // hann en redan inloggad användare se inloggningsformuläret blinka förbi
+  // innan "Du är inloggad" tog över.
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center gap-4 py-20 text-muted">
+        <DiscoBall size={72} className="anim-spin-slow" />
+        <p>Ett ögonblick…</p>
+      </div>
+    )
+  }
+
   // Redan inloggad – ingen anledning att visa formulären.
-  if (!loading && !isGuest) {
+  if (!isGuest) {
     return (
       <div className="mx-auto max-w-md space-y-5 text-center">
         <DiscoBall size={72} className="anim-float mx-auto" />

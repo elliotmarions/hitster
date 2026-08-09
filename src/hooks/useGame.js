@@ -14,7 +14,6 @@ export function useGame(roomId) {
   const [cards, setCards] = useState([])
   const [answers, setAnswers] = useState([])
   const [facit, setFacit] = useState(null)
-  const [loading, setLoading] = useState(true)
 
   const fetchRound = useCallback(async (rid) => {
     const { data } = await supabase
@@ -62,18 +61,13 @@ export function useGame(roomId) {
   }, [])
 
   useEffect(() => {
-    if (!supabase || !roomId) {
-      setLoading(false)
-      return
-    }
+    if (!supabase || !roomId) return
     let cancelled = false
     let channel = null
 
     ;(async () => {
-      setLoading(true)
       await Promise.all([fetchRound(roomId), fetchCards(roomId), fetchAnswers(roomId)])
       if (cancelled) return
-      setLoading(false)
 
       channel = supabase
         .channel(`game:${roomId}`)
@@ -140,5 +134,5 @@ export function useGame(roomId) {
     )
   }, [])
 
-  return { round, cards, answers, facit, loading, refetch, optimisticCell, optimisticOverride }
+  return { round, cards, answers, facit, refetch, optimisticCell, optimisticOverride }
 }

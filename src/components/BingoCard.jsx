@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { CATEGORIES } from '../lib/constants'
 import { winningLine } from '../lib/game'
 
@@ -24,12 +25,17 @@ function CrossMark({ color, lg }) {
 }
 
 /**
- * En spelares bingobricka (4x4). Alla ser allas brickor.
+ * En spelares bingobricka (5×5). Alla ser allas brickor.
  * - Egen bricka (variant 'lg'): klicka en ruta vars kategori matchar rundan för att kryssa.
  * - Medspelares bricka (variant 'sm'): läsbar; om suddregeln gäller kan man klicka
  *   ett kryss för att sudda.
+ *
+ * memo:ad, och därför tar onErase (brickans id, rutan) i stället för bara rutan.
+ * Anroparen skickar då EN stabil funktion till alla brickor i stället för en
+ * nyskapad pil per bricka och rendering – annars hade memo:n aldrig bitit, och
+ * spelvyns klocka ritar om föräldern fem gånger i sekunden medan klippet spelar.
  */
-export default function BingoCard({
+function BingoCard({
   card,
   playerName,
   isOwn = false,
@@ -89,7 +95,7 @@ export default function BingoCard({
                   : eligibleUnmark
                     ? onUnmark?.(i)
                     : eligibleErase
-                      ? onErase?.(i)
+                      ? onErase?.(card.id, i)
                       : undefined
               }
               title={eligibleUnmark ? 'Ta bort kryss' : eligibleErase ? 'Sudda kryss' : cat.label}
@@ -128,3 +134,5 @@ export default function BingoCard({
     </div>
   )
 }
+
+export default memo(BingoCard)

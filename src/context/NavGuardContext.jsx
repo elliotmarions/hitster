@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react'
 
 /**
  * Spärr för navigering ut ur skalet (logotypen uppe till vänster).
@@ -35,11 +35,11 @@ export function NavGuardProvider({ children }) {
     return true
   }, [])
 
-  return (
-    <NavGuardContext.Provider value={{ register, runGuard }}>
-      {children}
-    </NavGuardContext.Provider>
-  )
+  // Stabilt värde: useNavGuard har contexten i sin beroendelista, och ett nytt
+  // objekt per rendering hade avregistrerat och registrerat om spärren i onödan.
+  const value = useMemo(() => ({ register, runGuard }), [register, runGuard])
+
+  return <NavGuardContext.Provider value={value}>{children}</NavGuardContext.Provider>
 }
 
 /** För skalet: fråga spärren innan navigering. Utan provider blockeras inget. */

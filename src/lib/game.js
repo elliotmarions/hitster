@@ -16,6 +16,46 @@ export async function spinWheel(roomId) {
   return data
 }
 
+// Adaptiv pollningstakt: kolla tidigt och tätt (iTunes svarar oftast <1s) och
+// backa av till jämn takt. Väl under rate-limitern (track_poll = 200/min).
+const POLL_RAMP = [120, 150, 180, 220, 260, 300, 350, 400, 450, 500, 550, 600, 700]
+const POLL_STEADY = 700
+
+// Ren säkerhetsventil, INTE en gissning på hur länge servern får hålla på.
+// Förut räknade klienten ut ett eget fönster (26s) ur hur många försök servern
+// gjorde – och räknade fel: servern köar fyra låtförsök × två söksteg, så den
+// kunde fortfarande leta när klienten gav upp med "tog för lång tid".
+// Serverns egen uppgivningslogik är den som vet när det är slut; den kastar
+// 'Hittade ingen spelbar låt just nu' och då bryter loopen av sig själv.
+const POLL_MAX_MS = 60000
+
+/**
+ * Driver ett pågående låtuppslag framåt tills rundan fått sin låt.
+ *
+ * Tillståndsmaskinen är klient-driven (pg_net är asynkront), så någon måste
+ * fråga servern "är svaret framme?" om och om igen. Sedan 0077 får vilken
+ * medlem som helst göra det, inte bara värden – backgroundade värden fliken
+ * stod annars hela rummet still.
+ *
+ * Väggklockan, inte summan av väntetiderna, avgör när vi ger upp: stryper
+ * webbläsaren timers i en bakgrundsflik ska taket ändå gälla i verklig tid.
+ *
+ * opts.intervalMs – fast takt i stället för rampen (reservpollare tar det lugnt)
+ * opts.shouldStop – () => bool, avbryt tyst (t.ex. rundan bytte under tiden)
+ */
+export async function pollTrackStart(roomId, { intervalMs, shouldStop } = {}) {
+  const start = Date.now()
+  for (let i = 0; Date.now() - start < POLL_MAX_MS; i++) {
+    const wait = intervalMs ?? (i < POLL_RAMP.length ? POLL_RAMP[i] : POLL_STEADY)
+    await new Promise((resolve) => setTimeout(resolve, wait))
+    if (shouldStop?.()) return null
+    const { data, error } = await supabase.rpc('poll_track_start', { p_room_id: roomId })
+    if (error) throw translateDbError(error)
+    if (data?.id) return data // klart – alla klienter startar via realtiden
+  }
+  throw new Error('Låtstarten tog för lång tid – försök igen.')
+}
+
 // Värden startar en slumpad låt. HELT server-side: servern väljer låt ur
 // potten, slår upp preview-klippet hos iTunes och sparar facit bakom
 // reveal-spärren – ingen klient (inte ens värdens) ser svaret i förväg.
@@ -23,45 +63,7 @@ export async function spinWheel(roomId) {
 export async function startRandomTrack(roomId) {
   const { error } = await supabase.rpc('start_random_track', { p_room_id: roomId })
   if (error) throw translateDbError(error)
-  // Adaptiv pollning: kolla tidigt och tätt (iTunes svarar oftast <1s) och backa
-  // av till jämn takt. Pollningen är KLIENT-DRIVEN → fönstret måste rymma
-  // serverns låtförsök (0036: 3) när ett remix-bara resultat hoppas över.
-  //
-  // Fönstret är satt efter serverns VÄRSTA fall, inte normalfallet: 3 låtar ×
-  // 2 sökningar × 4s timeout = 24s. Med de tidigare 15s gav klienten upp med
-  // "tog för lång tid" medan servern höll på och hittade en låt strax efter –
-  // värden fick ett fel trots att allt fungerade. Normalfallet svarar ändå på
-  // första pollen. Väl under rate-limitern (track_poll = 200/min).
-  const ramp = [120, 150, 180, 220, 260, 300, 350, 400, 450, 500, 550, 600, 700]
-  const steady = 700
-  const maxMs = 26000
-  let elapsed = 0
-  for (let i = 0; elapsed < maxMs; i++) {
-    const wait = i < ramp.length ? ramp[i] : steady
-    await new Promise((resolve) => setTimeout(resolve, wait))
-    elapsed += wait
-    const { data, error: pollError } = await supabase.rpc('poll_track_start', {
-      p_room_id: roomId,
-    })
-    if (pollError) throw translateDbError(pollError)
-    if (data?.id) return data // klart – alla klienter startar via realtiden
-  }
-  throw new Error('Låtstarten tog för lång tid – försök igen.')
-}
-
-// Antal låtar per pott (lobbyns visning). Själva potten är oläsbar för klienter.
-export async function trackPoolCounts() {
-  const { data, error } = await supabase.rpc('track_pool_counts')
-  if (error) throw translateDbError(error)
-  return data
-}
-
-// Antal låtar per genreläge, till lobbyns kategoriknappar. Returnerar rader
-// { genre, antal } – potten växer, så siffrorna hämtas i stället för hårdkodas.
-export async function trackPoolGenreCounts() {
-  const { data, error } = await supabase.rpc('track_pool_genre_counts')
-  if (error) throw translateDbError(error)
-  return Object.fromEntries((data || []).map((r) => [r.genre, Number(r.antal)]))
+  return pollTrackStart(roomId)
 }
 
 // Antal låtar i EN specifik kombination (språk + årsfönster + genre). Behövs

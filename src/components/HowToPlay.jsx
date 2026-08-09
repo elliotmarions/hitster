@@ -3,13 +3,17 @@ import { createPortal } from 'react-dom'
 import NeonButton from './ui/NeonButton.jsx'
 
 /**
- * Flytande "?"-knapp med spelreglerna.
+ * "?"-knapp med spelreglerna.
  *
- * Finns på startsidan, där hjälten numera bara är discokula och logga – utan
- * den här är det inget som berättar vad spelet går ut på förrän man skrollat
- * ned till korten. Den ligger MEDVETET inte i AppShell: lagchatten sitter på
- * exakt samma plats (fixed bottom-4 right-4) inne i ett rum, och två flytande
- * knappar i samma hörn krockar.
+ * placement="floating" (default) – startsidans flytande knapp. Hjälten där är
+ *   bara discokula och logga, så utan den är det inget som berättar vad spelet
+ *   går ut på förrän man skrollat ned till korten.
+ * placement="inline" – en liten knapp som anroparen placerar själv. Används i
+ *   spelvyns rubrikrad, där reglerna behövs som mest ("vad betyder ±3 år?")
+ *   men hörnet redan är upptaget av lagchatten (fixed bottom-4 right-4).
+ *
+ * Den ligger alltså MEDVETET inte i AppShell: två flytande knappar i samma
+ * hörn krockar.
  *
  * Samma overlay-recept som ConfirmDialog: portal till <body>, explicit höjd i
  * dvh och ingen backdrop-filter (den gav ett eget kompositeringslager som
@@ -57,7 +61,7 @@ const BRA_ATT_VETA = [
   'Rättningen är automatisk men värden kan ändra en dom som blivit fel.',
 ]
 
-export default function HowToPlay() {
+export default function HowToPlay({ placement = 'floating' }) {
   const [open, setOpen] = useState(false)
   const closeRef = useRef(null)
   const openerRef = useRef(null)
@@ -101,8 +105,12 @@ export default function HowToPlay() {
         onClick={() => setOpen(true)}
         aria-label="Så spelar man"
         title="Så spelar man"
-        className="absolute right-0 top-0 z-10 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-cyan/60 bg-midnight/80 font-display text-xl text-cyan transition hover:bg-cyan/10 sm:fixed sm:bottom-4 sm:right-4 sm:top-auto sm:z-40"
-        style={{ boxShadow: '0 0 22px -6px #22e6e6' }}
+        className={
+          placement === 'inline'
+            ? 'flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-cyan/60 font-display text-base text-cyan transition hover:bg-cyan/10'
+            : 'absolute right-0 top-0 z-10 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-cyan/60 bg-midnight/80 font-display text-xl text-cyan transition hover:bg-cyan/10 sm:fixed sm:bottom-4 sm:right-4 sm:top-auto sm:z-40'
+        }
+        style={placement === 'inline' ? undefined : { boxShadow: '0 0 22px -6px #22e6e6' }}
       >
         ?
       </button>

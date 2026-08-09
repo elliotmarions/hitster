@@ -14,6 +14,7 @@ import {
   ensureCard,
   spinWheel,
   startRandomTrack,
+  pollTrackStart,
   markCross,
   unmarkCross,
   eraseCross,
@@ -35,6 +36,7 @@ import VolumeControl from '../VolumeControl.jsx'
 import Countdown from '../Countdown.jsx'
 import AnswerPanel from '../AnswerPanel.jsx'
 import TeamChat from '../TeamChat.jsx'
+import HowToPlay from '../HowToPlay.jsx'
 import NeonButton from '../ui/NeonButton.jsx'
 import ConfirmDialog from '../ui/ConfirmDialog.jsx'
 
@@ -55,6 +57,12 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [markedRoundId, setMarkedRoundId] = useState(null) // runda där jag redan kryssat (optimistiskt)
+  const [erasedRoundId, setErasedRoundId] = useState(null) // runda där jag redan suddat (optimistiskt)
+  // Servern kan inte städa bort rounds.state = 'loading' när den ger upp:
+  // felet rullar tillbaka hela anropet, inklusive raderingen av pending-raden.
+  // Statusen står alltså kvar tills värden trycker igen – så overlayn har ett
+  // eget tak i stället för att bli hängande för de andra spelarna.
+  const [searchStale, setSearchStale] = useState(false)
   // Värden tryckte "Starta låt" och servern letar upp klippet. Visar en
   // "Gör dig redo"-overlay direkt så det inte blir en död lucka innan
   // nedräkningen (som väntar på timer_start_at).
@@ -70,12 +78,6 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
     ensured.current = true
     ensureCard(room.id).catch(() => {})
   }, [room.id])
-
-  // Tickande klocka.
-  useEffect(() => {
-    const t = setInterval(() => setNow(serverNow()), 200)
-    return () => clearInterval(t)
-  }, [])
 
   // Snurr-animation: bara när en NY runda (utan låt) kommer – inte när start_track
   // uppdaterar samma runda med en låt.
@@ -126,6 +128,50 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   const answersRevealed = Boolean(round?.answers_revealed)
   const clipPlaying = clipWindow && !answersRevealed
   const timerRunning = clipPlaying && remaining > 0
+
+  // Klockan tickar bara medan rundans tidsfönster faktiskt betyder något:
+  // från att låten fått sin timer_start_at tills klippet är slut. Utanför det
+  // ändrar `now` ingenting som renderas – och intervallet var förut igång hela
+  // matchen, även mellan rundorna och på vinstskärmen. Var 200:e ms ritades då
+  // HELA spelvyn om, inklusive varje medspelares bricka på 25 rutor.
+  const clockUntil = hasTrack && startMs != null ? startMs + TIMER_SECONDS * 1000 + 800 : null
+  useEffect(() => {
+    if (clockUntil == null) return undefined
+    setNow(serverNow())
+    const t = setInterval(() => {
+      const n = serverNow()
+      setNow(n)
+      if (n >= clockUntil) clearInterval(t)
+    }, 200)
+    return () => clearInterval(t)
+  }, [clockUntil])
+
+  // Servern letar upp klippet just nu (rounds.state, satt av start_random_track
+  // i 0077). Tidigare visste bara VÄRDEN att något hände – övriga satt tysta
+  // med "Värden styr rundan" tills musiken plötsligt startade.
+  const searching = !hasTrack && round?.state === 'loading'
+  useEffect(() => {
+    setSearchStale(false)
+    if (!searching) return undefined
+    const t = setTimeout(() => setSearchStale(true), 45_000)
+    return () => clearTimeout(t)
+  }, [searching, round?.id])
+
+  // Reservpollare. Uppslaget drivs framåt av att någon frågar servern, och
+  // förut var det bara värdens flik. Bytte värden app eller låste telefonen
+  // ströps timers och rundan stod still för alla. Övriga hoppar därför in efter
+  // några sekunders tystnad, i lugn takt och utan att visa fel för sig själva.
+  useEffect(() => {
+    if (isHost || !searching || !room.id) return undefined
+    let stopped = false
+    const t = setTimeout(() => {
+      pollTrackStart(room.id, { intervalMs: 1500, shouldStop: () => stopped }).catch(() => {})
+    }, 6000)
+    return () => {
+      stopped = true
+      clearTimeout(t)
+    }
+  }, [isHost, searching, room.id, round?.id])
 
   // Prep→nedräkning: så fort låten fått sin timer_start_at (beforeStart) eller
   // redan spelar, släpp "Gör dig redo"-overlayn så 3-2-1 tar över utan glapp.
@@ -197,8 +243,11 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
     answerGateOk &&
     !(hasTrack && alreadyMarkedThisRound)
   const canUnmark = !finished || inDecidingRound
-  // Ett sudd per runda (server-styrt via round_answers.has_erased).
-  const alreadyErasedThisRound = myRoundAnswer?.has_erased === true
+  // Ett sudd per runda (server-styrt via round_answers.has_erased; erasedRoundId
+  // speglar det optimistiskt så ett andra klick inte hinner iväg och komma
+  // tillbaka som ett rött "Du har redan suddat den här rundan").
+  const alreadyErasedThisRound =
+    (round && erasedRoundId === round.id) || myRoundAnswer?.has_erased === true
   const canErase =
     !finished &&
     room.erase_rule_enabled &&
@@ -282,16 +331,21 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
 
   // Optimistisk åtgärd: visa ändringen lokalt direkt, skicka till servern i
   // bakgrunden (blockerar inte UI:t), backa via refetch om det blir fel.
-  function optimistic(applyLocal, rpc) {
-    setErr('')
-    applyLocal()
-    Promise.resolve()
-      .then(rpc)
-      .catch((e) => {
-        setErr(e.message || 'Något gick fel.')
-        refetch()
-      })
-  }
+  // useCallback: brick-komponenten är memo:ad, så handlarna måste överleva en
+  // omritning – annars vore memo:n verkningslös just när det gäller som mest.
+  const optimistic = useCallback(
+    (applyLocal, rpc) => {
+      setErr('')
+      applyLocal()
+      Promise.resolve()
+        .then(rpc)
+        .catch((e) => {
+          setErr(e.message || 'Något gick fel.')
+          refetch()
+        })
+    },
+    [refetch],
+  )
 
   const onSpin = () => run(() => spinWheel(room.id))
   // Servern väljer låt (rätt pott via rooms.swedish_mode), slår upp klippet
@@ -307,33 +361,53 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
     } catch (e) {
       setErr(e.message || 'Något gick fel.')
       setStartingTrack(false)
+      // Servern hinner inte städa bort state='loading' när den ger upp (felet
+      // rullar tillbaka anropet), så overlayn hade legat kvar över felrutan.
+      setSearchStale(true)
     } finally {
       setBusy(false)
     }
   }
-  const onMark = (i) =>
-    myCard &&
-    optimistic(
-      () => {
-        optimisticCell(myCard.id, i, true, round?.id)
-        if (round?.id) setMarkedRoundId(round.id) // lås fler kryss direkt (ett per runda)
-      },
-      () => markCross(room.id, i),
-    )
-  const onUnmark = (i) =>
-    myCard &&
-    optimistic(
-      () => {
-        optimisticCell(myCard.id, i, false)
-        setMarkedRoundId(null) // frigör rundans kryss så felklick kan läggas om
-      },
-      () => unmarkCross(room.id, i),
-    )
-  const onErase = (cardId, i) =>
-    optimistic(
-      () => optimisticCell(cardId, i, false),
-      () => eraseCross(room.id, cardId, i),
-    )
+  const myCardId = myCard?.id
+  const roundId = round?.id
+  const onMark = useCallback(
+    (i) => {
+      if (!myCardId) return
+      optimistic(
+        () => {
+          optimisticCell(myCardId, i, true, roundId)
+          if (roundId) setMarkedRoundId(roundId) // lås fler kryss direkt (ett per runda)
+        },
+        () => markCross(room.id, i),
+      )
+    },
+    [myCardId, roundId, room.id, optimistic, optimisticCell],
+  )
+  const onUnmark = useCallback(
+    (i) => {
+      if (!myCardId) return
+      optimistic(
+        () => {
+          optimisticCell(myCardId, i, false)
+          setMarkedRoundId(null) // frigör rundans kryss så felklick kan läggas om
+        },
+        () => unmarkCross(room.id, i),
+      )
+    },
+    [myCardId, room.id, optimistic, optimisticCell],
+  )
+  const onErase = useCallback(
+    (cardId, i) => {
+      optimistic(
+        () => {
+          optimisticCell(cardId, i, false)
+          if (roundId) setErasedRoundId(roundId)
+        },
+        () => eraseCross(room.id, cardId, i),
+      )
+    },
+    [roundId, room.id, optimistic, optimisticCell],
+  )
   const onLockAnswer = (t, bonusYear = '') => run(() => lockAnswer(room.id, t, bonusYear))
   const onRevealAnswers = () => run(() => revealAnswers(room.id))
   const onOverrideAnswer = (answerId, correct) =>
@@ -358,7 +432,12 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   return (
     <div className="space-y-6">
       {beforeStart && <Countdown secondsToStart={(startMs - now) / 1000} />}
-      {startingTrack && !beforeStart && !clipPlaying && <Countdown preparing />}
+      {/* "Letar upp låten…" gäller numera ALLA i rummet, inte bara den som
+          tryckte: startingTrack är värdens egen knapp, searching kommer från
+          rundans state via realtiden. */}
+      {(startingTrack || (searching && !searchStale)) && !beforeStart && !clipPlaying && (
+        <Countdown preparing />
+      )}
 
       <ConfirmDialog
         open={confirmLeave}
@@ -393,6 +472,9 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
           <span className="chip" style={{ '--neon': '#22e6e6' }}>
             {teamMode ? `${teams.length} lag · ${players.length} spelare` : `${players.length} spelare`}
           </span>
+          {/* Reglerna fanns bara på startsidan, men "vad betyder ±3 år?" ställs
+              mitt i matchen. Inline-varianten: hörnet är upptaget av lagchatten. */}
+          <HowToPlay placement="inline" />
           <NeonButton variant="ghost" onClick={() => setConfirmLeave(true)}>
             Lämna
           </NeonButton>
@@ -598,7 +680,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
                 playerName={cardName(c)}
                 currentCategory={currentCategory}
                 canErase={canErase}
-                onErase={(i) => onErase(c.id, i)}
+                onErase={onErase}
                 variant="sm"
               />
             ))}

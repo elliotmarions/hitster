@@ -3,6 +3,13 @@ import { CATEGORIES, ERASE_CATEGORIES } from '../lib/constants'
 import NeonButton from './ui/NeonButton.jsx'
 import TrackReveal from './TrackReveal.jsx'
 
+// Autofokus på svarsrutan drar upp mobiltangentbordet i samma sekund som
+// klippet börjar spela – rakt över discokulan, timern och "Lyssna och gissa!".
+// Man vill lyssna först och skriva sen. På mus/tangentbord kostar fokus inget
+// och sparar ett klick, så där behålls det.
+const GROV_PEKARE =
+  typeof window !== 'undefined' && Boolean(window.matchMedia?.('(pointer: coarse)').matches)
+
 /**
  * Svarsfas: så fort låten börjat spela skriver varje enhet (lag i lagläge,
  * annars varje spelare) sitt svar och LÅSER IN det – man behöver inte vänta ut
@@ -374,7 +381,7 @@ export default function AnswerPanel({
                       value={text}
                       onChange={(e) => setText(e.target.value)}
                       maxLength={200}
-                      autoFocus
+                      autoFocus={!GROV_PEKARE}
                       autoCorrect="off"
                       autoCapitalize="off"
                       autoComplete="off"

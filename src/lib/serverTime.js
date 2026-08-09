@@ -39,11 +39,6 @@ export function serverNow() {
   return Date.now() + offsetMs
 }
 
-/** Hur fel enhetens klocka går, i ms (positivt = enheten ligger efter). */
-export function clockOffsetMs() {
-  return offsetMs
-}
-
 async function sample() {
   const t0 = Date.now()
   const res = await fetch(URL_BASE.replace(/\/+$/, '') + '/rest/v1/rpc/server_now', {

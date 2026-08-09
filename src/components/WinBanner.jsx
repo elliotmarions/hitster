@@ -25,7 +25,9 @@ export default function WinBanner({
       : `Oavgjort mellan ${listNames(winnerNames)}!`
     : isMe
       ? teamMode
-        ? `Ert lag ${winnerNames[0] || ''} vann! 🪩`.replace('  ', ' ')
+        ? winnerNames[0]
+          ? `Ert lag ${winnerNames[0]} vann! 🪩`
+          : 'Ert lag vann! 🪩'
         : 'Du vann! 🪩'
       : `${winnerNames[0] || (teamMode ? 'Ett lag' : 'Någon')} vann!`
 
