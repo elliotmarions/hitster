@@ -257,33 +257,12 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
     // Övriga → bonusrutans årsgissning måste vara rätt (0064). Speglar erase_cross.
     (ERASE_CATEGORIES.includes(currentCategory) ? myAnswerCorrect : bonusWon)
 
-  // Brickan har exakt fem rutor per kategori. Har man kryssat alla fem kan ett
-  // rätt svar inte omsättas i något kryss – då ska hinten säga det i stället för
-  // att uppmana till ett kryss som inte finns. (Samma villkor som spin-spärren
-  // pendingCross använder, så värden får snurra vidare direkt.)
-  const freeCellInCategory = Boolean(
-    currentCategory &&
-      myCard?.grid?.some((cell) => cell.category === currentCategory && !cell.filled),
-  )
-
-  // Förklaring till varför kryssning är låst/öppen just nu. Fel svar får ingen
-  // text – svarspanelen har redan sagt ✗ Fel, och en rad till om det gör bara
-  // förlusten pratigare. 'ok' och 'full' är sentinelvärden: de renderas nedan
-  // med kategorins namn och färg, allt annat är färdig text.
-  const markHint =
-    finished || !currentCategory || myCard?.has_won
-      ? null
-      : !hasTrack
-        ? 'Starta låten och gissa innan ni kryssar.'
-        : !answersRevealed
-          ? 'Lås in ert svar och vänta på facit innan ni kryssar.'
-          : !myAnswerCorrect
-            ? null
-            : alreadyMarkedThisRound
-              ? 'Kryss placerat – ett per runda. Klicka på krysset för att ändra.'
-              : freeCellInCategory
-                ? 'ok'
-                : 'full'
+  // (Här låg en rad hjälptexter bredvid "Din bricka" – "Starta låten och gissa
+  // innan ni kryssar", "Lås in ert svar…", "✓ Rätt! Kryssa en Årtal-ruta".
+  // De sa i ord vad brickan och svarspanelen redan visar: rutorna man får
+  // kryssa lyser i kategorifärgen och går att klicka, resten är släckta, och
+  // svarspanelen har redan sagt ✓ Rätt eller ✗ Fel. Texten bytte dessutom
+  // formulering fyra gånger per runda i en rad som satt intill rubriken.)
 
   // Snurr-spärr: lämna inte en avslöjad runda medan någon rätt-svarande ännu
   // inte kryssat (och har en ledig ruta i kategorin att kryssa). Speglar spin_wheel.
@@ -613,31 +592,10 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
 
       {/* Egen bricka */}
       <section>
-        <div className="mb-2 flex items-center justify-between">
+        <div className="mb-2">
           <h2 className="font-display text-xl text-cream">
             {teamMode ? (myTeamId ? `Ert lag: ${teamName(myTeamId)}` : 'Din bricka') : 'Din bricka'}
           </h2>
-          {markHint === 'ok' && CATEGORIES[currentCategory] ? (
-            <span className="text-xs" style={{ color: '#3ee87b' }}>
-              ✓ Rätt! Kryssa en{' '}
-              <b style={{ color: CATEGORIES[currentCategory].hex }}>
-                {CATEGORIES[currentCategory].short}
-              </b>
-              -ruta
-            </span>
-          ) : markHint === 'full' && CATEGORIES[currentCategory] ? (
-            <span className="text-xs text-muted">
-              ✓ Rätt! Men alla{' '}
-              <b style={{ color: CATEGORIES[currentCategory].hex }}>
-                {CATEGORIES[currentCategory].short}
-              </b>
-              -rutor är redan ikryssade.
-            </span>
-          ) : (
-            markHint !== 'ok' &&
-            markHint !== 'full' &&
-            markHint && <span className="text-xs text-muted">{markHint}</span>
-          )}
         </div>
         {myCard ? (
           <div className="mx-auto max-w-[380px] space-y-2">
