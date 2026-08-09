@@ -85,18 +85,35 @@
     overflow-x: hidden;
   }
 
-  /* Dansgolvet: fasta färgade ljuspölar bakom allt innehåll */
+  /* Dansgolvet: fasta färgade ljuspölar bakom allt innehåll.
+     Varje pöl har en HÅLLEN kärna (färgen står kvar till ~30 % av radien)
+     och tonar sedan ut på kortare sträcka. En rak ton från mitten till
+     ingenting spred ut samma färgmängd över hela radien, och pölarna
+     lade sig som en jämn dimma i stället för att läsa som ljus – de gick
+     knappt att skilja från varandra där de möttes. */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
     z-index: -2;
     background:
-      radial-gradient(38rem 38rem at 12% -8%, color-mix(in srgb, var(--color-magenta) 26%, transparent), transparent 60%),
-      radial-gradient(34rem 34rem at 92% 4%, color-mix(in srgb, var(--color-cyan) 22%, transparent), transparent 60%),
-      radial-gradient(40rem 40rem at 78% 108%, color-mix(in srgb, var(--color-disco) 30%, transparent), transparent 62%),
-      radial-gradient(30rem 30rem at 8% 96%, color-mix(in srgb, var(--color-lime) 14%, transparent), transparent 60%);
-    filter: saturate(1.1);
+      radial-gradient(38rem 38rem at 12% -8%,
+        color-mix(in srgb, var(--color-magenta) 38%, transparent) 0%,
+        color-mix(in srgb, var(--color-magenta) 34%, transparent) 30%,
+        transparent 64%),
+      radial-gradient(34rem 34rem at 92% 4%,
+        color-mix(in srgb, var(--color-cyan) 32%, transparent) 0%,
+        color-mix(in srgb, var(--color-cyan) 28%, transparent) 30%,
+        transparent 64%),
+      radial-gradient(40rem 40rem at 78% 108%,
+        color-mix(in srgb, var(--color-disco) 42%, transparent) 0%,
+        color-mix(in srgb, var(--color-disco) 38%, transparent) 30%,
+        transparent 66%),
+      radial-gradient(30rem 30rem at 8% 96%,
+        color-mix(in srgb, var(--color-lime) 24%, transparent) 0%,
+        color-mix(in srgb, var(--color-lime) 20%, transparent) 30%,
+        transparent 64%);
+    filter: saturate(1.25);
   }
 
   /* Diskret filmkornstextur ovanpå ljuset (dämpad så läsbarheten aldrig lider) */
