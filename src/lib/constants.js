@@ -196,9 +196,11 @@ export function selectionFrom(room) {
 // Skalans ändar är inte pottens ytterligheter. Potten har enstaka spår
 // ända ner till 1908, men under ~1955 rör det sig om någon låt per år;
 // en tidslinje som la två tredjedelar av sin bredd på dem hade varit
-// oanvändbar. Ändarna betyder därför "ingen gräns åt det hållet", inte
-// "1950": dras reglaget ut helt skrivs ett tomt year_bands och de gamla
-// låtarna är med. Övre änden följer klockan så skalan inte rostar.
+// oanvändbar. De 18 låtarna före 1950 spelas därför bara när HELA skalan
+// är vald (tomt year_bands = ingen årsgräns). Ett spann som råkar ligga an
+// mot vänsterkanten betyder 1950, inte "ingen undre gräns" – annars var
+// nästan var femte låt i ett 1950–1960-rum äldre än vad tidslinjen visade.
+// Övre änden följer klockan så skalan inte rostar.
 export const AR_MIN = 1950
 export const AR_MAX = Math.max(2026, new Date().getFullYear())
 
@@ -246,17 +248,25 @@ export function mergeSpans(spans) {
   return ihop
 }
 
-// year_bands för de valda spannen. En kant som ligger i skalans ände skrivs
-// som null (= öppen) i stället för årtalet: "1990 och uppåt" ska fortsätta
-// betyda det även när nästa års låtar kommer in i potten. (I sammanfattningen
-// skrivs den övre änden ändå ut som ett årtal, se bandLabel.) Täcker något spann
-// hela skalan finns ingen gräns kvar att skriva.
+// year_bands för de valda spannen. ÖVRE kanten i skalans ände skrivs som null
+// (= öppen) i stället för årtalet: "1990 och uppåt" ska fortsätta betyda det
+// även när nästa års låtar kommer in i potten. (I sammanfattningen skrivs den
+// ändå ut som ett årtal, se bandLabel.)
+//
+// UNDRE kanten skrivs alltid ut. Den var också öppen förut, men där finns
+// låtar bortom skalan – och de kom med utan att synas någonstans på
+// tidslinjen. Ett sidoresultat av samma null: åldersläget (0061) läser det
+// härledda year_min, och med null räknades även ett elvaårigt spann som
+// 1900–1960, alltså brett nog för vanliga hjulet med "Årtionde" som
+// gratisruta. Båda försvinner när kanten är ett årtal.
+//
+// Täcker något spann hela skalan finns ingen gräns kvar att skriva.
 export function yearBandsFor(spans) {
   const ihop = mergeSpans(spans)
   if (!ihop.length) return []
   if (ihop.some(([lo, hi]) => lo <= AR_MIN && hi >= AR_MAX)) return []
   return ihop.map(([lo, hi]) => ({
-    min: lo <= AR_MIN ? null : lo,
+    min: Math.max(AR_MIN, lo),
     max: hi >= AR_MAX ? null : hi,
   }))
 }
@@ -342,9 +352,9 @@ export const TOMT_VAL = { swedish_mode: null, year_bands: [], genres: [] }
 // slutar vid innevarande år och det finns inga låtar bortom den, så "1990–2026"
 // säger samma sak som "1990 och framåt" – fast med det årtal man just drog till.
 //
-// Undre kanten är inte pottens. Under 1950 finns låtar ända ned till 1908, och
-// att skriva "1950–1969" hade gömt dem bakom en gräns som inte finns. Den änden
-// skrivs därför fortfarande ut som öppen.
+// Undre kanten är ett årtal sedan yearBandsFor slutade skriva den öppen.
+// "till och med"-formen står kvar för rum som valdes före det: deras band
+// ligger kvar i databasen och betyder fortfarande vad de betydde då.
 function bandLabel(b) {
   const lo = b?.min ?? null
   const hi = b?.max ?? null
