@@ -24,6 +24,20 @@ function rememberedVolume() {
 // skillnad, och en onödig sökning hackar till ljudet.
 const DRIFT_TOLERANCE = 0.35
 
+// Spola till den position alla andra är på just nu. Delas av startlogiken och
+// av upplåsningen (som kan komma flera sekunder in i klippet).
+function seekToLive(a, startMs) {
+  const target = (serverNow() - startMs) / 1000
+  if (!Number.isFinite(target) || target < DRIFT_TOLERANCE) return
+  if (target >= TIMER_SECONDS - 0.5) return
+  if (Math.abs(a.currentTime - target) < DRIFT_TOLERANCE) return
+  try {
+    a.currentTime = target
+  } catch {
+    /* inte sökbar än – 'playing'-korrigeringen tar det */
+  }
+}
+
 /**
  * Synkad uppspelning av ett preview-klipp (ersätter Spotify Web Playback).
  * Alla klienter spelar samma publika ljud-URL (round.current_track_id) vid
@@ -83,22 +97,45 @@ export function useSyncedAudio(round) {
     syncServerTime()
   }, [])
 
+  // Rundans klipp, läsbart från upplåsningen (som inte får se bara det som
+  // gällde när den skapades).
+  const liveRef = useRef({ url: null, startMs: null, revealed: false })
+
   // Lås upp <audio> (spela tyst klipp → pausa). Anropas från ett användarklick,
   // men provas också direkt vid montering: har webbläsaren redan gett appen
   // autoplay-rätt slipper spelaren bannern helt.
+  //
+  // Upplåsningen och musiken MÅSTE dela element – iOS låser upp per element,
+  // inte per sida. Därför får den heller aldrig skriva över ett laddat klipp
+  // med tystnaden: gesten kommer typiskt EFTER att rundans låt nekats, och
+  // spelade vi tystnaden då försvann låt-URL:en ur elementet och ingenting
+  // startade om den. Ligger rundans klipp redan i elementet spelar vi det i
+  // stället – då blir gesten det "försök igen" som felmeddelandet lovar.
   const unlock = useCallback(async () => {
     if (unlockedRef.current) return true
     const a = getAudio()
+    const live = liveRef.current
+    const inClip =
+      Boolean(live.url) &&
+      live.startMs != null &&
+      !live.revealed &&
+      a.src === live.url &&
+      serverNow() < live.startMs + TIMER_SECONDS * 1000
     try {
-      a.src = SILENCE
+      if (inClip) {
+        seekToLive(a, live.startMs)
+      } else {
+        a.src = SILENCE
+      }
       await a.play()
       // Bara städa om ingen riktig låt hunnit ta över elementet under tiden.
-      if (a.src === SILENCE) {
+      if (!inClip && a.src === SILENCE) {
         a.pause()
         a.currentTime = 0
       }
       unlockedRef.current = true
       setReady(true)
+      if (inClip) setError('')
       return true
     } catch {
       // Blockerat – bannern får stå kvar tills en riktig användargest kommer.
@@ -136,6 +173,9 @@ export function useSyncedAudio(round) {
   // annars ligger klippet och spelar över facit.
   const revealed = Boolean(round?.answers_revealed)
 
+  // Håll upplåsningen underrättad om vilken låt som gäller just nu.
+  liveRef.current = { url: url ?? null, startMs, revealed }
+
   // Starta klippet exakt vid start_at.
   useEffect(() => {
     if (!url || startMs == null) return
@@ -153,47 +193,46 @@ export function useSyncedAudio(round) {
       a.load() // börja buffra nu, inte först vid play()
     }
 
-    // Spola till den position alla andra är på just nu.
-    const seekToLive = () => {
-      const target = (serverNow() - startMs) / 1000
-      if (!Number.isFinite(target) || target < DRIFT_TOLERANCE) return
-      if (target >= TIMER_SECONDS - 0.5) return
-      if (Math.abs(a.currentTime - target) < DRIFT_TOLERANCE) return
-      try {
-        a.currentTime = target
-      } catch {
-        /* inte sökbar än – 'playing'-korrigeringen nedan tar det */
-      }
-    }
-
     // En sökning innan play() fastnar inte alltid (klippet kan sakna metadata
     // än), så vi korrigerar en gång till så fort ljudet faktiskt rullar.
-    const onPlaying = () => seekToLive()
+    const onPlaying = () => seekToLive(a, startMs)
     a.addEventListener('playing', onPlaying, { once: true })
 
     const id = setTimeout(() => {
-      playedRef.current = roundNo
-      a.currentTime = 0
-      seekToLive()
+      // Bara från noll om inget redan rullar – upplåsningen kan ha dragit
+      // igång klippet mitt i, och då ska vi inte rycka tillbaka det.
+      if (a.paused) a.currentTime = 0
+      seekToLive(a, startMs)
       setError('')
-      a.play().catch((e) => {
-        // Nekad uppspelning = ljudet var aldrig upplåst. Ta tillbaka bannern
-        // i stället för att bara visa en felrad.
-        if (e?.name === 'NotAllowedError') {
-          unlockedRef.current = false
-          setReady(false)
-        }
-        setError(
-          'Kunde inte spela ljudet (' + (e?.name || 'fel') + ') – klicka "Aktivera ljud" och försök igen.',
-        )
-      })
+      a.play().then(
+        () => {
+          // Rundan räknas som spelad först när den FAKTISKT rullar. Stämplades
+          // den redan vid försöket var en nekad uppspelning slutgiltig: spelaren
+          // klickade "Aktivera ljud" som appen bad om, och ingenting hände –
+          // hela rundan gick i tystnad och fick blindgissas.
+          playedRef.current = roundNo
+        },
+        (e) => {
+          // Nekad uppspelning = ljudet var aldrig upplåst. Ta tillbaka bannern
+          // i stället för att bara visa en felrad.
+          if (e?.name === 'NotAllowedError') {
+            unlockedRef.current = false
+            setReady(false)
+          }
+          setError(
+            'Kunde inte spela ljudet (' + (e?.name || 'fel') + ') – klicka "Aktivera ljud" och försök igen.',
+          )
+        },
+      )
     }, Math.max(0, delay))
 
     return () => {
       clearTimeout(id)
       a.removeEventListener('playing', onPlaying)
     }
-  }, [roundNo, url, startMs, revealed])
+    // `ready` är med för att en lyckad upplåsning MITT i en runda ska starta
+    // klippet (från rätt position) i stället för att rundan är förlorad.
+  }, [roundNo, url, startMs, revealed, ready])
 
   // Tysta klippet i samma ögonblick rundan avslöjas (alla låste in i förtid).
   // pausedRef/playedRef sätts till rundan så varken 25s-pausen eller en ny
