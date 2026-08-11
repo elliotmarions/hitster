@@ -202,6 +202,27 @@ hitster-bingo-online/
 └─ vercel.json            SPA-routing + säkerhetsheaders (CSP m.m.)
 ```
 
+### Verktyg för låtpotten
+
+Tre skript för att utöka och kontrollera potten. De två sista behöver bara
+anon-nyckeln, inte databaslösenordet.
+
+```bash
+# Vilka kandidater går att SPELA? Kör dem genom serverns egen matchning
+# (_clean_title -> iTunes-sökningen -> _itunes_pick) och släpp bara igenom
+# de som ger en preview-URL. Ut kommer rader klara för en insert-migration.
+node scripts/check-playable.mjs kandidater.json
+
+# Stämmer årtalen? Prövas mot MusicBrainz (release-group typ Single) och
+# Discogs. --detalj visar pressningarna, vilket är det som skiljer
+# "källan känner bara en återutgåva" från "vårt år är fel".
+node scripts/check-years.mjs latar.json --detalj
+
+# Vad kommer faktiskt upp? Skapar ett riktigt rum, sätter urvalet, spelar
+# rundor och läser facit. Flera --span mäter viktningen mellan spann.
+node scripts/play-test.mjs --span 1950-1960 --rundor 12
+```
+
 ---
 
 ## Design
