@@ -527,6 +527,18 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
               🎵 Lyssna och gissa!
             </p>
           )}
+          {/* Avstängt ljud ser ut precis som ett trasigt ljud: rundan rullar på
+              och ingen låt hörs. Ikonen som säger det är liten och sitter i
+              scenens hörn, så under klippet säger vi det rakt ut i stället –
+              med vägen tillbaka på plats. */}
+          {clipPlaying && audio.volume === 0 && (
+            <div className="panel-inset flex flex-wrap items-center justify-center gap-3 p-3">
+              <p className="text-sm text-cream">🔇 Ljudet är avstängt på den här enheten.</p>
+              <NeonButton variant="outline" neon="#1ed760" onClick={() => audio.setVolume(1)}>
+                Slå på ljudet
+              </NeonButton>
+            </div>
+          )}
           {/* Facit visas inte här – det avslöjas i svarspanelen först när alla lag låst. */}
           {audio.error && (beforeStart || clipPlaying) && (
             <p className="panel-inset p-3 text-center text-sm text-magenta">⚠ {audio.error}</p>

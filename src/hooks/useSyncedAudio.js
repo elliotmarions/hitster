@@ -10,11 +10,17 @@ const SILENCE =
 
 // Volymen är LOKAL per enhet (varje spelare spelar sitt eget klipp – inget
 // synkas) och sparas mellan spel. 0–1.
+//
+// NIVÅN sparas, men inte MUTNINGEN. Noll är inte en nivå utan ett tillstånd
+// för stunden ("tyst nu, någon ringer"), och sparades den vaknade appen tyst
+// nästa spelkväll också. Enda signalen var en liten 🔇-ikon i scenens hörn, så
+// det såg ut precis som den här buggen: allt fungerar, ingen låt hörs.
 const VOLUME_KEY = 'hbo:volume'
 function rememberedVolume() {
   try {
     const v = parseFloat(localStorage.getItem(VOLUME_KEY))
-    return Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 1
+    // <= 0 kan bara komma från en gammal sparad mutning – börja med ljud på.
+    return Number.isFinite(v) && v > 0 ? Math.min(1, v) : 1
   } catch {
     return 1
   }
@@ -86,7 +92,8 @@ export function useSyncedAudio(round) {
     setVolumeState(clamped)
     if (audioRef.current) audioRef.current.volume = clamped
     try {
-      localStorage.setItem(VOLUME_KEY, String(clamped))
+      // Bara riktiga nivåer sparas – en mutning gäller den här sidladdningen.
+      if (clamped > 0) localStorage.setItem(VOLUME_KEY, String(clamped))
     } catch {
       /* privat läge e.d. – strunt samma */
     }
