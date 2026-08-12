@@ -37,15 +37,23 @@ export const CATEGORIES = {
     color: 'blue',
     hex: '#33a6ff',
   },
-  // Tightare årtals-kategori (bara i åldersläge, där ±3 blir för lätt när
-  // eran redan är smal). Delar aldrig bräde med approx_year → samma blå färg ok.
+  // Tightare årtals-kategori. Kom till för åldersläget, där ±3 blir för lätt
+  // när eran redan är smal, men går sedan 0084 att välja i vilket rum som helst.
   approx_year_1: {
     key: 'approx_year_1',
     label: 'Årtal ±1 år',
     short: '±1 år',
     desc: 'Gissa utgivningsåret – rätt inom ±1 år räknas.',
-    color: 'blue',
-    hex: '#33a6ff',
+    color: 'cyan',
+    hex: '#22e6e6',
+  },
+  approx_year_5: {
+    key: 'approx_year_5',
+    label: 'Årtal ±5 år',
+    short: '±5 år',
+    desc: 'Gissa utgivningsåret – rätt inom ±5 år räknas.',
+    color: 'indigo',
+    hex: '#6c5cff',
   },
   title: {
     key: 'title',
@@ -55,27 +63,92 @@ export const CATEGORIES = {
     color: 'green',
     hex: '#3ee87b',
   },
-  // Bara i åldersläge: släpptes låten före eller efter ett givet år? Pivot-året
-  // (rounds.pivot_year) slumpas per runda. Vattentät auto-bedömning – året är känt.
+  // Släpptes låten före eller efter ett givet år? Pivot-året (rounds.pivot_year)
+  // slumpas per runda. Vattentät auto-bedömning – året är känt. Färgen är MEDVETET
+  // inte lila längre: sedan 0084 kan den ligga på samma bricka som Årtiondet.
   before_after: {
     key: 'before_after',
     label: 'Före eller efter',
     short: 'Före/efter',
     desc: 'Släpptes låten före eller efter ett givet år?',
-    color: 'purple',
-    hex: '#b14dff',
+    color: 'orange',
+    hex: '#ff8a3c',
   },
+  genre: {
+    key: 'genre',
+    label: 'Genren',
+    short: 'Genre',
+    desc: 'Vilken genre hör låten till?',
+    color: 'lime',
+    hex: '#b6ff3c',
+  },
+  swedish: {
+    key: 'swedish',
+    label: 'Svenskt eller inte',
+    short: 'Svenskt?',
+    desc: 'Är det en svensk eller utländsk låt?',
+    color: 'magenta',
+    hex: '#f04dff',
+  },
+}
+
+// Kategorier med FASTA svarsalternativ – knappar i stället för en skrivruta.
+// Värdena är exakt de strängar servern dömer mot i _judge_answer (0084), så
+// en ändring här måste följas av en migration.
+export const GENRE_CHOICES = [
+  ['pop', 'Pop'],
+  ['rock', 'Rock'],
+  ['hiphop', 'Hiphop/R&B'],
+  ['edm', 'EDM'],
+  ['dansband', 'Dansband/Schlager'],
+]
+export const SWEDISH_CHOICES = [
+  ['svensk', '🇸🇪 Svensk'],
+  ['utländsk', '🌍 Utländsk'],
+]
+
+// Alternativen för en runda, eller null när kategorin skrivs i fritext.
+// before_after får sina etiketter av rundans pivot-år.
+export function choicesFor(category, pivotYear) {
+  if (category === 'genre') return GENRE_CHOICES
+  if (category === 'swedish') return SWEDISH_CHOICES
+  if (category === 'before_after') {
+    return [
+      ['före', `Före ${pivotYear}`],
+      ['efter', `${pivotYear} eller senare`],
+    ]
+  }
+  return null
 }
 
 // Fast ordning – t.ex. discokulans segment.
 export const CATEGORY_ORDER = ['decade', 'artist', 'exact_year', 'approx_year', 'title']
 
+// Allt som går att välja till hjulet, i den ordning en väljare bör visa dem:
+// de fem vanliga först, sedan årtalsvarianterna, sist de två som frågar om
+// låten i stället för året. Speglar _valid_categories (0084).
+export const VALJBARA_KATEGORIER = [
+  'decade',
+  'artist',
+  'exact_year',
+  'approx_year',
+  'title',
+  'approx_year_1',
+  'approx_year_5',
+  'before_after',
+  'genre',
+  'swedish',
+]
+
+// Hjulet och brickan har alltid exakt fem kategorier.
+export const ANTAL_KATEGORIER = 5
+
 // Kategorier som ger sudd-rätt när suddregeln är på: de där svaret ÄR ett
 // årtal. Inte 'decade' (då svarar man ett decennium) och inte 'before_after'
 // (då väljer man sida – en ren gissning träffar rätt varannan gång, och sudd
 // på femtio procents odds är en annan regel än den här).
-// MÅSTE spegla serverns erase_cross (0063).
-export const ERASE_CATEGORIES = ['exact_year', 'approx_year', 'approx_year_1']
+// MÅSTE spegla serverns erase_cross (0063 + 0084).
+export const ERASE_CATEGORIES = ['exact_year', 'approx_year', 'approx_year_1', 'approx_year_5']
 
 // Åldersläge (rummet har ett årsfönster): årtionde + ±3 blir för lätt när eran
 // redan är smal, så de byts mot en tightare ±1 år plus "Före eller efter" (mot
@@ -110,10 +183,21 @@ export function yearSpanWidth(room) {
 
 // Vilket kategori-set gäller för rummet just nu?
 //
-// Åldersläget finns för att en SMAL era gör "Årtionde" och "±3 år" triviala.
-// Det är alltså bredden som motiverar bytet, inte att spannet existerar –
-// 1955–2025 är inget smalt fönster och ska spelas med vanliga hjulet.
+// Har värden valt fem egna gäller de (0084). Annars automatiken: åldersläget
+// finns för att en SMAL era gör "Årtionde" och "±3 år" triviala. Det är alltså
+// bredden som motiverar bytet, inte att spannet existerar – 1955–2025 är inget
+// smalt fönster och ska spelas med vanliga hjulet.
+// MÅSTE spegla serverns _room_categories.
 export function categoryOrderFor(room) {
+  const valda = room?.categories
+  if (
+    Array.isArray(valda) &&
+    valda.length === ANTAL_KATEGORIER &&
+    new Set(valda).size === ANTAL_KATEGORIER &&
+    valda.every((k) => VALJBARA_KATEGORIER.includes(k))
+  ) {
+    return valda
+  }
   const bredd = yearSpanWidth(room)
   return bredd !== null && bredd < ALDERSLAGE_BREDD ? AGE_CATEGORY_ORDER : CATEGORY_ORDER
 }

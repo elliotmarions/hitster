@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CATEGORIES, ERASE_CATEGORIES } from '../lib/constants'
+import { CATEGORIES, ERASE_CATEGORIES, choicesFor } from '../lib/constants'
 import NeonButton from './ui/NeonButton.jsx'
 import TrackReveal from './TrackReveal.jsx'
 
@@ -77,21 +77,25 @@ export default function AnswerPanel({
   const isYearCat =
     round.category === 'exact_year' ||
     round.category === 'approx_year' ||
-    round.category === 'approx_year_1'
+    round.category === 'approx_year_1' ||
+    round.category === 'approx_year_5'
   const yearFormatBad = isYearCat && text.trim() !== '' && !/(?:19|20)\d{2}/.test(text)
 
-  // "Före eller efter" – ett binärt val mot ett känt pivot-år (rounds.pivot_year).
-  const isBeforeAfter = round.category === 'before_after'
+  // Kategorier med fasta alternativ (före/efter, genre, svenskt) svaras med
+  // knappar. Värdena är serverns egna – se choicesFor i constants.
   const pivot = round.pivot_year
+  const choices = choicesFor(round.category, pivot)
+  const isChoice = Boolean(choices)
 
   // Bonusruta (0064): är suddregeln på och rundan INTE handlar om årtal får man
   // gissa året vid sidan av. Exakt träff ger ett sudd, oberoende av huvudsvaret.
   // På årtalskategorierna vore rutan en dubblett av svaret – då visas den inte.
   const showBonus = eraseRuleOn && !ERASE_CATEGORIES.includes(round.category)
   const bonusFormatBad = bonus.trim() !== '' && !/^(?:19|20)\d{2}$/.test(bonus.trim())
-  // Snyggare etikett för ett före/efter-svar vid avslöjandet.
-  const beforeAfterLabel = (val) =>
-    val === 'före' ? `Före ${pivot}` : val === 'efter' ? `${pivot} eller senare` : val
+  // Ett knappsvar lagras som sitt värde ('efter', 'edm', 'svensk') – visa
+  // etiketten i stället, både för egen del och vid avslöjandet.
+  const choiceLabel = (val) =>
+    choices?.find(([v]) => v === val)?.[1] ?? val
 
   // --- Avslöjat: visa allas svar + facit ---
   if (revealed) {
@@ -131,7 +135,7 @@ export default function AnswerPanel({
                 </div>
                 <p className="mt-0.5 font-display text-lg text-cream break-words">
                   {a.answer?.trim() ? (
-                    isBeforeAfter ? beforeAfterLabel(a.answer) : a.answer
+                    isChoice ? choiceLabel(a.answer) : a.answer
                   ) : (
                     <span className="text-muted">— inget svar —</span>
                   )}
@@ -299,7 +303,7 @@ export default function AnswerPanel({
                   <div className="mt-2">
                     <p className="font-display text-lg text-cream break-words">
                       {mine?.answer?.trim() ? (
-                        isBeforeAfter ? beforeAfterLabel(mine.answer) : mine.answer
+                        isChoice ? choiceLabel(mine.answer) : mine.answer
                       ) : mine ? (
                         <span className="text-muted">— inget svar —</span>
                       ) : (
@@ -331,16 +335,21 @@ export default function AnswerPanel({
                     </p>
                     <p className="text-xs text-muted">Resonera i lagchatten – kaptenen låser in.</p>
                   </div>
-                ) : isBeforeAfter ? (
+                ) : isChoice ? (
                   <div className="mt-2 space-y-2">
                     <p className="text-sm text-cream">
-                      Släpptes låten <b>före {pivot}</b> eller <b>{pivot} och senare</b>?
+                      {round.category === 'before_after' ? (
+                        <>
+                          Släpptes låten <b>före {pivot}</b> eller <b>{pivot} och senare</b>?
+                        </>
+                      ) : (
+                        cat?.desc
+                      )}
                     </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        ['före', `Före ${pivot}`],
-                        ['efter', `${pivot} eller senare`],
-                      ].map(([val, lbl]) => (
+                    {/* Två alternativ ligger bredvid varandra, fem staplas –
+                        annars blir genreknapparna för smala för sina namn. */}
+                    <div className={choices.length > 2 ? 'grid gap-2' : 'grid grid-cols-2 gap-2'}>
+                      {choices.map(([val, lbl]) => (
                         <button
                           key={val}
                           type="button"
@@ -348,8 +357,8 @@ export default function AnswerPanel({
                           aria-pressed={text === val}
                           className="panel-inset cursor-pointer p-3 text-center font-display text-cream transition"
                           style={{
-                            borderColor: text === val ? '#b14dff' : undefined,
-                            boxShadow: text === val ? '0 0 18px -8px #b14dff' : undefined,
+                            borderColor: text === val ? cat?.hex : undefined,
+                            boxShadow: text === val ? `0 0 18px -8px ${cat?.hex}` : undefined,
                           }}
                         >
                           {lbl}
@@ -360,7 +369,7 @@ export default function AnswerPanel({
                     <NeonButton
                       onClick={() => onLock(text, bonus.trim())}
                       disabled={
-                        busy || (text !== 'före' && text !== 'efter') || bonusFormatBad
+                        busy || !choices.some(([v]) => v === text) || bonusFormatBad
                       }
                       className="w-full"
                     >
