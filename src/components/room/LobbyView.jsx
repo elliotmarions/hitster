@@ -17,9 +17,12 @@ import CopyButton from '../ui/CopyButton.jsx'
 import SwedishFlag from '../ui/SwedishFlag.jsx'
 import TeamChat from '../TeamChat.jsx'
 import YearSpanPicker from './YearSpanPicker.jsx'
+import WheelPicker from './WheelPicker.jsx'
 import {
+  CATEGORIES,
   POOL_CATEGORIES,
   TOMT_VAL,
+  categoryOrderFor,
   isSelected,
   selectionEmpty,
   selectionFrom,
@@ -57,6 +60,9 @@ export default function LobbyView({
   const [lagFraganAvfardad, setLagFraganAvfardad] = useState(false)
   // Antal låtar i exakt den kombination som är vald (språk + år + genre).
   const [selCount, setSelCount] = useState(null)
+  // Lobbyn är två steg: musiken först, hjulet sedan. Bara värden går vidare –
+  // gästerna ser musikvyn tills spelet startar, med hjulet sammanfattat i den.
+  const [steg, setSteg] = useState(1)
   // Optimistiskt lager: valet ska synas direkt vid klick, utan att vänta på
   // server-svar + realtidsstuds. Rensas när riktiga room-proppen hunnit ikapp.
   const [optimistic, setOptimistic] = useState(null)
@@ -252,6 +258,14 @@ export default function LobbyView({
   // som skapades innan chippen klickades.
   const skrivArsspann = (bands) => skrivVal({ year_bands: bands })
 
+  // Hjulet: null = automatiken (klassiska fem, eller det svårare setet om eran
+  // är smal). En lista måste vara exakt fem giltiga nycklar – kolumnens check
+  // (0084) avvisar allt annat, och skrivVal fångar det.
+  const skrivHjul = (cats) => skrivVal({ categories: cats })
+
+  // De fem kategorierna som gäller just nu, för sammanfattningen i steg 1.
+  const hjulet = categoryOrderFor(view)
+
   const tomtVal = selectionEmpty(view)
 
   // En kategori-knapp – delas av de breda potterna, åldersspannen och genrerna.
@@ -336,6 +350,14 @@ export default function LobbyView({
           </div>
         </div>
 
+        {steg === 2 && (
+          <div className="mt-6">
+            <WheelPicker room={view} isHost={isHost} busy={busy} onValj={skrivHjul} />
+          </div>
+        )}
+
+        {steg === 1 && (
+        <>
         {/* Urval – fritt multival. Union inom varje rad, snitt mellan raderna:
             "Svenska + 20–29 år + 30–39 år + Pop" = svensk pop ur endera eran. */}
         <div className="mt-6">
@@ -410,6 +432,25 @@ export default function LobbyView({
                 25 kan brickan bli svår att fylla.
               </p>
             )}
+
+            {/* Hjulet står här även för gästerna: kategorierna avgör spelet
+                lika mycket som potten, och den som väntar ska kunna se vad
+                som gäller utan att fråga. Värden ändrar dem i steg 2. */}
+            <div className="mt-4 flex flex-wrap items-center gap-1.5">
+              <span className="label mr-1 opacity-70">Hjulet</span>
+              {hjulet.map((c) => (
+                <span
+                  key={c}
+                  className="rounded-full px-2 py-0.5 text-[11px]"
+                  style={{
+                    border: `1px solid ${CATEGORIES[c]?.hex}66`,
+                    color: CATEGORIES[c]?.hex,
+                  }}
+                >
+                  {CATEGORIES[c]?.short}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -458,16 +499,28 @@ export default function LobbyView({
             </button>
           </div>
         )}
+        </>
+        )}
 
         {err && <p className="mt-4 text-sm text-magenta">{err}</p>}
 
         <div className="mt-6 flex flex-wrap items-center gap-3">
-          {isHost ? (
-            <NeonButton onClick={handleStart} disabled={busy}>
-              {busy ? 'Startar…' : 'Starta spel'}
-            </NeonButton>
-          ) : (
+          {!isHost ? (
             <span className="text-sm text-muted">Väntar på att värden startar spelet…</span>
+          ) : steg === 1 ? (
+            /* Musiken är vald – nästa fråga är vad hjulet ska fråga om.
+               Starten ligger i steg 2, så ingen råkar hoppa förbi hjulet
+               utan att ha sett det. */
+            <NeonButton onClick={() => setSteg(2)}>Vidare: välj hjul →</NeonButton>
+          ) : (
+            <>
+              <NeonButton onClick={handleStart} disabled={busy}>
+                {busy ? 'Startar…' : 'Starta spel'}
+              </NeonButton>
+              <NeonButton variant="ghost" onClick={() => setSteg(1)} disabled={busy}>
+                ← Tillbaka
+              </NeonButton>
+            </>
           )}
           <NeonButton variant="ghost" onClick={() => setConfirmLeave(true)}>
             Lämna rummet

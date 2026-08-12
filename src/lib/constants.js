@@ -162,6 +162,11 @@ export const AGE_CATEGORY_ORDER = [
   'before_after',
 ]
 
+// "Svårt hjul" i lobbyn är SAMMA fem. Det var åldersläget som tog fram dem,
+// och exakt de frågorna – inget årtionde, inget ±3 – är vad ett svårare hjul
+// ska ha. Två namn på samma sak vore två saker att hålla i synk.
+export const SVART_HJUL = AGE_CATEGORY_ORDER
+
 // Ett spann smalare än så här spelas i åldersläge. Gränsen är exklusiv:
 // 19 år ger åldersläge, 20 ger det vanliga hjulet.
 export const ALDERSLAGE_BREDD = 20
