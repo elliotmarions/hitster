@@ -33,13 +33,18 @@ export default function WheelPicker({ room, isHost, busy = false, onValj }) {
   const valda = Array.isArray(room?.categories) ? room.categories : null
   const aktiv = !valda ? 'original' : sammaSet(valda, SVART_HJUL) ? 'svart' : 'eget'
 
-  // Utkastet för "bygg själv" börjar i det som gäller nu, så man ändrar i
-  // stället för att börja om.
-  const [egna, setEgna] = useState(() => (valda ? [...valda] : categoryOrderFor(room)))
+  // Har rummet redan en egen uppsättning ändrar man i den. Annars börjar man
+  // TOMT: förifyllt med originalhjulet såg ut som ett förslag man skulle sålla
+  // i, fast meningen är att man fyller i själv.
+  const [egna, setEgna] = useState(() => (valda ? [...valda] : []))
   const [oppetEget, setOppetEget] = useState(aktiv === 'eget')
   const [hint, setHint] = useState('')
 
-  const hjulet = aktiv === 'eget' || oppetEget ? egna : categoryOrderFor(room)
+  // Hjulet visar utkastet så fort man börjat bygga. Ett TOMT utkast visar i
+  // stället det som faktiskt gäller – rummet spelar ju fortfarande på den
+  // sparade uppsättningen tills fem nya är i.
+  const bygger = (aktiv === 'eget' || oppetEget) && egna.length > 0
+  const hjulet = bygger ? egna : categoryOrderFor(room)
 
   // Gratispoäng: två av kategorierna har samma svar hela matchen om urvalet
   // redan låst dem. Servern hindrar det inte – urvalet kan ändras efteråt –
@@ -62,8 +67,10 @@ export default function WheelPicker({ room, isHost, busy = false, onValj }) {
       setOppetEget(false)
       onValj([...SVART_HJUL])
     } else {
+      // Öppnar bara byggaren. Den sparade uppsättningen står kvar tills fem
+      // egna är i – att skriva något vid själva klicket vore att spara ett val
+      // man inte gjort än.
       setOppetEget(true)
-      if (egna.length === ANTAL_KATEGORIER) onValj([...egna])
     }
   }
 
@@ -105,23 +112,27 @@ export default function WheelPicker({ room, isHost, busy = false, onValj }) {
       <div className="grid items-center gap-5 sm:grid-cols-[1fr_auto]">
         <div className="space-y-3">
           {kort.map((k) => {
-            const vald = (oppetEget ? 'eget' : aktiv) === k.key
+            // Ramen följer kortet man står i, chippen det som FAKTISKT är
+            // sparat. Öppnar man byggaren med ett tomt utkast spelar rummet
+            // fortfarande på sin gamla uppsättning, och då vore "Valt" en lögn.
+            const oppen = (oppetEget ? 'eget' : aktiv) === k.key
+            const sparad = aktiv === k.key
             return (
               <button
                 key={k.key}
                 type="button"
                 disabled={!isHost || busy}
                 onClick={() => valjKort(k.key)}
-                aria-pressed={vald}
+                aria-pressed={oppen}
                 className="panel-inset w-full cursor-pointer p-4 text-left transition disabled:cursor-default disabled:opacity-60"
                 style={{
-                  borderColor: vald ? '#22e6e6' : undefined,
-                  boxShadow: vald ? '0 0 24px -10px #22e6e6' : undefined,
+                  borderColor: oppen ? '#22e6e6' : undefined,
+                  boxShadow: oppen ? '0 0 24px -10px #22e6e6' : undefined,
                 }}
               >
                 <div className="flex items-center justify-between gap-3">
                   <span className="font-display text-lg text-cream">{k.namn}</span>
-                  {vald && (
+                  {sparad && (
                     <span className="chip shrink-0" style={{ '--neon': '#22e6e6' }}>
                       Valt
                     </span>
