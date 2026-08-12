@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { CATEGORIES, CATEGORY_ORDER, SPIN_MS } from '../lib/constants'
 
 // Geometri i SVG-koordinater (viewBox 240x240).
@@ -26,7 +26,14 @@ const BULBS = Array.from({ length: 30 }, (_, i) => pointAt(i * 12, R + 6))
 // kategorier i åldersläge (se AGE_CATEGORY_ORDER). Segmentantalet följer med
 // automatiskt om setet någon gång ändrar storlek.
 export default function DiscoWheel({ round, order = CATEGORY_ORDER, size = 300 }) {
-  const N = order.length
+  // Bara kategorier vi känner igen ritas – en okänd nyckel (gammalt rum, ny
+  // klient) ska inte kunna slå ut hjulet.
+  const segment = useMemo(() => order.filter((k) => CATEGORIES[k]), [order])
+  // Ett tomt hjul är ett giltigt mellanläge: i lobbyns "bygg själv" står det
+  // utan segment tills den första kategorin klickas i. Utan golvet blir SEG
+  // oändligt och `i % 0` = NaN, vilket slog ut hela sidan när man klickade
+  // bort alla fem.
+  const N = Math.max(segment.length, 1)
   const SEG = 360 / N
   const [rotation, setRotation] = useState(0)
   const [spinning, setSpinning] = useState(false)
@@ -37,7 +44,7 @@ export default function DiscoWheel({ round, order = CATEGORY_ORDER, size = 300 }
   useEffect(() => {
     if (!round?.round_number || round.round_number === lastRound.current) return
     lastRound.current = round.round_number
-    const seg = order.indexOf(round.category)
+    const seg = segment.indexOf(round.category)
     if (seg < 0) return
     const target = (((-seg * SEG) % 360) + 360) % 360 // önskad slutorientering (mod 360)
     setRotation((prev) => {
@@ -48,7 +55,7 @@ export default function DiscoWheel({ round, order = CATEGORY_ORDER, size = 300 }
     setSpinning(true)
     const t = setTimeout(() => setSpinning(false), SPIN_MS)
     return () => clearTimeout(t)
-  }, [round?.round_number, round?.category, order, SEG])
+  }, [round?.round_number, round?.category, segment, SEG])
 
   const landedCat = round && !spinning ? CATEGORIES[round.category] : null
 
@@ -74,7 +81,7 @@ export default function DiscoWheel({ round, order = CATEGORY_ORDER, size = 300 }
             cx={x}
             cy={y}
             r={2.4}
-            fill={CATEGORIES[order[i % N]].hex}
+            fill={CATEGORIES[segment[i % N]]?.hex ?? '#3a2a5c'}
             opacity={spinning ? 0.9 : 0.55}
           />
         ))}
@@ -90,7 +97,7 @@ export default function DiscoWheel({ round, order = CATEGORY_ORDER, size = 300 }
               : 'none',
           }}
         >
-          {order.map((key, i) => {
+          {segment.map((key, i) => {
             const cat = CATEGORIES[key]
             const [lx, ly] = pointAt(i * SEG, LABEL_R)
             return (
