@@ -151,17 +151,21 @@ export const GRID = 5 // brickan är 5x5 (fritt slumpad, exakt 5 rutor per kateg
 //
 //  Genrerna filtrerar på track_pool.genre via _genre_key() server-side (0043).
 //  Deezers etiketter är grova, så mappningen slår ihop det folk ändå uppfattar
-//  som samma sak – "Alternativmusik" och "Metal" ligger under Rock. Antalen
-//  hämtas live från track_pool_genre_counts(), inte hårdkodade, eftersom potten
-//  växer.
+//  som samma sak – "Alternativmusik" och "Metal" ligger under Rock, och sedan
+//  0082 ligger R&B under Hiphop (chipet var pottens minsta med god marginal).
+//  'edm' hette 'dance' fram till 0082; gamla rum översätts av _genre_alias().
+//  Dansband/Schlager är vår EGEN etikett – strömningstjänsterna har ingen
+//  sådan genre, så låtarna är märkta artistvis (0082) och importerade (0083).
+//  Antalet för det VALDA urvalet hämtas live från
+//  track_pool_selection_count(), aldrig hårdkodat: potten växer.
 export const POOL_CATEGORIES = [
   { key: 'sv', group: 'lang', label: 'Svenska', hint: 'Svenska låtar/artister', swedish: true, neon: '#ffd23f' },
   { key: 'intl', group: 'lang', label: '🌍 Utländska', hint: 'Internationella låtar/artister', swedish: false, neon: '#22e6e6' },
   { key: 'pop', group: 'genre', label: 'Pop', genre: 'pop', neon: '#ff4d9d' },
   { key: 'rock', group: 'genre', label: 'Rock', genre: 'rock', neon: '#ff8a3c' },
-  { key: 'hiphop', group: 'genre', label: 'Hiphop', genre: 'hiphop', neon: '#b6ff3c' },
-  { key: 'dance', group: 'genre', label: 'Dance', genre: 'dance', neon: '#22e6e6' },
-  { key: 'rnb', group: 'genre', label: 'R&B', genre: 'rnb', neon: '#b14dff' },
+  { key: 'hiphop', group: 'genre', label: 'Hiphop/R&B', genre: 'hiphop', neon: '#b6ff3c' },
+  { key: 'edm', group: 'genre', label: 'EDM', genre: 'edm', neon: '#22e6e6' },
+  { key: 'dansband', group: 'genre', label: 'Dansband/Schlager', genre: 'dansband', neon: '#b14dff' },
 ]
 
 // Rummets val i den form servern vill ha det. `swedish` har TRE lägen (0058):
