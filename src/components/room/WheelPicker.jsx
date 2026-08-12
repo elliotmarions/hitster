@@ -82,25 +82,17 @@ export default function WheelPicker({ room, isHost, busy = false, onValj }) {
     if (nya.length === ANTAL_KATEGORIER) onValj(nya)
   }
 
+  // Korten säger vad de ger med kategorinamnen, inte med en mening till.
+  // Tre rader beskrivande text ovanför tio rader beskrivande text gjorde vyn
+  // omöjlig att överblicka – och namnen är vad man faktiskt jämför.
   const kort = [
     {
       key: 'original',
       namn: 'Originalhjul',
-      text: 'Spelet som det alltid har sett ut.',
       cats: categoryOrderFor({ ...room, categories: null }),
     },
-    {
-      key: 'svart',
-      namn: 'Svårt hjul',
-      text: 'Inget årtionde och inget ±3 – exakt årtal, ±1 år och före/efter.',
-      cats: SVART_HJUL,
-    },
-    {
-      key: 'eget',
-      namn: 'Bygg själv',
-      text: 'Fem av tio kategorier, precis som ni vill ha dem.',
-      cats: egna,
-    },
+    { key: 'svart', namn: 'Svårt hjul', cats: SVART_HJUL },
+    { key: 'eget', namn: 'Bygg själv', cats: egna },
   ]
 
   return (
@@ -108,9 +100,6 @@ export default function WheelPicker({ room, isHost, busy = false, onValj }) {
       <div>
         <p className="label">Steg 2 av 2</p>
         <h2 className="mt-1 font-display text-2xl text-cream">Vad ska hjulet fråga om?</h2>
-        <p className="mt-1 text-sm text-muted">
-          Fem kategorier hamnar på snurran och på allas brickor.
-        </p>
       </div>
 
       <div className="grid items-center gap-5 sm:grid-cols-[1fr_auto]">
@@ -138,7 +127,6 @@ export default function WheelPicker({ room, isHost, busy = false, onValj }) {
                     </span>
                   )}
                 </div>
-                <p className="mt-0.5 text-xs text-muted">{k.text}</p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {k.cats.map((c) => (
                     <span
@@ -177,6 +165,8 @@ export default function WheelPicker({ room, isHost, busy = false, onValj }) {
               {egna.length} av {ANTAL_KATEGORIER}
             </span>
           </div>
+          {/* Bara namnen. Tio förklaringar under tio knappar sa mindre än de
+              tio namnen gjorde – frågan står i klartext i spelet ändå. */}
           <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
             {VALJBARA_KATEGORIER.map((key) => {
               const c = CATEGORIES[key]
@@ -188,15 +178,15 @@ export default function WheelPicker({ room, isHost, busy = false, onValj }) {
                   disabled={!isHost || busy}
                   onClick={() => toggla(key)}
                   aria-pressed={pa}
-                  className="panel-inset cursor-pointer p-2.5 text-left transition disabled:cursor-default disabled:opacity-60"
+                  title={c.desc}
+                  className="panel-inset cursor-pointer px-3 py-2 text-left font-display text-sm text-cream transition disabled:cursor-default disabled:opacity-60"
                   style={{
                     borderColor: pa ? c.hex : undefined,
                     boxShadow: pa ? `0 0 20px -10px ${c.hex}` : undefined,
                     opacity: !pa && egna.length >= ANTAL_KATEGORIER ? 0.5 : undefined,
                   }}
                 >
-                  <span className="block font-display text-sm text-cream">{c.label}</span>
-                  <span className="mt-0.5 block text-[11px] text-muted">{c.desc}</span>
+                  {c.label}
                 </button>
               )
             })}
