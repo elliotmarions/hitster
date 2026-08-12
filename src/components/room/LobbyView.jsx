@@ -342,7 +342,7 @@ export default function LobbyView({
         </div>
 
         <div className="mt-6">
-          <p className="label mb-2">Rumskod – dela med gänget</p>
+          <p className="label mb-2">Rumskod</p>
           <div className="flex flex-wrap items-center gap-3">
             <div className="code-badge px-5 py-3 text-3xl">{room.code}</div>
             <CopyButton value={room.code} label="Kopiera kod" />
