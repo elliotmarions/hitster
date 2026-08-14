@@ -19,10 +19,8 @@ import TeamChat from '../TeamChat.jsx'
 import YearSpanPicker from './YearSpanPicker.jsx'
 import WheelPicker from './WheelPicker.jsx'
 import {
-  CATEGORIES,
   POOL_CATEGORIES,
   TOMT_VAL,
-  categoryOrderFor,
   isSelected,
   selectionEmpty,
   selectionFrom,
@@ -61,7 +59,7 @@ export default function LobbyView({
   // Antal låtar i exakt den kombination som är vald (språk + år + genre).
   const [selCount, setSelCount] = useState(null)
   // Lobbyn är två steg: musiken först, hjulet sedan. Bara värden går vidare –
-  // gästerna ser musikvyn tills spelet startar, med hjulet sammanfattat i den.
+  // gästerna ser musikvyn tills spelet startar.
   const [steg, setSteg] = useState(1)
   // Optimistiskt lager: valet ska synas direkt vid klick, utan att vänta på
   // server-svar + realtidsstuds. Rensas när riktiga room-proppen hunnit ikapp.
@@ -263,9 +261,6 @@ export default function LobbyView({
   // (0084) avvisar allt annat, och skrivVal fångar det.
   const skrivHjul = (cats) => skrivVal({ categories: cats })
 
-  // De fem kategorierna som gäller just nu, för sammanfattningen i steg 1.
-  const hjulet = categoryOrderFor(view)
-
   const tomtVal = selectionEmpty(view)
 
   // En kategori-knapp – delas av de breda potterna, åldersspannen och genrerna.
@@ -433,24 +428,6 @@ export default function LobbyView({
               </p>
             )}
 
-            {/* Hjulet står här även för gästerna: kategorierna avgör spelet
-                lika mycket som potten, och den som väntar ska kunna se vad
-                som gäller utan att fråga. Värden ändrar dem i steg 2. */}
-            <div className="mt-4 flex flex-wrap items-center gap-1.5">
-              <span className="label mr-1 opacity-70">Hjulet</span>
-              {hjulet.map((c) => (
-                <span
-                  key={c}
-                  className="rounded-full px-2 py-0.5 text-[11px]"
-                  style={{
-                    border: `1px solid ${CATEGORIES[c]?.hex}66`,
-                    color: CATEGORIES[c]?.hex,
-                  }}
-                >
-                  {CATEGORIES[c]?.short}
-                </span>
-              ))}
-            </div>
           </div>
         </div>
 
