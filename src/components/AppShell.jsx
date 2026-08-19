@@ -1,13 +1,22 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useNavGuardRunner } from '../context/NavGuardContext.jsx'
+import { useVolume } from '../context/VolumeContext.jsx'
 import DiscoBall from './DiscoBall.jsx'
 import AccountBadge from './AccountBadge.jsx'
+import VolumeControl from './VolumeControl.jsx'
 
 export default function AppShell({ children }) {
   // Mitt i en match är logotypen inte en genväg hem utan en väg UT ur spelet.
   // Har vyn registrerat en spärr ställer den frågan i stället – samma ruta som
   // "Lämna". Utanför rummet finns ingen spärr och länken beter sig som förut.
   const runGuard = useNavGuardRunner()
+
+  // Volymen hörde tidigare bara hemma i spelvyn, så den gick inte att ändra i
+  // lobbyn eller på startsidan. Nu sitter reglaget i headern – utom i rummet,
+  // där scenen har sitt eget i hörnet vid discokulan. Två kontroller för samma
+  // volym hade bara sett trasigt ut, även om de nu läser samma värde.
+  const { volume, setVolume } = useVolume()
+  const inRoom = useLocation().pathname.startsWith('/rum/')
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -28,7 +37,10 @@ export default function AppShell({ children }) {
               Låtsnurran
             </span>
           </Link>
-          <AccountBadge />
+          <div className="flex items-center gap-2">
+            {!inRoom && <VolumeControl volume={volume} setVolume={setVolume} />}
+            <AccountBadge />
+          </div>
         </div>
       </header>
 

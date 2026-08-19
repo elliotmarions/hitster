@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { TIMER_SECONDS } from '../lib/constants'
+import { useVolume } from '../context/VolumeContext.jsx'
 import { serverNow, syncServerTime } from '../lib/serverTime'
 
 // Kort tyst klipp – spelas vid "Aktivera ljud"-klicket för att låsa upp
@@ -7,24 +8,6 @@ import { serverNow, syncServerTime } from '../lib/serverTime'
 // utan eget klick) får ljuda trots webbläsarens autoplay-spärr.
 const SILENCE =
   'data:audio/wav;base64,UklGRnQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YVAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA=='
-
-// Volymen är LOKAL per enhet (varje spelare spelar sitt eget klipp – inget
-// synkas) och sparas mellan spel. 0–1.
-//
-// NIVÅN sparas, men inte MUTNINGEN. Noll är inte en nivå utan ett tillstånd
-// för stunden ("tyst nu, någon ringer"), och sparades den vaknade appen tyst
-// nästa spelkväll också. Enda signalen var en liten 🔇-ikon i scenens hörn, så
-// det såg ut precis som den här buggen: allt fungerar, ingen låt hörs.
-const VOLUME_KEY = 'hbo:volume'
-function rememberedVolume() {
-  try {
-    const v = parseFloat(localStorage.getItem(VOLUME_KEY))
-    // <= 0 kan bara komma från en gammal sparad mutning – börja med ljud på.
-    return Number.isFinite(v) && v > 0 ? Math.min(1, v) : 1
-  } catch {
-    return 1
-  }
-}
 
 // Hur mycket klippet får ligga fel innan vi spolar. Under detta hörs ingen
 // skillnad, och en onödig sökning hackar till ljudet.
@@ -72,7 +55,8 @@ export function useSyncedAudio(round) {
   // per sidladdning och kan inte sparas, så den får inte heller låtsas sparas.
   const [ready, setReady] = useState(false)
   const [error, setError] = useState('')
-  const [volume, setVolumeState] = useState(rememberedVolume)
+  // Volymen bor i VolumeContext så headern kan ändra den utanför spelvyn.
+  const { volume, setVolume } = useVolume()
   const volumeRef = useRef(volume) // senaste volymen åt lazily skapade element
 
   function getAudio() {
@@ -85,19 +69,13 @@ export function useSyncedAudio(round) {
     return audioRef.current
   }
 
-  // Justera volymen (0–1): applicera live, spara per enhet, minns för nya element.
-  const setVolume = useCallback((v) => {
-    const clamped = Math.min(1, Math.max(0, Number(v) || 0))
-    volumeRef.current = clamped
-    setVolumeState(clamped)
-    if (audioRef.current) audioRef.current.volume = clamped
-    try {
-      // Bara riktiga nivåer sparas – en mutning gäller den här sidladdningen.
-      if (clamped > 0) localStorage.setItem(VOLUME_KEY, String(clamped))
-    } catch {
-      /* privat läge e.d. – strunt samma */
-    }
-  }, [])
+  // Applicera volymen live och minns den åt element som skapas senare. Ändringen
+  // kan komma från scenens reglage likaväl som från headerns – båda skriver till
+  // samma context.
+  useEffect(() => {
+    volumeRef.current = volume
+    if (audioRef.current) audioRef.current.volume = volume
+  }, [volume])
 
   // Mät klockskillnaden mot servern en gång per sidladdning.
   useEffect(() => {

@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
+import { VolumeProvider } from './context/VolumeContext.jsx'
 import { syncServerTime } from './lib/serverTime.js'
 
 // Mät klockavvikelsen redan vid start, så offseten är klar långt innan någon
@@ -14,7 +15,9 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <App />
+        <VolumeProvider>
+          <App />
+        </VolumeProvider>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,
