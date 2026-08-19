@@ -4,6 +4,11 @@ import { useAuth } from '../context/AuthContext.jsx'
 import { useNavGuardRunner } from '../context/NavGuardContext.jsx'
 import NeonButton from './ui/NeonButton.jsx'
 
+/** Första tecknet i namnet, versalt. Array.from klarar å/ä/ö och emoji. */
+function initialOf(label) {
+  return (Array.from(label.trim())[0] || '?').toUpperCase()
+}
+
 /**
  * En rad i kontomenyn. Ser likadan ut oavsett vart den leder, så menyn läses
  * som en lista och inte som en samling lösa länkar.
@@ -44,19 +49,55 @@ export default function AccountBadge() {
     useAuth()
   const [open, setOpen] = useState(false)
   const rootRef = useRef(null)
+  const menuRef = useRef(null)
+  const triggerRef = useRef(null)
   // Mitt i en match är varje rad i menyn en väg UT ur spelet, precis som
   // logotypen. Samma spärr gäller därför här: rummet får ställa sin fråga
   // först. (Gamla "Profil"-länken gick förbi den och slängde ut spelaren.)
   const runGuard = useNavGuardRunner()
 
-  // Escape stänger menyn, och fokus går tillbaka till chipen. Utan det satt
-  // man fast i menyn så fort man öppnat den med tangentbordet.
+  // Klick utanför stänger menyn. Samma recept som VolumeControl använder – en
+  // pointerdown-lyssnare och en ref runt hela härligheten. Tidigare låg här en
+  // osynlig heltäckande knapp i stället, som dessutom la sig i tabbordningen.
+  useEffect(() => {
+    if (!open) return
+    function onPointerDown(e) {
+      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [open])
+
+  // Tangentbord i menyn: Escape stänger och lämnar tillbaka fokus, piltangenter
+  // vandrar mellan raderna. Utan pilarna nådde man raderna bara med Tab, och
+  // Tab tog en vidare ut ur menyn i stället för runt i den.
   useEffect(() => {
     if (!open) return
     function onKey(e) {
-      if (e.key !== 'Escape') return
-      setOpen(false)
-      rootRef.current?.querySelector('button')?.focus()
+      if (e.key === 'Escape') {
+        setOpen(false)
+        triggerRef.current?.focus()
+        return
+      }
+      const keys = ['ArrowDown', 'ArrowUp', 'Home', 'End']
+      if (!keys.includes(e.key)) return
+      const items = Array.from(menuRef.current?.querySelectorAll('[role="menuitem"]') ?? [])
+      if (!items.length) return
+      e.preventDefault()
+      const at = items.indexOf(document.activeElement)
+      const next =
+        e.key === 'Home'
+          ? 0
+          : e.key === 'End'
+            ? items.length - 1
+            : e.key === 'ArrowDown'
+              ? at < 0
+                ? 0
+                : (at + 1) % items.length
+              : at < 0
+                ? items.length - 1
+                : (at - 1 + items.length) % items.length
+      items[next].focus()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -92,13 +133,20 @@ export default function AccountBadge() {
   return (
     <div className="relative" ref={rootRef}>
       <button
+        ref={triggerRef}
         type="button"
-        className="chip cursor-pointer transition hover:brightness-125"
+        className="chip cursor-pointer !pl-1 transition hover:brightness-125"
         style={{ '--neon': '#b6ff3c' }}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
       >
+        <span
+          aria-hidden
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-lime/20 text-[0.7rem] text-lime"
+        >
+          {initialOf(badgeLabel)}
+        </span>
         <span className="max-w-[9rem] truncate">{badgeLabel}</span>
         {needsName && (
           <span
@@ -113,57 +161,56 @@ export default function AccountBadge() {
       </button>
 
       {open && (
-        <>
-          {/* klick-utanför-yta */}
-          <button
-            type="button"
-            aria-label="Stäng"
-            className="fixed inset-0 z-30 cursor-default"
-            onClick={close}
-          />
-          <div
-            role="menu"
-            aria-label="Kontomeny"
-            className="panel absolute right-0 z-40 mt-2 w-72 overflow-hidden"
-          >
-            {/* Vem är inloggad – överst, där man tittar först. */}
-            <div className="border-b border-white/10 px-4 py-3.5">
-              <p className="label">Inloggad</p>
-              <p className="mt-1 truncate font-display text-cream">{badgeLabel}</p>
-              <p className="mt-0.5 truncate text-xs text-muted">{accountEmail}</p>
-            </div>
-
-            <nav className="space-y-0.5 p-2">
-              <MenuRow
-                to="/profil"
-                onClick={navigateAway}
-                hint={needsName ? 'Välj ett visningsnamn' : 'Namn och statistik'}
-              >
-                Min profil
-              </MenuRow>
-              <MenuRow to="/nytt-losenord" onClick={navigateAway} hint="Välj ett nytt lösenord">
-                Byt lösenord
-              </MenuRow>
-              <MenuRow to="/" onClick={navigateAway} hint="Skapa eller gå med i ett rum">
-                Starta ett spel
-              </MenuRow>
-            </nav>
-
-            <div className="border-t border-white/10 p-2">
-              <NeonButton
-                variant="ghost"
-                className="w-full"
-                role="menuitem"
-                onClick={async () => {
-                  await signOut()
-                  close()
-                }}
-              >
-                Logga ut
-              </NeonButton>
-            </div>
+        <div
+          ref={menuRef}
+          role="menu"
+          aria-label="Kontomeny"
+          className="panel absolute right-0 z-40 mt-2 w-72 overflow-hidden"
+        >
+          {/* Vem är inloggad – överst, där man tittar först. */}
+          <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3.5">
+            <span
+              aria-hidden
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-lime/15 font-display text-lg text-lime shadow-[0_0_18px_-6px_#b6ff3c]"
+            >
+              {initialOf(badgeLabel)}
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate font-display text-cream">{badgeLabel}</span>
+              <span className="block truncate text-xs text-muted">{accountEmail}</span>
+            </span>
           </div>
-        </>
+
+          <nav className="space-y-0.5 p-2">
+            <MenuRow
+              to="/profil"
+              onClick={navigateAway}
+              hint={needsName ? 'Välj ett visningsnamn' : 'Namn och statistik'}
+            >
+              Min profil
+            </MenuRow>
+            <MenuRow to="/nytt-losenord" onClick={navigateAway} hint="Välj ett nytt lösenord">
+              Byt lösenord
+            </MenuRow>
+            <MenuRow to="/" onClick={navigateAway} hint="Skapa eller gå med i ett rum">
+              Starta ett spel
+            </MenuRow>
+          </nav>
+
+          <div className="border-t border-white/10 p-2">
+            <NeonButton
+              variant="ghost"
+              className="w-full"
+              role="menuitem"
+              onClick={async () => {
+                await signOut()
+                close()
+              }}
+            >
+              Logga ut
+            </NeonButton>
+          </div>
+        </div>
       )}
     </div>
   )
