@@ -33,7 +33,7 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
-  // null | 'confirm' | 'magic' | 'magicUpgrade' | 'reset'
+  // null | 'confirm' | 'magic' | 'magicUpgrade' | 'magicExisting' | 'reset'
   const [done, setDone] = useState(null)
 
   if (!isConfigured) return <SetupNotice />
@@ -123,7 +123,8 @@ export default function AuthPage() {
       // För en gäst är länken en bekräftelse av adressen, inte en inloggning –
       // kvittot måste säga rätt sak, annars sitter man och väntar på fel grej.
       const res = await signInWithEmail(email.trim())
-      setDone(res?.mode === 'upgrade' ? 'magicUpgrade' : 'magic')
+      if (res?.mode === 'upgrade') setDone('magicUpgrade')
+      else setDone(res?.fromGuest ? 'magicExisting' : 'magic')
     } catch (e2) {
       setErr(e2.message || 'Kunde inte skicka länken.')
     } finally {
@@ -140,6 +141,10 @@ export default function AuthPage() {
       magicUpgrade:
         'Klicka på länken i mejlet för att bekräfta adressen. Sen är kontot ditt – ' +
         'med all statistik du redan samlat på dig.',
+      magicExisting:
+        'Klicka på länken i mejlet så loggar vi in dig på det befintliga kontot. ' +
+        'Gäststatistiken i den här webbläsaren följer inte med – den blir kvar ' +
+        'på gästkontot.',
       reset:
         'Har du ett konto med den adressen är en återställningslänk på väg. Klicka i mejlet för att välja ett nytt lösenord.',
     }[done]

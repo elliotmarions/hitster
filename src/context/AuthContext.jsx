@@ -133,6 +133,10 @@ export function AuthProvider({ children }) {
    * Skickar en magisk inloggningslänk till angiven e-post.
    * - Är man gäst uppgraderas kontot på plats (samma id, statistiken följer med).
    * - Finns e-posten redan som konto loggar vi in i det befintliga istället.
+   *
+   * Returnerar { mode, fromGuest }. `fromGuest` säger om länken skickades från
+   * en pågående gästsession – bara då finns det gäststatistik som lämnas kvar
+   * när man landar i ett befintligt konto, och bara då är det värt att varna.
    */
   const signInWithEmail = useCallback(async (email) => {
     if (!isSupabaseConfigured) throw new Error('Supabase är inte konfigurerat.')
@@ -146,7 +150,7 @@ export function AuthProvider({ children }) {
         { email },
         { emailRedirectTo },
       )
-      if (!error) return { mode: 'upgrade' }
+      if (!error) return { mode: 'upgrade', fromGuest: true }
       // Om e-posten redan tillhör ett konto: logga in där i stället.
       if (/regist|already|exist|taken/i.test(error.message)) {
         const { error: e2 } = await supabase.auth.signInWithOtp({
@@ -154,7 +158,7 @@ export function AuthProvider({ children }) {
           options: { emailRedirectTo, shouldCreateUser: false },
         })
         if (e2) throw translateAuthError(e2)
-        return { mode: 'existing' }
+        return { mode: 'existing', fromGuest: true }
       }
       throw translateAuthError(error)
     }
@@ -164,7 +168,7 @@ export function AuthProvider({ children }) {
       options: { emailRedirectTo, shouldCreateUser: false },
     })
     if (error) throw translateAuthError(error)
-    return { mode: 'existing' }
+    return { mode: 'existing', fromGuest: false }
   }, [])
 
   /**
