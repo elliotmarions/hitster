@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import NeonButton from './ui/NeonButton.jsx'
 
@@ -88,19 +88,23 @@ export default function HowToPlay({ placement = 'floating', open: openProp, onCl
     // för rubriken.
     closeRef.current?.focus({ preventScroll: true })
     return () => window.removeEventListener('keydown', onKey)
-  }, [open])
+  }, [open, close])
 
   // Fokus tillbaka till knappen när rutan stängs – annars tappar tangentbords-
   // och skärmläsaranvändare sin plats på sidan. Styrs rutan utifrån är det den
   // som öppnade som får lämna tillbaka fokus; den vet vart.
-  function close() {
+  //
+  // useCallback, inte en vanlig funktion: Escape-effekten nedan har den i sin
+  // beroendelista, och en ny identitet per rendering hade kört om effekten –
+  // som då flyttar fokus till Stäng-knappen igen, mitt i att någon tabbar.
+  const close = useCallback(() => {
     if (controlled) {
       onClose?.()
       return
     }
     setOpenState(false)
     openerRef.current?.focus()
-  }
+  }, [controlled, onClose])
 
   return (
     <>

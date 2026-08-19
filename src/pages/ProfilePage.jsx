@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx'
 import { getMyStats } from '../lib/stats.js'
 import DiscoBall from '../components/DiscoBall.jsx'
 import SetupNotice from '../components/SetupNotice.jsx'
+import ConfirmDialog from '../components/ui/ConfirmDialog.jsx'
 import NeonButton from '../components/ui/NeonButton.jsx'
 import TextField from '../components/ui/TextField.jsx'
 
@@ -34,6 +35,7 @@ export default function ProfilePage() {
     accountName,
     preferredName,
     updateAccountName,
+    deleteAccount,
     signOut,
   } = useAuth()
 
@@ -45,6 +47,10 @@ export default function ProfilePage() {
   const [nameBusy, setNameBusy] = useState(false)
   const [nameErr, setNameErr] = useState('')
   const [nameSaved, setNameSaved] = useState(false)
+
+  const [askDelete, setAskDelete] = useState(false)
+  const [delBusy, setDelBusy] = useState(false)
+  const [delErr, setDelErr] = useState('')
 
   useEffect(() => {
     if (!isConfigured || authLoading) return
@@ -78,6 +84,19 @@ export default function ProfilePage() {
       setNameErr(e2.message || 'Kunde inte spara namnet.')
     } finally {
       setNameBusy(false)
+    }
+  }
+
+  async function removeAccount() {
+    setDelErr('')
+    setDelBusy(true)
+    try {
+      await deleteAccount()
+      navigate('/')
+    } catch (e2) {
+      setDelErr(e2.message || 'Kunde inte radera kontot.')
+      setDelBusy(false)
+      setAskDelete(false)
     }
   }
 
@@ -197,9 +216,47 @@ export default function ProfilePage() {
             >
               Logga ut
             </NeonButton>
+
+            {/* Vägen ut. Egen avdelning under en linje: den ska gå att hitta,
+                men inte ligga bredvid "Logga ut" som ett likvärdigt val. */}
+            <div className="border-t border-white/10 pt-4">
+              <h3 className="font-display text-cream">Radera kontot</h3>
+              <p className="mt-1 text-sm text-muted">
+                Kontot, statistiken, dina svar och rummen du varit värd för tas bort.
+                Det går inte att ångra.
+              </p>
+              {delErr && <p className="mt-2 text-sm text-magenta">{delErr}</p>}
+              <NeonButton
+                variant="outline"
+                neon="#ff2e9a"
+                className="mt-3"
+                onClick={() => {
+                  setDelErr('')
+                  setAskDelete(true)
+                }}
+              >
+                Radera mitt konto
+              </NeonButton>
+            </div>
           </>
         )}
       </section>
+
+      <ConfirmDialog
+        open={askDelete}
+        title="Radera kontot?"
+        message={
+          'Allt försvinner: kontot, statistiken, dina svar och rummen du varit värd för – ' +
+          'även ett som pågår just nu. Rum du bara varit med i lever vidare utan dig. ' +
+          'Det här går inte att ångra.'
+        }
+        confirmLabel="Radera allt"
+        cancelLabel="Behåll kontot"
+        busyLabel="Raderar…"
+        busy={delBusy}
+        onConfirm={removeAccount}
+        onCancel={() => setAskDelete(false)}
+      />
     </div>
   )
 }

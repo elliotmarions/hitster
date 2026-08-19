@@ -7,6 +7,7 @@ import {
   useState,
 } from 'react'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { translateDbError } from '../lib/errors'
 
 const AuthContext = createContext(null)
 
@@ -256,6 +257,33 @@ export function AuthProvider({ children }) {
   )
 
   /**
+   * Raderar kontot – på riktigt, inte "avaktiverat".
+   *
+   * Radering sker i RPC:n delete_my_account (migration 0085): klienten har
+   * ingen åtkomst till auth.users. Där tas raden bort och kaskaderna städar
+   * statistik, svar, brickor, lagchatt och rummen man varit VÄRD för.
+   *
+   * Efteråt pekar sessionens token på en användare som inte finns – därför
+   * loggar vi ut lokalt direkt, så appen inte går runt med ett spöke i handen.
+   */
+  const deleteAccount = useCallback(async () => {
+    if (!isSupabaseConfigured) throw new Error('Supabase är inte konfigurerat.')
+    const { error } = await supabase.rpc('delete_my_account')
+    if (error) {
+      // Ligger migrationen inte i databasen än svarar PostgREST att funktionen
+      // inte finns. Det är inget spelaren kan göra något åt, men det ska gå att
+      // förstå vad som hänt i stället för ett allmänt "något gick snett".
+      if (error.code === 'PGRST202' || /find the function|does not exist/i.test(error.message))
+        throw new Error(
+          'Radering är inte påslagen på servern än – databasen behöver uppdateras (migration 0085).',
+        )
+      throw translateDbError(error)
+    }
+    await supabase.auth.signOut()
+    setUser(null)
+  }, [])
+
+  /**
    * Ser till att det finns en session INNAN vi gör något som kräver en – och
    * är enda stället där en gästsession skapas.
    *
@@ -307,6 +335,7 @@ export function AuthProvider({ children }) {
     requestPasswordReset,
     updatePassword,
     updateAccountName,
+    deleteAccount,
     ensureSession,
     signOut,
   }

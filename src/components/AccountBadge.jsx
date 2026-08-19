@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import { useNavGuardRunner } from '../context/NavGuardContext.jsx'
@@ -56,6 +56,10 @@ export default function AccountBadge() {
   const [open, setOpen] = useState(false)
   const [stats, setStats] = useState(null)
   const [helpOpen, setHelpOpen] = useState(false)
+  const closeHelp = useCallback(() => {
+    setHelpOpen(false)
+    triggerRef.current?.focus()
+  }, [])
   const rootRef = useRef(null)
   const menuRef = useRef(null)
   const triggerRef = useRef(null)
@@ -147,6 +151,8 @@ export default function AccountBadge() {
   const needsName = !accountName
   const close = () => setOpen(false)
 
+  // Stabil identitet: HowToPlay har onClose i en beroendelista, och en ny
+  // funktion per rendering hade kört om dess fokus-effekt.
   function navigateAway(e) {
     setOpen(false)
     if (runGuard()) e.preventDefault()
@@ -264,13 +270,7 @@ export default function AccountBadge() {
         </div>
       )}
 
-      <HowToPlay
-        open={helpOpen}
-        onClose={() => {
-          setHelpOpen(false)
-          triggerRef.current?.focus()
-        }}
-      />
+      <HowToPlay open={helpOpen} onClose={closeHelp} />
     </div>
   )
 }
