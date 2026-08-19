@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import { useNavGuardRunner } from '../context/NavGuardContext.jsx'
+import { getMyStats } from '../lib/stats.js'
 import NeonButton from './ui/NeonButton.jsx'
 
 /** Första tecknet i namnet, versalt. Array.from klarar å/ä/ö och emoji. */
@@ -48,6 +49,7 @@ export default function AccountBadge() {
   const { isConfigured, loading, isGuest, accountEmail, accountName, preferredName, signOut } =
     useAuth()
   const [open, setOpen] = useState(false)
+  const [stats, setStats] = useState(null)
   const rootRef = useRef(null)
   const menuRef = useRef(null)
   const triggerRef = useRef(null)
@@ -55,6 +57,20 @@ export default function AccountBadge() {
   // logotypen. Samma spärr gäller därför här: rummet får ställa sin fråga
   // först. (Gamla "Profil"-länken gick förbi den och slängde ut spelaren.)
   const runGuard = useNavGuardRunner()
+
+  // Siffrorna hämtas först när menyn öppnas, inte vid sidladdning – annars
+  // betalar varje besökare för en fråga som bara syns om man klickar. Ett fel
+  // här får inte fälla menyn: då står raden bara tom.
+  useEffect(() => {
+    if (!open || stats) return
+    let active = true
+    getMyStats()
+      .then((s) => active && setStats(s))
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [open, stats])
 
   // Klick utanför stänger menyn. Samma recept som VolumeControl använder – en
   // pointerdown-lyssnare och en ref runt hela härligheten. Tidigare låg här en
@@ -178,6 +194,16 @@ export default function AccountBadge() {
             <span className="min-w-0">
               <span className="block truncate font-display text-cream">{badgeLabel}</span>
               <span className="block truncate text-xs text-muted">{accountEmail}</span>
+              {stats && (
+                <span className="mt-1.5 flex gap-3 text-[0.7rem] text-muted">
+                  <span>
+                    <span className="font-display text-cyan">{stats.games_played}</span> spelade
+                  </span>
+                  <span>
+                    <span className="font-display text-lime">{stats.games_won}</span> vinster
+                  </span>
+                </span>
+              )}
             </span>
           </div>
 
