@@ -61,8 +61,17 @@ const BRA_ATT_VETA = [
   'Rättningen är automatisk men värden kan ändra en dom som blivit fel.',
 ]
 
-export default function HowToPlay({ placement = 'floating' }) {
-  const [open, setOpen] = useState(false)
+/**
+ * Props:
+ * - placement: 'floating' | 'inline' – var den egna "?"-knappen sitter.
+ * - open / onClose: styr rutan utifrån. Skickas `open` in tar den som skickar
+ *   över ansvaret, och då ritas ingen egen knapp – det är så kontomenyn öppnar
+ *   rutan utan att en andra "?" dyker upp i headern.
+ */
+export default function HowToPlay({ placement = 'floating', open: openProp, onClose }) {
+  const controlled = openProp !== undefined
+  const [openState, setOpenState] = useState(false)
+  const open = controlled ? openProp : openState
   const closeRef = useRef(null)
   const openerRef = useRef(null)
 
@@ -71,10 +80,7 @@ export default function HowToPlay({ placement = 'floating' }) {
     const onKey = (e) => {
       // Samma väg ut som Stäng-knappen: fokus tillbaka till "?" så man inte
       // hamnar på <body> och får börja tabba om från sidans topp.
-      if (e.key === 'Escape') {
-        setOpen(false)
-        openerRef.current?.focus()
-      }
+      if (e.key === 'Escape') close()
     }
     window.addEventListener('keydown', onKey)
     // preventScroll: rutan är scrollbar och Stäng ligger längst ned – utan det
@@ -85,9 +91,14 @@ export default function HowToPlay({ placement = 'floating' }) {
   }, [open])
 
   // Fokus tillbaka till knappen när rutan stängs – annars tappar tangentbords-
-  // och skärmläsaranvändare sin plats på sidan.
+  // och skärmläsaranvändare sin plats på sidan. Styrs rutan utifrån är det den
+  // som öppnade som får lämna tillbaka fokus; den vet vart.
   function close() {
-    setOpen(false)
+    if (controlled) {
+      onClose?.()
+      return
+    }
+    setOpenState(false)
     openerRef.current?.focus()
   }
 
@@ -99,10 +110,11 @@ export default function HowToPlay({ placement = 'floating' }) {
           Desktop (sm+): fast nere till höger, där marginalerna ändå står tomma.
           z-10 på mobil (headern är z-20): knappen ska glida IN UNDER den sticky
           headern när man skrollar förbi, inte ovanpå den. */}
+      {!controlled && (
       <button
         ref={openerRef}
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => setOpenState(true)}
         aria-label="Så spelar man"
         title="Så spelar man"
         className={
@@ -114,6 +126,7 @@ export default function HowToPlay({ placement = 'floating' }) {
       >
         ?
       </button>
+      )}
 
       {open &&
         createPortal(

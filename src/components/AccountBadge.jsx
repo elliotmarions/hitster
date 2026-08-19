@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import { useNavGuardRunner } from '../context/NavGuardContext.jsx'
 import { getMyStats } from '../lib/stats.js'
+import HowToPlay from './HowToPlay.jsx'
 import NeonButton from './ui/NeonButton.jsx'
 
 /** Första tecknet i namnet, versalt. Array.from klarar å/ä/ö och emoji. */
@@ -15,12 +16,16 @@ function initialOf(label) {
  * som en lista och inte som en samling lösa länkar.
  */
 function MenuRow({ to, onClick, children, hint }) {
+  // Utan `to` är raden en knapp – "Så funkar det" öppnar en ruta i stället för
+  // att navigera, men ska se ut och kännas exakt som grannarna.
+  const Tag = to ? Link : 'button'
+  const extra = to ? { to } : { type: 'button' }
   return (
-    <Link
-      to={to}
+    <Tag
+      {...extra}
       onClick={onClick}
       role="menuitem"
-      className="group flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 transition hover:bg-white/[0.07] focus-visible:bg-white/[0.07] focus-visible:outline-none"
+      className="group flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-white/[0.07] focus-visible:bg-white/[0.07] focus-visible:outline-none"
     >
       <span className="min-w-0">
         <span className="block font-display text-sm text-cream">{children}</span>
@@ -32,7 +37,7 @@ function MenuRow({ to, onClick, children, hint }) {
       >
         ›
       </span>
-    </Link>
+    </Tag>
   )
 }
 
@@ -50,6 +55,7 @@ export default function AccountBadge() {
     useAuth()
   const [open, setOpen] = useState(false)
   const [stats, setStats] = useState(null)
+  const [helpOpen, setHelpOpen] = useState(false)
   const rootRef = useRef(null)
   const menuRef = useRef(null)
   const triggerRef = useRef(null)
@@ -221,6 +227,15 @@ export default function AccountBadge() {
             <MenuRow to="/" onClick={navigateAway} hint="Skapa eller gå med i ett rum">
               Starta ett spel
             </MenuRow>
+            <MenuRow
+              onClick={() => {
+                setOpen(false)
+                setHelpOpen(true)
+              }}
+              hint="Reglerna på en minut"
+            >
+              Så funkar det
+            </MenuRow>
           </nav>
 
           <div className="border-t border-white/10 p-2">
@@ -238,6 +253,14 @@ export default function AccountBadge() {
           </div>
         </div>
       )}
+
+      <HowToPlay
+        open={helpOpen}
+        onClose={() => {
+          setHelpOpen(false)
+          triggerRef.current?.focus()
+        }}
+      />
     </div>
   )
 }
