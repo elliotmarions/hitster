@@ -75,6 +75,27 @@ export default function HowToPlay({ placement = 'floating', open: openProp, onCl
   const closeRef = useRef(null)
   const openerRef = useRef(null)
 
+  // Fokus tillbaka till knappen när rutan stängs – annars tappar tangentbords-
+  // och skärmläsaranvändare sin plats på sidan. Styrs rutan utifrån är det den
+  // som öppnade som får lämna tillbaka fokus; den vet vart.
+  //
+  // useCallback, inte en vanlig funktion: Escape-effekten under har den i sin
+  // beroendelista, och en ny identitet per rendering hade kört om effekten –
+  // som då flyttar fokus till Stäng-knappen igen, mitt i att någon tabbar.
+  //
+  // MÅSTE stå före effekten. En `const` som nämns i en beroendelista läses
+  // under render, så låg den efter kastade renderingen
+  // "Cannot access 'close' before initialization" och tog ned hela sidan –
+  // startsidan renderar den här komponenten alltid.
+  const close = useCallback(() => {
+    if (controlled) {
+      onClose?.()
+      return
+    }
+    setOpenState(false)
+    openerRef.current?.focus()
+  }, [controlled, onClose])
+
   useEffect(() => {
     if (!open) return
     const onKey = (e) => {
@@ -89,22 +110,6 @@ export default function HowToPlay({ placement = 'floating', open: openProp, onCl
     closeRef.current?.focus({ preventScroll: true })
     return () => window.removeEventListener('keydown', onKey)
   }, [open, close])
-
-  // Fokus tillbaka till knappen när rutan stängs – annars tappar tangentbords-
-  // och skärmläsaranvändare sin plats på sidan. Styrs rutan utifrån är det den
-  // som öppnade som får lämna tillbaka fokus; den vet vart.
-  //
-  // useCallback, inte en vanlig funktion: Escape-effekten nedan har den i sin
-  // beroendelista, och en ny identitet per rendering hade kört om effekten –
-  // som då flyttar fokus till Stäng-knappen igen, mitt i att någon tabbar.
-  const close = useCallback(() => {
-    if (controlled) {
-      onClose?.()
-      return
-    }
-    setOpenState(false)
-    openerRef.current?.focus()
-  }, [controlled, onClose])
 
   return (
     <>
