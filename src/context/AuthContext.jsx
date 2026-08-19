@@ -45,6 +45,14 @@ function translateAuthError(error) {
       'Många har öppnat spelet från samma nätverk den senaste timmen. ' +
         'Vänta en liten stund och försök igen.',
     )
+  // Magisk länk skickas med shouldCreateUser: false – finns inget konto med
+  // adressen svarar Supabase "Signups not allowed for otp", vilket låter som
+  // ett systemfel men bara betyder "vi känner inte igen dig".
+  if (error?.code === 'otp_disabled' || /signups not allowed for otp/i.test(msg))
+    return new Error(
+      'Vi hittar inget konto med den e-posten. Skapa ett konto i stället – ' +
+        'det tar tio sekunder.',
+    )
   if (/rate limit|too many requests|over_email_send_rate/i.test(msg))
     return new Error('För många försök. Vänta en stund och prova igen.')
   if (/same as the old password|should be different/i.test(msg))
@@ -145,17 +153,17 @@ export function AuthProvider({ children }) {
           email,
           options: { emailRedirectTo, shouldCreateUser: false },
         })
-        if (e2) throw e2
+        if (e2) throw translateAuthError(e2)
         return { mode: 'existing' }
       }
-      throw error
+      throw translateAuthError(error)
     }
 
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { emailRedirectTo, shouldCreateUser: false },
     })
-    if (error) throw error
+    if (error) throw translateAuthError(error)
     return { mode: 'existing' }
   }, [])
 
