@@ -66,7 +66,7 @@ export default function AccountBadge() {
               onClick={() => setOpen(false)}
               className="flex items-center gap-2 rounded-lg px-2 py-1.5 font-display text-cream hover:bg-white/5"
             >
-              👤 Profil
+              Profil
             </Link>
 
             <div className="my-3 border-t border-white/10" />
