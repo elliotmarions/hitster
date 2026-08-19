@@ -14,6 +14,7 @@ const RoomPage = lazy(() => import('./pages/RoomPage.jsx'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'))
 const AuthPage = lazy(() => import('./pages/AuthPage.jsx'))
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage.jsx'))
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage.jsx'))
 
 function Laddar() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
             <Route path="/statistik" element={<Navigate to="/profil" replace />} />
             <Route path="/konto" element={<AuthPage />} />
             <Route path="/nytt-losenord" element={<ResetPasswordPage />} />
+            <Route path="/integritet" element={<PrivacyPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>

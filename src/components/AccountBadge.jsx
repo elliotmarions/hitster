@@ -250,6 +250,16 @@ export default function AccountBadge() {
             >
               Logga ut
             </NeonButton>
+            {/* Liten fotnot, inte en egen rad: juridiken ska gå att hitta utan
+                att konkurrera med sakerna man faktiskt kom hit för. */}
+            <Link
+              to="/integritet"
+              onClick={navigateAway}
+              role="menuitem"
+              className="mt-2 block px-3 text-center text-xs text-muted hover:text-cream hover:underline"
+            >
+              Integritet och villkor
+            </Link>
           </div>
         </div>
       )}

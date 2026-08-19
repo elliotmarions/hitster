@@ -48,6 +48,20 @@ export default function AppShell({ children }) {
         {children}
       </main>
 
+      {/* Sidfot: den plats folk letar på när de vill veta vad en sajt sparar.
+          Länken kör samma spärr som logotypen – mitt i en match är också den
+          här en väg ut ur spelet. */}
+      <footer className="mx-auto w-full max-w-6xl px-4 pb-6 pt-2 text-center sm:px-6">
+        <Link
+          to="/integritet"
+          onClick={(e) => {
+            if (runGuard()) e.preventDefault()
+          }}
+          className="text-xs text-muted transition hover:text-cream hover:underline"
+        >
+          Integritet och villkor
+        </Link>
+      </footer>
     </div>
   )
 }
