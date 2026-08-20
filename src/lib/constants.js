@@ -82,11 +82,23 @@ export const CATEGORIES = {
     color: 'lime',
     hex: '#b6ff3c',
   },
+  // Ligger kvar fast väljaren slutat erbjuda den (0085): rum som redan
+  // valt den ska kunna spela klart, och gamla rundor ska kunna visas.
   swedish: {
     key: 'swedish',
     label: 'Svenskt eller inte',
     short: 'Svenskt?',
     desc: 'Är det en svensk eller utländsk låt?',
+    color: 'magenta',
+    hex: '#f04dff',
+  },
+  // Ersättaren: "Svenskt eller inte" hördes i låten, den här kräver att
+  // man vet något om artisten. Ärver magentan – de delar aldrig hjul.
+  solo_group: {
+    key: 'solo_group',
+    label: 'Solo eller grupp',
+    short: 'Solo/grupp',
+    desc: 'Står en soloartist eller en grupp bakom låten?',
     color: 'magenta',
     hex: '#f04dff',
   },
@@ -106,12 +118,17 @@ export const SWEDISH_CHOICES = [
   ['svensk', '🇸🇪 Svensk'],
   ['utländsk', '🌍 Utländsk'],
 ]
+export const SOLO_GROUP_CHOICES = [
+  ['solo', '🎤 Solo'],
+  ['grupp', '👥 Grupp'],
+]
 
 // Alternativen för en runda, eller null när kategorin skrivs i fritext.
 // before_after får sina etiketter av rundans pivot-år.
 export function choicesFor(category, pivotYear) {
   if (category === 'genre') return GENRE_CHOICES
   if (category === 'swedish') return SWEDISH_CHOICES
+  if (category === 'solo_group') return SOLO_GROUP_CHOICES
   if (category === 'before_after') {
     return [
       ['före', `Före ${pivotYear}`],
@@ -126,7 +143,11 @@ export const CATEGORY_ORDER = ['decade', 'artist', 'exact_year', 'approx_year', 
 
 // Allt som går att välja till hjulet, i den ordning en väljare bör visa dem:
 // de fem vanliga först, sedan årtalsvarianterna, sist de två som frågar om
-// låten i stället för året. Speglar _valid_categories (0084).
+// låten i stället för året.
+//
+// 'swedish' står INTE här sedan 0085 – svaret hördes i låten och två
+// alternativ gjorde ren gissning lönsam. Servern godtar den fortfarande
+// (rum mitt i match, gammal historik), den går bara inte att välja.
 export const VALJBARA_KATEGORIER = [
   'decade',
   'artist',
@@ -137,7 +158,7 @@ export const VALJBARA_KATEGORIER = [
   'approx_year_5',
   'before_after',
   'genre',
-  'swedish',
+  'solo_group',
 ]
 
 // Hjulet och brickan har alltid exakt fem kategorier.
