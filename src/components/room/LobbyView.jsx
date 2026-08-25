@@ -267,8 +267,16 @@ export default function LobbyView({
   // Chipen visar INTE sin egen pottstorlek: tolv siffror som ändå inte går att
   // addera (dimensionerna snittas) blev bara brus. Den siffra som styr något,
   // urvalets storlek, står samlat under valen.
+  //
+  // Rubrikssnittet är brett och rutorna är en halv skärmbredd på telefon:
+  // "Dansband/Schlager" behövde 156 px i full grad men rutan har 113 px
+  // invändigt på en 360 px-skärm, så etiketten rann ut över kanten (den har
+  // ingen brytpunkt att vika på). Långa namn får därför en mindre grad – mätt
+  // så att det längsta ryms med marginal även på den smalaste telefonen.
+  // Gränsen ligger över "Hiphop/R&B" och "🌍 Utländska", som ryms som de är.
   function renderCategory(cat) {
     const active = isSelected(view, cat)
+    const gradKlass = cat.label.length > 14 ? 'text-[0.7rem]' : ''
     return (
       <button
         key={cat.key}
@@ -282,7 +290,7 @@ export default function LobbyView({
           boxShadow: active ? `0 0 22px -8px ${cat.neon}` : undefined,
         }}
       >
-        <span className="inline-flex items-center gap-2 font-display text-cream">
+        <span className={`inline-flex items-center gap-2 font-display text-cream ${gradKlass}`}>
           {cat.key === 'sv' && <SwedishFlag size={18} />}
           {cat.label}
         </span>
