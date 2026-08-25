@@ -137,7 +137,7 @@ export default function AccountBadge() {
     return (
       <Link
         to="/konto"
-        className="chip chip-cta cursor-pointer transition hover:brightness-125"
+        className="chip chip-cta cursor-pointer !py-2 transition hover:brightness-125"
         style={{ '--neon': '#22e6e6' }}
       >
         <span>Logga in</span>
@@ -163,7 +163,7 @@ export default function AccountBadge() {
       <button
         ref={triggerRef}
         type="button"
-        className="chip cursor-pointer !pl-1 transition hover:brightness-125"
+        className="chip max-w-[14rem] cursor-pointer !py-1.5 !pl-1 transition hover:brightness-125"
         style={{ '--neon': '#b6ff3c' }}
         aria-haspopup="menu"
         aria-expanded={open}

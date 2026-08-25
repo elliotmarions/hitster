@@ -61,7 +61,7 @@ export default function AuthPage() {
         <p className="text-muted">Inloggad som {accountEmail}.</p>
         <div className="flex flex-col gap-3">
           <NeonButton onClick={() => navigate('/')}>Till start</NeonButton>
-          <Link to="/profil" className="text-sm text-cyan hover:underline">
+          <Link to="/profil" className="inline-flex min-h-11 items-center justify-center text-sm text-cyan hover:underline">
             Till min profil
           </Link>
         </div>
@@ -157,7 +157,7 @@ export default function AuthPage() {
         </h1>
         <p className="text-muted">{text}</p>
         <p className="text-xs text-muted">Skickat till {email}</p>
-        <Link to="/" className="inline-block text-sm text-cyan hover:underline">
+        <Link to="/" className="inline-flex min-h-11 items-center text-sm text-cyan hover:underline">
           ← Tillbaka till start
         </Link>
       </div>
@@ -239,9 +239,10 @@ export default function AuthPage() {
               />
             )}
 
-            <label className="flex cursor-pointer items-center gap-2 text-xs text-muted">
+            <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs text-muted">
               <input
                 type="checkbox"
+                className="h-5 w-5 accent-cyan"
                 checked={showPassword}
                 onChange={(e) => setShowPassword(e.target.checked)}
               />
@@ -280,7 +281,7 @@ export default function AuthPage() {
             <button
               type="button"
               onClick={() => switchMode('forgot')}
-              className="w-full cursor-pointer text-center text-xs text-muted hover:text-cream hover:underline"
+              className="min-h-11 w-full cursor-pointer text-center text-xs text-muted hover:text-cream hover:underline"
             >
               Glömt lösenordet?
             </button>
@@ -308,7 +309,7 @@ export default function AuthPage() {
           <button
             type="button"
             onClick={() => switchMode('signin')}
-            className="w-full cursor-pointer text-center text-xs text-muted hover:text-cream hover:underline"
+            className="min-h-11 w-full cursor-pointer text-center text-xs text-muted hover:text-cream hover:underline"
           >
             ← Tillbaka till inloggning
           </button>
@@ -316,7 +317,7 @@ export default function AuthPage() {
       </form>
 
       <p className="text-center text-sm text-muted">
-        <Link to="/" className="text-cyan hover:underline">
+        <Link to="/" className="py-1.5 text-cyan hover:underline">
           Fortsätt som gäst
         </Link>{' '}
         – du kan skapa konto när som helst.

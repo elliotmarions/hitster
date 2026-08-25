@@ -57,7 +57,7 @@ export default function AppShell({ children }) {
           onClick={(e) => {
             if (runGuard()) e.preventDefault()
           }}
-          className="text-xs text-muted transition hover:text-cream hover:underline"
+          className="inline-flex min-h-11 items-center px-3 text-xs text-muted transition hover:text-cream hover:underline"
         >
           Integritet och villkor
         </Link>

@@ -324,12 +324,19 @@ export default function LobbyView({
         onCancel={() => setLagFraganAvfardad(true)}
       />
 
+      {/* min-w-0 på spalterna: ett rutnät ger sina barn `min-width: auto`, så
+          spalten blir minst så bred som sitt bredaste OBRYTBARA innehåll. Utan
+          det sprängde en lång rad – t.ex. urvalstexten, som ligger på en enda
+          rad – hela sidan bredare än telefonens skärm, och mobilen zoomade ut
+          allt i stället för att bryta raden. */}
       <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-      <section className="panel p-6 sm:p-8">
+      <section className="panel min-w-0 p-4 sm:p-8">
         <div className="flex items-start justify-between gap-4">
-          <div>
+          <div className="min-w-0">
             <p className="label">Lobby</p>
-            <h1 className="mt-1 font-display text-3xl text-cream">{room.name || 'Namnlöst rum'}</h1>
+            <h1 className="mt-1 break-words font-display text-2xl text-cream sm:text-3xl">
+              {room.name || 'Namnlöst rum'}
+            </h1>
           </div>
           <span className="chip" style={{ '--neon': '#b6ff3c' }}>
             Väntar
@@ -338,10 +345,24 @@ export default function LobbyView({
 
         <div className="mt-6">
           <p className="label mb-2">Rumskod</p>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="code-badge px-5 py-3 text-3xl">{room.code}</div>
-            <CopyButton value={room.code} label="Kopiera kod" />
-            <CopyButton value={roomLink} label="Kopiera länk" neon="#b14dff" />
+          {/* På telefon får koden en egen rad och knapparna delar på nästa:
+              sida vid sida rymdes de inte, och då hamnade "Kopiera länk" ensam
+              på en tredje rad. */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <div className="code-badge px-4 py-3 text-center text-2xl sm:px-5 sm:text-3xl">
+              {room.code}
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:flex sm:gap-3">
+              {/* Smalare text på telefon – i full storlek rymdes "Kopiera
+                  länk" inte i en halv skärmbredd. */}
+              <CopyButton value={room.code} label="Kopiera kod" className="px-2 text-sm sm:px-5 sm:text-base" />
+              <CopyButton
+                value={roomLink}
+                label="Kopiera länk"
+                neon="#b14dff"
+                className="px-2 text-sm sm:px-5 sm:text-base"
+              />
+            </div>
           </div>
         </div>
 
@@ -361,7 +382,7 @@ export default function LobbyView({
               <button
                 type="button"
                 onClick={onClearAll}
-                className="cursor-pointer text-xs text-muted underline hover:text-cream"
+                className="-mr-2 inline-flex min-h-9 cursor-pointer items-center px-2 text-xs text-muted underline hover:text-cream"
               >
                 Rensa
               </button>
@@ -396,19 +417,25 @@ export default function LobbyView({
               har brutits ut: egen linje över, egen färgton, och antalet som
               det stora talet i stället för en fotnot. */}
           <div className="mt-5 border-t border-white/10 pt-4">
+            {/* Texten BRYTS, den kapas inte. Med många valda kategorier blir
+                sammanfattningen lång, och på en telefon räckte en enradig
+                "Svenska · 1965–197…" varken till för att säga vad man valt
+                eller för att få plats – raden vägrade brytas och drog i stället
+                ut hela lobbyn i sidled. Antalet står kvar till höger, men
+                hoppar ned under texten när det blir för trångt (flex-wrap). */}
             <div
-              className="flex items-center justify-between gap-4 rounded-xl px-4 py-3"
+              className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl px-4 py-3"
               style={{
                 background:
                   'linear-gradient(90deg, rgba(177,77,255,0.16), rgba(34,230,230,0.10))',
                 border: '1px solid rgba(34,230,230,0.35)',
               }}
             >
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="label" style={{ color: '#22e6e6' }}>
                   Ert urval
                 </p>
-                <p className="mt-0.5 truncate font-display text-cream">
+                <p className="mt-0.5 break-words font-display text-cream">
                   {selectionLabel(view)}
                 </p>
               </div>
@@ -445,7 +472,7 @@ export default function LobbyView({
             </span>
             <input
               type="checkbox"
-              className="h-5 w-5 accent-magenta disabled:opacity-50"
+              className="h-6 w-6 shrink-0 accent-magenta disabled:opacity-50"
               checked={room.erase_rule_enabled}
               onChange={toggleErase}
               disabled={!isHost}
@@ -470,7 +497,7 @@ export default function LobbyView({
             <button
               type="button"
               onClick={() => setTeamMode(false)}
-              className="cursor-pointer text-xs text-muted underline hover:text-cream"
+              className="-mx-2 inline-flex min-h-9 cursor-pointer items-center px-2 text-xs text-muted underline hover:text-cream"
             >
               Spela var för sig
             </button>
@@ -505,8 +532,8 @@ export default function LobbyView({
         </div>
       </section>
 
-      <section className="panel p-6">
-        <div className="flex items-center justify-between">
+      <section className="panel min-w-0 p-4 sm:p-6">
+        <div className="flex items-center justify-between gap-3">
           <h2 className="font-display text-xl text-cream">Spelare</h2>
           <span className="chip" style={{ '--neon': '#22e6e6' }}>
             {players.length} i rummet

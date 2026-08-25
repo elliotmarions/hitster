@@ -27,3 +27,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Mobilharnessens skärmbilder (dev-only)
+harness/shots/

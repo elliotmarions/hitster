@@ -24,9 +24,9 @@ export default function PlayerList({ players, currentUserId }) {
               className="h-2.5 w-2.5 shrink-0 rounded-full anim-pulse"
               style={{ background: dot, color: dot }}
             />
-            <span className="font-display truncate text-cream">{p.display_name}</span>
+            <span className="min-w-0 flex-1 truncate font-display text-cream">{p.display_name}</span>
 
-            <span className="ml-auto flex items-center gap-1.5">
+            <span className="flex shrink-0 items-center gap-1.5">
               {p.is_host && (
                 <span className="chip" style={{ '--neon': '#ffc93c' }}>
                   ★ Värd

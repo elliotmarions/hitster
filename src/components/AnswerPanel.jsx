@@ -155,6 +155,9 @@ export default function AnswerPanel({
                   </p>
                 )}
 
+                {/* Värdens rättningsknappar. De satt tidigare som 24×22 px
+                    ikoner – möjliga att träffa med en muspekare, men inte med
+                    en tumme mitt i en runda. */}
                 {isHost && (
                   <div className="mt-2 flex items-center gap-1.5 text-xs">
                     <span className="text-muted">Rätta:</span>
@@ -162,7 +165,8 @@ export default function AnswerPanel({
                       type="button"
                       disabled={busy}
                       onClick={() => onOverride?.(a.id, true)}
-                      className="rounded px-1.5 py-0.5"
+                      aria-label="Döm som rätt"
+                      className="flex h-9 min-w-9 items-center justify-center rounded px-2"
                       style={{
                         border: `1px solid ${good}`,
                         color: correct ? '#140c22' : good,
@@ -175,7 +179,8 @@ export default function AnswerPanel({
                       type="button"
                       disabled={busy}
                       onClick={() => onOverride?.(a.id, false)}
-                      className="rounded px-1.5 py-0.5"
+                      aria-label="Döm som fel"
+                      className="flex h-9 min-w-9 items-center justify-center rounded px-2"
                       style={{
                         border: `1px solid ${bad}`,
                         color: !correct ? '#140c22' : bad,
@@ -189,7 +194,7 @@ export default function AnswerPanel({
                         type="button"
                         disabled={busy}
                         onClick={() => onOverride?.(a.id, null)}
-                        className="text-muted underline"
+                        className="flex h-9 items-center px-2 text-muted underline"
                       >
                         auto
                       </button>

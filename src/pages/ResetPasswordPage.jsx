@@ -144,9 +144,10 @@ export default function ResetPasswordPage() {
             value={password2}
             onChange={(e) => setPassword2(e.target.value)}
           />
-          <label className="flex cursor-pointer items-center gap-2 text-xs text-muted">
+          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs text-muted">
             <input
               type="checkbox"
+              className="h-5 w-5 accent-cyan"
               checked={showPassword}
               onChange={(e) => setShowPassword(e.target.checked)}
             />

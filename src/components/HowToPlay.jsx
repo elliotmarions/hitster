@@ -128,7 +128,7 @@ export default function HowToPlay({ placement = 'floating', open: openProp, onCl
         title="Så spelar man"
         className={
           placement === 'inline'
-            ? 'flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-cyan/60 font-display text-base text-cyan transition hover:bg-cyan/10'
+            ? 'flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-cyan/60 font-display text-base text-cyan transition hover:bg-cyan/10'
             : 'absolute right-0 top-0 z-10 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-cyan/60 bg-midnight/80 font-display text-xl text-cyan transition hover:bg-cyan/10 sm:fixed sm:bottom-4 sm:right-4 sm:top-auto sm:z-40'
         }
         style={placement === 'inline' ? undefined : { boxShadow: '0 0 22px -6px #22e6e6' }}

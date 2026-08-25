@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import NeonButton from './NeonButton.jsx'
 
-export default function CopyButton({ value, label, neon = '#22e6e6' }) {
+export default function CopyButton({ value, label, neon = '#22e6e6', className = '' }) {
   const [done, setDone] = useState(false)
   async function copy() {
     try {
@@ -13,7 +13,13 @@ export default function CopyButton({ value, label, neon = '#22e6e6' }) {
     }
   }
   return (
-    <NeonButton type="button" variant="outline" neon={done ? '#b6ff3c' : neon} onClick={copy}>
+    <NeonButton
+      type="button"
+      variant="outline"
+      neon={done ? '#b6ff3c' : neon}
+      onClick={copy}
+      className={className}
+    >
       {done ? 'Kopierat!' : label}
     </NeonButton>
   )

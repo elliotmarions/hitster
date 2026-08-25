@@ -54,7 +54,7 @@ export default function VolumeControl({ volume, setVolume }) {
           <button
             type="button"
             onClick={toggleMute}
-            className="text-lg leading-none"
+            className="-m-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg leading-none"
             aria-label={volume > 0 ? 'Stäng av ljudet' : 'Slå på ljudet'}
             title={volume > 0 ? 'Stäng av ljudet' : 'Slå på ljudet'}
           >
@@ -70,7 +70,7 @@ export default function VolumeControl({ volume, setVolume }) {
               if (v > 0) volBeforeMute.current = v
               setVolume(v)
             }}
-            className="h-1.5 flex-1 cursor-pointer"
+            className="h-6 flex-1 cursor-pointer"
             style={{ accentColor: '#22e6e6' }}
             aria-label="Volym"
           />

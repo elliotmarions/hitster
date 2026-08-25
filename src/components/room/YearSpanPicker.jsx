@@ -108,10 +108,10 @@ export default function YearSpanPicker({ spans, disabled = false, onCommit }) {
       {/* Sammanfattningen läses ur utkastet, inte ur rummet, så texten följer
           med medan man drar i stället för att hoppa till när skrivningen gått
           igenom. */}
-      <div className="mb-2 mt-4 flex items-baseline justify-between gap-3">
+      <div className="mb-2 mt-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <p className="label opacity-70">Årtal</p>
-        <div className="flex items-baseline gap-2">
-          <span className="font-display text-sm text-cream">
+        <div className="flex min-w-0 items-baseline gap-2">
+          <span className="min-w-0 break-words font-display text-sm text-cream">
             {yearSpanLabel({ year_bands: yearBandsFor(valda) }) ?? 'Alla årtal'}
           </span>
           {!disabled && (
@@ -121,9 +121,11 @@ export default function YearSpanPicker({ spans, disabled = false, onCommit }) {
               disabled={!nasta}
               aria-label="Lägg till ett årsspann"
               title="Lägg till ett årsspann"
-              className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center self-center rounded-full border border-cyan/60 font-display text-base leading-none text-cyan transition hover:bg-cyan/15 disabled:cursor-default disabled:opacity-40"
+              className="-my-1.5 -mr-1.5 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center self-center rounded-full font-display text-base leading-none text-cyan transition disabled:cursor-default disabled:opacity-40"
             >
-              +
+              <span className="flex h-6 w-6 items-center justify-center rounded-full border border-cyan/60 transition hover:bg-cyan/15">
+                +
+              </span>
             </button>
           )}
         </div>
@@ -153,12 +155,14 @@ export default function YearSpanPicker({ spans, disabled = false, onCommit }) {
                   onClick={() => taBort(i)}
                   aria-label={`Ta bort spannet ${spannText(spann)}`}
                   title="Ta bort spannet"
-                  className="mt-1 flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full border border-line text-muted transition hover:border-magenta hover:text-magenta"
+                  className="-mr-1.5 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition hover:text-magenta"
                 >
-                  ×
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full border border-line transition hover:border-magenta">
+                    ×
+                  </span>
                 </button>
               ) : (
-                <span className="mt-1 h-6 w-6 shrink-0" aria-hidden="true" />
+                <span className="h-9 w-9 shrink-0" aria-hidden="true" />
               )}
             </div>
           </div>

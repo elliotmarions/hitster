@@ -109,7 +109,7 @@ export default function ProfilePage() {
             {accountName || preferredName || 'Profil'}
           </h1>
         </div>
-        <Link to="/" className="chip" style={{ '--neon': '#22e6e6' }}>
+        <Link to="/" className="chip !py-2" style={{ '--neon': '#22e6e6' }}>
           ← Till start
         </Link>
       </div>
@@ -123,7 +123,7 @@ export default function ProfilePage() {
           <p className="text-sm text-muted">
             Du spelar som gäst. Namnet du väljer när du skapar eller går med i ett rum
             gäller bara det spelet.{' '}
-            <Link to="/konto" className="text-cyan hover:underline">
+            <Link to="/konto" className="py-1.5 text-cyan hover:underline">
               Skapa ett konto
             </Link>{' '}
             för att spara ett namn som följer med.

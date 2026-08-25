@@ -120,7 +120,7 @@ export default function PrivacyPage() {
       <Section title="Bli av med det" neon="#33a6ff">
         <p className="text-sm text-muted">
           Har du konto kan du radera det själv under{' '}
-          <Link to="/profil" className="text-cyan hover:underline">
+          <Link to="/profil" className="py-1.5 text-cyan hover:underline">
             Min profil
           </Link>
           . Då försvinner kontot, statistiken, rummen du varit värd för och dina svar –
@@ -151,7 +151,7 @@ export default function PrivacyPage() {
       </Section>
 
       <p className="text-center text-sm text-muted">
-        <Link to="/" className="text-cyan hover:underline">
+        <Link to="/" className="inline-flex min-h-11 items-center text-cyan hover:underline">
           ← Tillbaka till start
         </Link>
       </p>

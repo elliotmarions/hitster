@@ -67,19 +67,20 @@ export default function TeamSetup({ room, players, teams, isHost }) {
                 style={{ borderColor: teamColor(t) + '66' }}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="flex items-center gap-2 font-display text-cream">
+                  <span className="flex min-w-0 items-center gap-2 font-display text-cream">
                     <span
-                      className="h-3 w-3 rounded-full"
+                      className="h-3 w-3 shrink-0 rounded-full"
                       style={{ background: teamColor(t), boxShadow: `0 0 8px ${teamColor(t)}` }}
                     />
-                    {t.name}
-                    <span className="text-xs text-muted">({members.length})</span>
+                    <span className="truncate">{t.name}</span>
+                    <span className="shrink-0 text-xs text-muted">({members.length})</span>
                   </span>
                   {isHost && (
                     <button
-                      className="text-xs text-muted hover:text-magenta"
+                      className="-my-1.5 -mr-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs text-muted hover:text-magenta"
                       onClick={() => onDeleteTeam(t.id)}
                       disabled={busy}
+                      aria-label={`Ta bort ${t.name}`}
                       title="Ta bort lag"
                     >
                       ✕
@@ -107,7 +108,7 @@ export default function TeamSetup({ room, players, teams, isHost }) {
                                   ? `Gör ${p.display_name} till lagkapten`
                                   : undefined
                             }
-                            className={`text-xs ${
+                            className={`-my-1.5 -ml-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs ${
                               isHost ? 'cursor-pointer hover:brightness-125' : 'cursor-default'
                             }`}
                             style={{ color: arKapten ? teamColor(t) : 'rgba(255,255,255,0.22)' }}
