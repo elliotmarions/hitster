@@ -31,7 +31,7 @@ const STEG = [
     n: '2',
     c: '#22e6e6',
     t: 'Lyssna',
-    d: 'Ett klipp ur en slumpad låt spelas i upp till 25 sekunder, samtidigt hos alla.',
+    d: 'Ett klipp ur en slumpad låt spelas samtidigt hos alla. Ni har 30 sekunder, 45 sekunder eller en minut på er – värden väljer.',
   },
   {
     n: '3',

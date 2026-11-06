@@ -232,7 +232,19 @@ export function categoryOrderFor(room) {
 export const TEAM_COLORS = ['#22e6e6', '#ff4d9d', '#b6ff3c', '#ffc93c', '#b14dff', '#ff8a3c']
 
 // Fas 2 – spelplanens tajming och mått
-export const TIMER_SECONDS = 25 // rundans timer
+// Låtklippet spelas i 25 s. Det är INTE längre rundans klocka – svarstiden
+// väljer värden (rooms.answer_seconds, 0086). Är den längre loopar klippet.
+export const CLIP_SECONDS = 25
+// Svarstiderna värden kan välja mellan i lobbyn. MÅSTE spegla serverns
+// rooms_answer_seconds_check (0086).
+export const SVARSTIDER = [30, 45, 60]
+export const STANDARD_SVARSTID = 30
+// Rummets svarstid i sekunder. Faller tillbaka på standarden om kolumnen
+// saknas (migrationen inte körd än) eller har ett okänt värde.
+export function answerSecondsFor(room) {
+  const s = room?.answer_seconds
+  return SVARSTIDER.includes(s) ? s : STANDARD_SVARSTID
+}
 export const SPIN_MS = 4200 // discokulans snurr-animation (matchar timer_start_at i spin_wheel)
 export const GRID = 5 // brickan är 5x5 (fritt slumpad, exakt 5 rutor per kategori)
 

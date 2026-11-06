@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { TIMER_SECONDS } from '../lib/constants'
+import { CLIP_SECONDS } from '../lib/constants'
 import { useVolume } from '../context/VolumeContext.jsx'
 import { serverNow, syncServerTime } from '../lib/serverTime'
 
@@ -13,12 +13,18 @@ const SILENCE =
 // skillnad, och en onödig sökning hackar till ljudet.
 const DRIFT_TOLERANCE = 0.35
 
-// Spola till den position alla andra är på just nu. Delas av startlogiken och
-// av upplåsningen (som kan komma flera sekunder in i klippet).
+// Spola till den position alla andra är på just nu. Delas av startlogiken,
+// upplåsningen (som kan komma flera sekunder in i klippet) och loopen.
+//
+// Svarstiden kan vara längre än klippet (0086). Då loopar klippet, och
+// positionen är tiden sedan start MODULO klippets längd – samma räkning hos
+// alla, så varven börjar om i takt även för den som kom in sent.
 function seekToLive(a, startMs) {
-  const target = (serverNow() - startMs) / 1000
-  if (!Number.isFinite(target) || target < DRIFT_TOLERANCE) return
-  if (target >= TIMER_SECONDS - 0.5) return
+  const elapsed = (serverNow() - startMs) / 1000
+  if (!Number.isFinite(elapsed) || elapsed < DRIFT_TOLERANCE) return
+  const target = elapsed % CLIP_SECONDS
+  // Strax före varvets slut: låt loopen ta omstarten i stället.
+  if (target >= CLIP_SECONDS - 0.5) return
   if (Math.abs(a.currentTime - target) < DRIFT_TOLERANCE) return
   try {
     a.currentTime = target
@@ -30,7 +36,9 @@ function seekToLive(a, startMs) {
 /**
  * Synkad uppspelning av ett preview-klipp (ersätter Spotify Web Playback).
  * Alla klienter spelar samma publika ljud-URL (round.current_track_id) vid
- * `start_at` (= timer_start_at) och pausar efter 25s. Tidpunkten jämförs mot
+ * `start_at` (= timer_start_at) och pausar när rundans svarstid
+ * (`answerSeconds`, 30/45/60 s) är slut. Klippet är 25 s och loopar om
+ * svarstiden är längre. Tidpunkten jämförs mot
  * SERVERNS klocka (se lib/serverTime.js) – inte enhetens egen, som kan gå
  * flera sekunder fel. Inget ljud skickas mellan spelare.
  *
@@ -43,7 +51,7 @@ function seekToLive(a, startMs) {
  *   unlock – anropa från ett användarklick för att låsa upp autoplay.
  *   error  – senaste uppspelningsfel (för diagnostik i UI).
  */
-export function useSyncedAudio(round) {
+export function useSyncedAudio(round, answerSeconds = CLIP_SECONDS) {
   const audioRef = useRef(null)
   const playedRef = useRef(0)
   const pausedRef = useRef(0)
@@ -84,7 +92,7 @@ export function useSyncedAudio(round) {
 
   // Rundans klipp, läsbart från upplåsningen (som inte får se bara det som
   // gällde när den skapades).
-  const liveRef = useRef({ url: null, startMs: null, revealed: false })
+  const liveRef = useRef({ url: null, startMs: null, revealed: false, answerSeconds })
 
   // Lås upp <audio> (spela tyst klipp → pausa). Anropas från ett användarklick,
   // men provas också direkt vid montering: har webbläsaren redan gett appen
@@ -105,7 +113,7 @@ export function useSyncedAudio(round) {
       live.startMs != null &&
       !live.revealed &&
       a.src === live.url &&
-      serverNow() < live.startMs + TIMER_SECONDS * 1000
+      serverNow() < live.startMs + live.answerSeconds * 1000
     try {
       if (inClip) {
         seekToLive(a, live.startMs)
@@ -154,12 +162,12 @@ export function useSyncedAudio(round) {
   const startMs = round?.timer_start_at ? new Date(round.timer_start_at).getTime() : null
   const roundNo = round?.round_number
   // Rundan är avgjord i förtid: alla har låst in sina svar (eller värden tryckte
-  // "Visa svar nu") innan de 25 sekunderna gått. Då ska musiken tystna direkt –
+  // "Visa svar nu") innan svarstiden gått ut. Då ska musiken tystna direkt –
   // annars ligger klippet och spelar över facit.
   const revealed = Boolean(round?.answers_revealed)
 
   // Håll upplåsningen underrättad om vilken låt som gäller just nu.
-  liveRef.current = { url: url ?? null, startMs, revealed }
+  liveRef.current = { url: url ?? null, startMs, revealed, answerSeconds }
 
   // Starta klippet exakt vid start_at.
   useEffect(() => {
@@ -171,7 +179,7 @@ export function useSyncedAudio(round) {
     const delay = startMs - serverNow()
     // Kommer vi in mitt i klippet spolar vi fram i stället för att hoppa över
     // rundan – men bara om det är någon vettig stund kvar att lyssna på.
-    if (-delay / 1000 > TIMER_SECONDS - 3) return
+    if (-delay / 1000 > answerSeconds - 3) return
     const a = getAudio()
     if (a.src !== url) {
       a.src = url
@@ -220,7 +228,7 @@ export function useSyncedAudio(round) {
   }, [roundNo, url, startMs, revealed, ready])
 
   // Tysta klippet i samma ögonblick rundan avslöjas (alla låste in i förtid).
-  // pausedRef/playedRef sätts till rundan så varken 25s-pausen eller en ny
+  // pausedRef/playedRef sätts till rundan så varken slutpausen eller en ny
   // start-effekt gör något mer med den här rundan.
   useEffect(() => {
     if (!revealed || roundNo == null) return
@@ -229,18 +237,50 @@ export function useSyncedAudio(round) {
     if (audioRef.current) audioRef.current.pause()
   }, [revealed, roundNo])
 
-  // Pausa när 25s-klippet är slut.
+  // Loopa klippet när svarstiden är längre än klippet (45 s, 1 min). Vid
+  // varvets slut spolas tillbaka till positionen alla andra räknar fram –
+  // inte bara till noll – så att en enhet som legat lite före eller efter
+  // hamnar i takt igen. 'ended' tar förhandslyssningar som är kortare än
+  // varvet.
+  useEffect(() => {
+    if (!url || startMs == null || revealed) return undefined
+    if (answerSeconds <= CLIP_SECONDS) return undefined
+    const a = getAudio()
+    const inWindow = () => serverNow() < startMs + answerSeconds * 1000
+    const onTime = () => {
+      if (a.src !== url || !inWindow()) return
+      if (a.currentTime >= CLIP_SECONDS) seekToLive(a, startMs)
+    }
+    const onEnded = () => {
+      if (a.src !== url || !inWindow()) return
+      const elapsed = (serverNow() - startMs) / 1000
+      try {
+        a.currentTime = elapsed % CLIP_SECONDS
+      } catch {
+        a.currentTime = 0
+      }
+      a.play().catch(() => {})
+    }
+    a.addEventListener('timeupdate', onTime)
+    a.addEventListener('ended', onEnded)
+    return () => {
+      a.removeEventListener('timeupdate', onTime)
+      a.removeEventListener('ended', onEnded)
+    }
+  }, [url, startMs, revealed, answerSeconds])
+
+  // Pausa när rundans svarstid är slut.
   useEffect(() => {
     if (!url || startMs == null) return
     if (pausedRef.current === roundNo) return
-    const delay = startMs + TIMER_SECONDS * 1000 - serverNow()
+    const delay = startMs + answerSeconds * 1000 - serverNow()
     if (delay < 0) return
     const id = setTimeout(() => {
       pausedRef.current = roundNo
       getAudio().pause()
     }, delay)
     return () => clearTimeout(id)
-  }, [roundNo, url, startMs])
+  }, [roundNo, url, startMs, answerSeconds])
 
   // Städa upp ljudet när hooken avmonteras.
   useEffect(() => {

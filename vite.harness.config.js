@@ -1,10 +1,13 @@
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 // Dev-server för harness.html (mobilgranskning). Inte del av prod-bygget.
-const here = path.dirname(new URL(import.meta.url).pathname)
+// fileURLToPath, inte URL.pathname: på Windows blir pathname "/C:/..." med
+// %20 för mellanslagen, och då hittar inga alias sina attrapper.
+const here = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useNavGuard } from '../../context/NavGuardContext.jsx'
 import {
   CATEGORIES,
-  TIMER_SECONDS,
+  answerSecondsFor,
   SPIN_MS,
   categoryOrderFor,
   selectionLabel,
@@ -44,11 +44,13 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   const navigate = useNavigate()
   const { round, cards, answers, facit, refetch, optimisticCell, optimisticOverride } =
     useGame(room.id)
+  // Rundans svarstid (30/45/60 s) – värdens val i lobbyn, läses av alla.
+  const answerSeconds = answerSecondsFor(room)
   // Synkad uppspelning av preview-klippet (samma ljud-URL hos alla vid start_at).
-  const audio = useSyncedAudio(round)
+  const audio = useSyncedAudio(round, answerSeconds)
 
   // MÅSTE vara serverns klocka, inte enhetens. Allt härunder jämförs mot
-  // timer_start_at (server-satt): nedräkningen, klippets 25s-fönster, timern
+  // timer_start_at (server-satt): nedräkningen, rundans svarsfönster, timern
   // och när svarsrutan dyker upp. Går enheten fel hamnar hela fasindelningen
   // lika mycket fel – och eftersom ljudet numera följer serverklockan skulle
   // UI och musik dessutom säga emot varandra.
@@ -106,12 +108,13 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   // timer_start_at sätts först när värden trycker "Starta låt" (= start_at).
   const startMs = round?.timer_start_at ? new Date(round.timer_start_at).getTime() : null
   const hasTrack = Boolean(round?.current_track_id)
-  const remaining = startMs != null ? TIMER_SECONDS - (now - startMs) / 1000 : 0
+  const remaining = startMs != null ? answerSeconds - (now - startMs) / 1000 : 0
 
   // Uppspelningsfaser (efter "Starta låt").
   const beforeStart = hasTrack && startMs != null && now < startMs
   // OBS tre skilda begrepp som är lätta att blanda ihop:
-  //   clipWindow      – klippets 25-sekundersfönster enligt klockan. Styr när
+  //   clipWindow      – rundans svarsfönster (answerSeconds) enligt klockan.
+  //                     Klippet loopar om fönstret är längre än 25 s. Styr när
   //                     svarsrutan visas (man skriver och kan låsa in medan
   //                     låten spelar).
   //   clipPlaying     – låten LÅTER faktiskt. Samma fönster, men avslöjas
@@ -123,8 +126,8 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   // den klockan i stället påstår brickan "Fel svar" så fort klippet tystnat,
   // innan spelaren ens hunnit svara.
   const clipWindow =
-    hasTrack && startMs != null && now >= startMs && now < startMs + TIMER_SECONDS * 1000
-  const clipFinished = hasTrack && startMs != null && now >= startMs + TIMER_SECONDS * 1000
+    hasTrack && startMs != null && now >= startMs && now < startMs + answerSeconds * 1000
+  const clipFinished = hasTrack && startMs != null && now >= startMs + answerSeconds * 1000
   const answersRevealed = Boolean(round?.answers_revealed)
   const clipPlaying = clipWindow && !answersRevealed
   const timerRunning = clipPlaying && remaining > 0
@@ -134,7 +137,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
   // ändrar `now` ingenting som renderas – och intervallet var förut igång hela
   // matchen, även mellan rundorna och på vinstskärmen. Var 200:e ms ritades då
   // HELA spelvyn om, inklusive varje medspelares bricka på 25 rutor.
-  const clockUntil = hasTrack && startMs != null ? startMs + TIMER_SECONDS * 1000 + 800 : null
+  const clockUntil = hasTrack && startMs != null ? startMs + answerSeconds * 1000 + 800 : null
   useEffect(() => {
     if (clockUntil == null) return undefined
     setNow(serverNow())
@@ -518,7 +521,7 @@ export default function GameView({ room, players, teams = [], me, isHost }) {
               <DiscoWheel round={round} order={categoryOrderFor(room)} size={260} />
             </div>
             {timerRunning && (
-              <RoundTimer remaining={remaining} total={TIMER_SECONDS} color={timerColor} />
+              <RoundTimer remaining={remaining} total={answerSeconds} color={timerColor} />
             )}
           </div>
 

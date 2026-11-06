@@ -20,6 +20,8 @@ import YearSpanPicker from './YearSpanPicker.jsx'
 import WheelPicker from './WheelPicker.jsx'
 import {
   POOL_CATEGORIES,
+  SVARSTIDER,
+  answerSecondsFor,
   TOMT_VAL,
   isSelected,
   selectionEmpty,
@@ -64,6 +66,12 @@ export default function LobbyView({
   // Optimistiskt lager: valet ska synas direkt vid klick, utan att vänta på
   // server-svar + realtidsstuds. Rensas när riktiga room-proppen hunnit ikapp.
   const [optimistic, setOptimistic] = useState(null)
+  // Värdens senaste klick på svarstiden, tills rummet hunnit ikapp.
+  const [svarstidLokal, setSvarstidLokal] = useState(null)
+  const svarstid = svarstidLokal ?? answerSecondsFor(room)
+  useEffect(() => {
+    if (svarstidLokal != null && room.answer_seconds === svarstidLokal) setSvarstidLokal(null)
+  }, [room.answer_seconds, svarstidLokal])
   const roomLink = `${window.location.origin}/rum/${room.code}`
 
   // Logotypen uppe till vänster är annars en tyst nödutgång även härifrån:
@@ -219,6 +227,17 @@ export default function LobbyView({
   async function toggleErase(e) {
     // Värdens direkta uppdatering tillåts av RLS (rooms_update_host). Realtid speglar till alla.
     await supabase.from('rooms').update({ erase_rule_enabled: e.target.checked }).eq('id', room.id)
+  }
+
+  async function setAnswerSeconds(s) {
+    // Syns direkt hos värden; realtiden tar det till övriga.
+    setSvarstidLokal(s)
+    setErr('')
+    const { error } = await supabase.from('rooms').update({ answer_seconds: s }).eq('id', room.id)
+    if (error) {
+      setSvarstidLokal(null)
+      setErr('Kunde inte ändra svarstiden – ladda om sidan och försök igen.')
+    }
   }
 
   async function setTeamMode(on) {
@@ -486,6 +505,39 @@ export default function LobbyView({
               disabled={!isHost}
             />
           </label>
+
+          {/* Svarstid – hur länge klockan går varje runda. Klippet är 25 s
+              och loopar om tiden är längre. */}
+          <div className="panel-inset mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-3 p-3.5">
+            <span>
+              <span className="font-display text-cream">Svarstid</span>
+              <span className="mt-0.5 block text-xs text-muted">
+                Så länge får alla på sig att svara varje runda.
+              </span>
+            </span>
+            <div role="radiogroup" aria-label="Svarstid" className="flex shrink-0 gap-2">
+              {SVARSTIDER.map((s) => {
+                const active = svarstid === s
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    disabled={!isHost}
+                    onClick={() => setAnswerSeconds(s)}
+                    className="min-h-9 min-w-14 cursor-pointer rounded-lg border px-3 font-display text-sm text-cream transition disabled:cursor-default disabled:opacity-60"
+                    style={{
+                      borderColor: active ? '#22e6e6' : 'rgba(255,255,255,0.15)',
+                      boxShadow: active ? '0 0 18px -6px #22e6e6' : undefined,
+                    }}
+                  >
+                    {s === 60 ? '1 min' : `${s} s`}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
         </div>
 
         {/* Lagläget frågas fram i stället för att ligga som en kryssruta bland
