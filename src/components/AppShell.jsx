@@ -2,7 +2,6 @@ import { Link, useLocation } from 'react-router-dom'
 import { useNavGuardRunner } from '../context/NavGuardContext.jsx'
 import { useVolume } from '../context/VolumeContext.jsx'
 import DiscoBall from './DiscoBall.jsx'
-import AccountBadge from './AccountBadge.jsx'
 import VolumeControl from './VolumeControl.jsx'
 
 export default function AppShell({ children }) {
@@ -39,7 +38,6 @@ export default function AppShell({ children }) {
           </Link>
           <div className="flex items-center gap-2">
             {!inRoom && <VolumeControl volume={volume} setVolume={setVolume} />}
-            <AccountBadge />
           </div>
         </div>
       </header>

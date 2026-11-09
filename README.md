@@ -28,7 +28,8 @@ tidsstämpel. Röst/video för häcklandet sköts utanför appen (Discord e.d.).
    svaret, där exakt rätt år krävs och räknas oberoende av rundans egen fråga),
    **lagläge** (gemensam bricka + gemensamt svar per lag, plus en **privat lagchatt**
    där laget resonerar utan att motståndarna ser), **svenskt läge** (bara
-   svenska låtar) och enkel **statistik** (spelade/vinster/oavgjorda) på `/statistik`.
+   svenska låtar). Det finns ingen inloggning eller statistik – spelet är till för stunden.
+Spelläget **Sjung vidare** låter lagen sjunga fortsättningen på en låt som tystnar.
 
 ---
 
@@ -81,19 +82,9 @@ npm install
    delar på de 30 platserna, så potten ska inte gå åt till folk som bara tittar.
    All gästinloggning sker därför i `ensureSession()` i `AuthContext`; slår
    spärren till får användaren en begriplig förklaring i stället för ett RPC-fel.
-4. **URL Configuration** (krävs för konto, bekräftelsemejl och lösenordsåterställning).
-   Under **Authentication → URL Configuration**, sätt **Site URL** till din
-   produktions-URL och lägg till dessa som **Redirect URLs**:
-   - `http://127.0.0.1:5173` och `http://127.0.0.1:5173/nytt-losenord`
-   - `https://latsnurran.vercel.app` och `https://latsnurran.vercel.app/nytt-losenord`
-
-   Saknas `/nytt-losenord` i listan hamnar den som klickar på en
-   återställningslänk på startsidan i stället, och kan aldrig byta lösenord.
-5. **Bekräftelsemejl** – under **Authentication → Sign In / Providers → Email**
-   styr **Confirm email** om nyregistrerade måste klicka i mejlet innan de kan
-   logga in från en annan enhet. Appen klarar båda lägena: är det på visas
-   "Kolla din mejl", är det av loggas man in direkt.
-6. Hämta **Project URL** och **anon/public key** under **Project Settings → API**.
+4. E-postinloggning används inte längre (borttagen 2026-11). Providern behöver
+   inte vara påslagen, och URL Configuration/bekräftelsemejl spelar ingen roll.
+5. Hämta **Project URL** och **anon/public key** under **Project Settings → API**.
 
 ### 3. Miljövariabler
 
@@ -190,10 +181,10 @@ slår upp den. Att helt stoppa en tekniskt kunnig fuskare kräver server-side-lj
 hitster-bingo-online/
 ├─ src/
 │  ├─ lib/            supabase-klient, spelkonstanter, RPC-wrappers, iTunes-sök
-│  ├─ context/        AuthContext – anonym gäst + konto (lösenord/magisk länk)
+│  ├─ context/        AuthContext – anonym gästsession (ingen inloggning)
 │  ├─ hooks/          useRoom/useGame (realtid), useSyncedAudio (synkat ljud)
 │  ├─ components/     spelvyer (lobby/spel), bricka, discokula, svarspanel, ui/*
-│  ├─ pages/          LandingPage, RoomPage, ProfilePage, AuthPage, ResetPasswordPage
+│  ├─ pages/          LandingPage, RoomPage, PrivacyPage
 │  ├─ data/           låtpotter (lazy-laddade chunkar): tracks.js, swedishTracks.js
 │  └─ main.jsx        router + providers
 ├─ supabase/migrations/   SQL-migrationer i nummerordning (körs med npm run migrate)

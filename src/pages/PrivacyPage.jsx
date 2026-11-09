@@ -1,5 +1,9 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext.jsx'
 import DiscoBall from '../components/DiscoBall.jsx'
+import NeonButton from '../components/ui/NeonButton.jsx'
+import ConfirmDialog from '../components/ui/ConfirmDialog.jsx'
 
 /**
  * Integritet och villkor.
@@ -34,6 +38,28 @@ function Rad({ vad, varfor }) {
 }
 
 export default function PrivacyPage() {
+  const { deleteMyData } = useAuth()
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteMsg, setDeleteMsg] = useState('')
+
+  async function onDelete() {
+    setDeleting(true)
+    try {
+      const hadData = await deleteMyData()
+      setDeleteMsg(
+        hadData
+          ? 'Klart – allt som hörde till den här webbläsaren är raderat.'
+          : 'Det fanns inget sparat att radera.',
+      )
+    } catch (e) {
+      setDeleteMsg(e.message || 'Kunde inte radera just nu – försök igen.')
+    } finally {
+      setDeleting(false)
+      setConfirmDelete(false)
+    }
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <header className="text-center">
@@ -47,12 +73,10 @@ export default function PrivacyPage() {
 
       <Section title="Du kan spela utan att lämna något" neon="#b6ff3c">
         <p className="text-sm text-muted">
-          Det krävs inget konto för att spela. Går du med i ett rum som gäst skapas ett
-          anonymt id åt dig som lever i din webbläsare – det är kopplat till dina rum och
-          brickor, men inte till din e-post, ditt namn eller din enhet i övrigt.
-        </p>
-        <p className="text-sm text-muted">
-          Ett konto behövs bara om du vill att statistiken ska följa med mellan enheter.
+          Det finns inga konton och ingen inloggning. När du skapar eller går med i ett
+          rum får du ett anonymt id som lever i din webbläsare – det är kopplat till dina
+          rum och brickor, men inte till någon e-post, ditt riktiga namn eller din enhet
+          i övrigt.
         </p>
       </Section>
 
@@ -60,15 +84,11 @@ export default function PrivacyPage() {
         <ul>
           <Rad
             vad="Visningsnamnet"
-            varfor="Namnet du skriver in syns för alla i rummet. Har du konto kan du spara ett namn som följer med."
+            varfor="Namnet du skriver in syns för alla i rummet."
           />
           <Rad
-            vad="E-postadressen"
-            varfor="Bara om du skapar ett konto. Används för att logga in och för att återställa lösenord – aldrig för utskick."
-          />
-          <Rad
-            vad="Matchstatistik"
-            varfor="Antal spelade, vunna och oavgjorda matcher. Kopplas till kontot om du har ett, annars till gäst-id:t."
+            vad="Matchräkning"
+            varfor="Antal spelade, vunna och oavgjorda matcher räknas på det anonyma id:t. Den visas ingenstans."
           />
           <Rad
             vad="Spelet självt"
@@ -76,7 +96,7 @@ export default function PrivacyPage() {
           />
           <Rad
             vad="I din webbläsare"
-            varfor="Senaste visningsnamnet, din volymnivå, och din inloggning. Inget av det skickas vidare någonstans."
+            varfor="Senaste visningsnamnet, din volymnivå och ditt anonyma id. Inget av det skickas vidare någonstans."
           />
         </ul>
       </Section>
@@ -92,7 +112,7 @@ export default function PrivacyPage() {
         <ul>
           <Rad
             vad="Supabase"
-            varfor="Databasen och inloggningen. Det är här kontot och spelen faktiskt ligger."
+            varfor="Databasen. Det är här rummen och spelen faktiskt ligger."
           />
           <Rad
             vad="Vercel"
@@ -112,24 +132,34 @@ export default function PrivacyPage() {
       <Section title="Vad andra spelare ser" neon="#ffc93c">
         <p className="text-sm text-muted">
           De som är i samma rum ser ditt visningsnamn, din bricka, dina svar och det du
-          skriver i lagchatten. De ser inte din e-postadress. Välj ett namn du är bekväm
+          skriver i lagchatten. Välj ett namn du är bekväm
           med att visa – det behöver inte vara ditt riktiga.
         </p>
       </Section>
 
       <Section title="Bli av med det" neon="#33a6ff">
         <p className="text-sm text-muted">
-          Har du konto kan du radera det själv under{' '}
-          <Link to="/profil" className="py-1.5 text-cyan hover:underline">
-            Min profil
-          </Link>
-          . Då försvinner kontot, statistiken, rummen du varit värd för och dina svar –
-          på riktigt, inte dolt.
+          Ingenting här pekar på dig som person. Vill du ändå bort med allt som hör till
+          den här webbläsaren – rummen du varit värd för, dina svar, din matchräkning –
+          raderas det på riktigt, inte dolt. Nästa gång du spelar får du ett nytt id.
         </p>
-        <p className="text-sm text-muted">
-          Spelar du som gäst finns ingenting som pekar på dig som person. Rensar du
-          webbläsarens data för sajten är kopplingen till gäst-id:t borta för din del.
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <NeonButton variant="outline" neon="#ff2e9a" onClick={() => setConfirmDelete(true)}>
+            Radera mina uppgifter
+          </NeonButton>
+          {deleteMsg && <span className="text-sm text-muted">{deleteMsg}</span>}
+        </div>
+        <ConfirmDialog
+          open={confirmDelete}
+          busy={deleting}
+          title="Radera dina uppgifter?"
+          message="Rum du är värd för stängs för alla, och dina svar och din matchräkning försvinner. Det går inte att ångra."
+          confirmLabel="Radera allt"
+          busyLabel="Raderar…"
+          cancelLabel="Avbryt"
+          onConfirm={onDelete}
+          onCancel={() => setConfirmDelete(false)}
+        />
       </Section>
 
       <Section title="Villkor, kort" neon="#b6ff3c">

@@ -7,13 +7,10 @@ import LandingPage from './pages/LandingPage.jsx'
 
 // Startsidan laddas direkt – den är det första man ser och ska inte vänta på
 // ett extra nätverksanrop. Resten hämtas när de behövs: rumsvyn drar med sig
-// spelplanen, ljudsynken och lagchatten, och kontosidorna besöks sällan. Allt
+// spelplanen, ljudsynken och lagchatten. Allt
 // låg förut i EN bundle på ~540 kB, som alltså laddades ned i sin helhet av
 // någon som bara skulle skriva in ett namn.
 const RoomPage = lazy(() => import('./pages/RoomPage.jsx'))
-const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'))
-const AuthPage = lazy(() => import('./pages/AuthPage.jsx'))
-const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage.jsx'))
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage.jsx'))
 
 function Laddar() {
@@ -33,11 +30,9 @@ export default function App() {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/rum/:code" element={<RoomPage />} />
-            <Route path="/profil" element={<ProfilePage />} />
-            {/* Statistiken bor numera på profilen – gamla länkar ska inte dö. */}
-            <Route path="/statistik" element={<Navigate to="/profil" replace />} />
-            <Route path="/konto" element={<AuthPage />} />
-            <Route path="/nytt-losenord" element={<ResetPasswordPage />} />
+            {/* Inloggning, profil och statistik är borttagna – Låtsnurran är ett
+                sällskapsspel för stunden. Gamla länkar dit (/konto, /profil,
+                /statistik, /nytt-losenord) faller till startsidan nedan. */}
             <Route path="/integritet" element={<PrivacyPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
