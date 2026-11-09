@@ -7,6 +7,7 @@ import SetupNotice from '../components/SetupNotice.jsx'
 import JoinGate from '../components/room/JoinGate.jsx'
 import LobbyView from '../components/room/LobbyView.jsx'
 import GameView from '../components/room/GameView.jsx'
+import SingView from '../components/room/SingView.jsx'
 
 // Container för /rum/:code – väljer vy utifrån rummets status (lobby/playing/finished).
 export default function RoomPage() {
@@ -56,6 +57,9 @@ export default function RoomPage() {
         presentUserIds={presentUserIds}
       />
     )
+  }
+  if (room.game_mode === 'sing') {
+    return <SingView room={room} players={players} teams={teams} me={me} isHost={isHost} />
   }
   return <GameView room={room} players={players} teams={teams} me={me} isHost={isHost} />
 }

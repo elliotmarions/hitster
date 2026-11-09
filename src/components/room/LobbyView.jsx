@@ -21,7 +21,9 @@ import WheelPicker from './WheelPicker.jsx'
 import {
   POOL_CATEGORIES,
   SVARSTIDER,
+  SING_TARGETS,
   answerSecondsFor,
+  singTargetFor,
   TOMT_VAL,
   isSelected,
   selectionEmpty,
@@ -282,6 +284,13 @@ export default function LobbyView({
 
   const tomtVal = selectionEmpty(view)
 
+  // Spelläget (0087). Sjung vidare spelas alltid i lag, så valet slår på
+  // lagläget i samma skrivning – annars skulle lagfrågan dyka upp efteråt.
+  const sjung = view.game_mode === 'sing'
+  const valjLage = (lage) =>
+    skrivVal(lage === 'sing' ? { game_mode: 'sing', team_mode: true } : { game_mode: 'bingo' })
+  const malet = singTargetFor(view)
+
   // En kategori-knapp – delas av de breda potterna, åldersspannen och genrerna.
   // Chipen visar INTE sin egen pottstorlek: tolv siffror som ändå inte går att
   // addera (dimensionerna snittas) blev bara brus. Den siffra som styr något,
@@ -401,6 +410,36 @@ export default function LobbyView({
 
         {steg === 1 && (
         <>
+        <div className="mt-6">
+          <p className="label mb-2">Spelläge</p>
+          <div role="radiogroup" aria-label="Spelläge" className="grid grid-cols-2 gap-3">
+            {[
+              { key: 'bingo', label: '🎯 Bingo', hint: 'Snurra hjulet, gissa och kryssa brickan', neon: '#22e6e6' },
+              { key: 'sing', label: '🎤 Sjung vidare', hint: 'Låten tystnar – laget sjunger resten', neon: '#ff4d9d' },
+            ].map((m) => {
+              const active = (view.game_mode || 'bingo') === m.key
+              return (
+                <button
+                  key={m.key}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  disabled={!isHost}
+                  onClick={() => valjLage(m.key)}
+                  className="panel-inset flex cursor-pointer flex-col gap-1 p-3.5 text-left transition disabled:cursor-default disabled:opacity-60"
+                  style={{
+                    borderColor: active ? m.neon : undefined,
+                    boxShadow: active ? `0 0 22px -8px ${m.neon}` : undefined,
+                  }}
+                >
+                  <span className="font-display text-cream">{m.label}</span>
+                  <span className="text-xs text-muted">{m.hint}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
         {/* Urval – fritt multival. Union inom varje rad, snitt mellan raderna:
             "Svenska + 20–29 år + 30–39 år + Pop" = svensk pop ur endera eran. */}
         <div className="mt-6">
@@ -489,6 +528,39 @@ export default function LobbyView({
         <div className="mt-6">
           <p className="label mb-2">Regler</p>
 
+          {sjung ? (
+            <div className="panel-inset flex flex-wrap items-center justify-between gap-x-4 gap-y-3 p-3.5">
+              <span>
+                <span className="font-display text-cream">Först till</span>
+                <span className="mt-0.5 block text-xs text-muted">
+                  Så många rätt behöver ett lag för att vinna.
+                </span>
+              </span>
+              <div role="radiogroup" aria-label="Först till" className="flex shrink-0 gap-2">
+                {SING_TARGETS.map((t) => {
+                  const active = malet === t
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      disabled={!isHost}
+                      onClick={() => skrivVal({ sing_target: t })}
+                      className="min-h-9 min-w-14 cursor-pointer rounded-lg border px-3 font-display text-sm text-cream transition disabled:cursor-default disabled:opacity-60"
+                      style={{
+                        borderColor: active ? '#ff4d9d' : 'rgba(255,255,255,0.15)',
+                        boxShadow: active ? '0 0 18px -6px #ff4d9d' : undefined,
+                      }}
+                    >
+                      {t}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ) : (
+          <>
           {/* Suddregel */}
           <label className="panel-inset flex items-center justify-between gap-4 p-3.5">
             <span>
@@ -538,6 +610,8 @@ export default function LobbyView({
               })}
             </div>
           </div>
+          </>
+          )}
         </div>
 
         {/* Lagläget frågas fram i stället för att ligga som en kryssruta bland
@@ -550,10 +624,12 @@ export default function LobbyView({
             <span>
               <span className="font-display text-cream">Ni spelar i lag</span>
               <span className="mt-0.5 block text-xs text-muted">
-                Dela in lagen under Spelare. Laget delar bricka, och kaptenen
-                låser svaret.
+                {sjung
+                  ? 'Dela in lagen under Spelare. Lagen turas om att sjunga vidare.'
+                  : 'Dela in lagen under Spelare. Laget delar bricka, och kaptenen låser svaret.'}
               </span>
             </span>
+            {!sjung && (
             <button
               type="button"
               onClick={() => setTeamMode(false)}
@@ -561,6 +637,7 @@ export default function LobbyView({
             >
               Spela var för sig
             </button>
+            )}
           </div>
         )}
         </>
@@ -571,6 +648,10 @@ export default function LobbyView({
         <div className="mt-6 flex flex-wrap items-center gap-3">
           {!isHost ? (
             <span className="text-sm text-muted">Väntar på att värden startar spelet…</span>
+          ) : steg === 1 && sjung ? (
+            <NeonButton onClick={handleStart} disabled={busy || players.length < 2}>
+              {busy ? 'Startar…' : players.length < 2 ? 'Minst två spelare behövs' : 'Starta spel'}
+            </NeonButton>
           ) : steg === 1 ? (
             /* Musiken är vald – nästa fråga är vad hjulet ska fråga om.
                Starten ligger i steg 2, så ingen råkar hoppa förbi hjulet

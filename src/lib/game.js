@@ -151,6 +151,30 @@ export async function overrideAnswer(roomId, answerId, correct) {
   if (error) throw translateDbError(error)
 }
 
+// --- Sjung vidare (0087) ---
+
+// Värden drar nästa låt: servern skapar turen (nästa lag i ordningen) och
+// startar låten med samma maskin som bingon. Hittades inte klippet i cachen
+// pollas uppslaget tills låten är på plats.
+export async function singNextTurn(roomId) {
+  const { data, error } = await supabase.rpc('sing_next_turn', { p_room_id: roomId })
+  if (error) throw translateDbError(error)
+  if (data?.current_track_id) return data
+  return pollTrackStart(roomId)
+}
+
+// Värden spelar facit: låten fortsätter där den tystnade, titeln visas.
+export async function singReveal(roomId) {
+  const { error } = await supabase.rpc('sing_reveal', { p_room_id: roomId })
+  if (error) throw translateDbError(error)
+}
+
+// Rätt eller fel för laget som sjöng. Värden eller ett annat lag dömer.
+export async function singJudge(roomId, correct) {
+  const { error } = await supabase.rpc('sing_judge', { p_room_id: roomId, p_correct: correct })
+  if (error) throw translateDbError(error)
+}
+
 export async function resetGame(roomId, backToLobby = false) {
   const { error } = await supabase.rpc('reset_game', {
     p_room_id: roomId,

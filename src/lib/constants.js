@@ -245,6 +245,19 @@ export function answerSecondsFor(room) {
   const s = room?.answer_seconds
   return SVARSTIDER.includes(s) ? s : STANDARD_SVARSTID
 }
+// Sjung vidare (0087). Målen MÅSTE spegla rooms_sing_target_check.
+export const SING_TARGETS = [5, 10, 15]
+export const STANDARD_SING_TARGET = 10
+export function singTargetFor(room) {
+  const t = room?.sing_target
+  return SING_TARGETS.includes(t) ? t : STANDARD_SING_TARGET
+}
+// Hur länge laget har på sig att sjunga efter att låten tystnat. Klockan är
+// bara en hjälp – värden kan spela facit när som helst efter tystnaden.
+export const SING_SECONDS = 20
+// Hur länge facit spelar vidare efter stoppunkten (klippet är ~30 s långt).
+export const SING_FACIT_SECONDS = 12
+
 export const SPIN_MS = 4200 // discokulans snurr-animation (matchar timer_start_at i spin_wheel)
 export const GRID = 5 // brickan är 5x5 (fritt slumpad, exakt 5 rutor per kategori)
 
