@@ -252,9 +252,7 @@ export function singTargetFor(room) {
   const t = room?.sing_target
   return SING_TARGETS.includes(t) ? t : STANDARD_SING_TARGET
 }
-// Hur länge laget har på sig att sjunga efter att låten tystnat. Klockan är
-// bara en hjälp – värden kan spela facit när som helst efter tystnaden.
-export const SING_SECONDS = 20
+// Ingen tidsgräns när laget sjunger: värden spelar facit när laget är klart.
 // Hur länge facit spelar vidare efter stoppunkten (klippet är ~30 s långt).
 export const SING_FACIT_SECONDS = 12
 

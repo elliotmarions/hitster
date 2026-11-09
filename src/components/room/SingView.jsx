@@ -7,9 +7,8 @@ import { useSingAudio } from '../../hooks/useSingAudio.js'
 import { pollTrackStart, resetGame, singJudge, singNextTurn, singReveal } from '../../lib/game.js'
 import { leaveRoom } from '../../lib/rooms.js'
 import { serverNow } from '../../lib/serverTime.js'
-import { SING_FACIT_SECONDS, SING_SECONDS, TEAM_COLORS, singTargetFor } from '../../lib/constants.js'
+import { SING_FACIT_SECONDS, TEAM_COLORS, singTargetFor } from '../../lib/constants.js'
 import Countdown from '../Countdown.jsx'
-import RoundTimer from '../RoundTimer.jsx'
 import HostLeftNotice from '../HostLeftNotice.jsx'
 import VolumeControl from '../VolumeControl.jsx'
 import TeamChat from '../TeamChat.jsx'
@@ -104,7 +103,7 @@ export default function SingView({ room, players, teams, me, isHost }) {
   const clockUntil = revealMs
     ? revealMs + SING_FACIT_SECONDS * 1000 + 500
     : cutMs
-      ? cutMs + SING_SECONDS * 1000 + 500
+      ? cutMs + 500
       : null
   useEffect(() => {
     if (clockUntil == null) return undefined
@@ -166,7 +165,6 @@ export default function SingView({ room, players, teams, me, isHost }) {
 
   const winner = finished && !hostLeft ? teamById(room.winner_team_id) : null
   const iWon = Boolean(winner) && me?.team_id === winner.id
-  const singLeft = singing ? Math.max(0, SING_SECONDS - (now - cutMs) / 1000) : 0
 
   return (
     <div className="space-y-6">
@@ -351,12 +349,9 @@ export default function SingView({ room, players, teams, me, isHost }) {
                   </h2>
                   <p className="mt-2 text-sm text-muted">
                     {myTeamOnTurn
-                      ? 'Fortsätt låten där den tystnade.'
-                      : `${turnTeam?.name || 'Laget'} sjunger fortsättningen.`}
+                      ? 'Fortsätt låten där den tystnade. Ta den tid ni behöver.'
+                      : `${turnTeam?.name || 'Laget'} sjunger fortsättningen – ingen tidsgräns.`}
                   </p>
-                  <div className="mt-5 flex justify-center">
-                    <RoundTimer remaining={singLeft} total={SING_SECONDS} color={turnColor} />
-                  </div>
                   <div className="mt-5">
                     {isHost ? (
                       <NeonButton onClick={onReveal} disabled={busy}>Spela facit</NeonButton>
