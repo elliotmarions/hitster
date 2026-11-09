@@ -109,17 +109,18 @@ export default function LobbyView({
   // Nyckeln är serialiserad: `val` är ett nytt objekt varje rendering, så en
   // beroendelista på objektet självt hade kört effekten i all oändlighet.
   const val = selectionFrom(view)
+  const sjungRaknare = view.game_mode === 'sing'
   const valNyckel = JSON.stringify(val)
   useEffect(() => {
     let active = true
     setSelCount(null)
-    trackPoolSelectionCount(JSON.parse(valNyckel))
+    trackPoolSelectionCount(JSON.parse(valNyckel), sjungRaknare)
       .then((n) => active && setSelCount(n))
       .catch(() => {})
     return () => {
       active = false
     }
-  }, [valNyckel])
+  }, [valNyckel, sjungRaknare])
 
   // --- Frånvaro: stänger man fliken ska man försvinna ur lobbyn ----------
   //
@@ -510,14 +511,15 @@ export default function LobbyView({
                   {selCount === null ? '—' : selCount.toLocaleString('sv-SE')}
                 </p>
                 <p className="mt-1 text-[11px] text-muted">
-                  {selCount === null ? 'räknar…' : 'låtar'}
+                  {selCount === null ? 'räknar…' : sjungRaknare ? 'sjungbara låtar' : 'låtar'}
                 </p>
               </div>
             </div>
             {selCount !== null && selCount < 25 && (
               <p className="mt-2 text-xs" style={{ color: '#ff8a3c' }}>
-                Tunn pott – {selCount} låtar. Samma låtar börjar återkomma, och med färre än
-                25 kan brickan bli svår att fylla.
+                {sjungRaknare
+                  ? `Tunn pott – ${selCount} sjungbara låtar. Samma låtar börjar återkomma; bredda urvalet om ni kan.`
+                  : `Tunn pott – ${selCount} låtar. Samma låtar börjar återkomma, och med färre än 25 kan brickan bli svår att fylla.`}
               </p>
             )}
 

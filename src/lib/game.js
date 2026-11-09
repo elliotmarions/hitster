@@ -74,8 +74,10 @@ export async function startRandomTrack(roomId) {
 // union inom varje dimension, snitt mellan dimensionerna.
 // swedish har tre lägen (0058): true = bara svenska, false = bara utländska,
 // null/undefined = ingen språkgräns. Därför ?? och inte !!.
-export async function trackPoolSelectionCount({ swedish, bands, genres }) {
-  const { data, error } = await supabase.rpc('track_pool_selection_count', {
+// sing = true räknar bara låtar som Sjung vidare får dra (0089): samma urval,
+// men med sjungläget popularitetsgräns.
+export async function trackPoolSelectionCount({ swedish, bands, genres }, sing = false) {
+  const { data, error } = await supabase.rpc(sing ? 'track_pool_sing_count' : 'track_pool_selection_count', {
     p_swedish: swedish ?? null,
     p_bands: bands ?? [],
     p_genres: genres ?? [],
